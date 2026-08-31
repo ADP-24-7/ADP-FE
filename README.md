@@ -21,6 +21,16 @@ npm run dev
 
 기본 개발 서버는 `http://localhost:5173`에서 실행됩니다.
 
+## Docker Preview
+
+로컬에서 빌드된 SPA를 계속 띄워 확인할 때는 Docker Compose를 사용합니다.
+
+```bash
+docker compose up -d --build
+```
+
+미리보기는 `http://localhost:4173`에서 열립니다. 컨테이너는 기본적으로 호스트의 BE를 `http://host.docker.internal:8080`으로 바라봅니다.
+
 ## Environment
 
 `.env.example`을 복사해 `.env.local`을 생성합니다.
