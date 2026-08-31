@@ -10,7 +10,7 @@ ADP-FE는 관리자용 SPA입니다. SSR과 SEO 요구가 없으므로 Vite 기�
 - `layouts`: 관리자 콘솔 공통 레이아웃
 - `pages`: URL과 직접 매핑되는 화면
 - `features`: auth, workloads, detection, runtime decision, transformation, policy lifecycle, audit trace 도메인
-- `shared`: HTTP 클라이언트, error normalization, 공통 타입, config, hook, component, mock infrastructure
+- `shared`: HTTP 클라이언트, error normalization, 공통 타입, config, hook, component, UI primitives
 
 ## Server State
 
@@ -22,11 +22,11 @@ app -> pages -> features -> shared
 
 `shared/api`에는 도메인 API 함수를 두지 않고 HTTP boundary와 error normalization만 둡니다.
 
-## Mocking
+## Mocking And Tests
 
-Local mock은 MSW가 HTTP layer에서 `/v1/**` 요청을 intercept합니다. Production code는 mock/real 분기를 갖지 않고 항상 동일한 HTTP contract를 사용합니다. Mock mode에서 처리되지 않은 `/v1/**` 요청은 실제 BE로 우회하지 않고 실패로 드러나야 합니다.
+일반 개발 실행은 MSW browser worker를 시작하지 않습니다. Local 화면은 실제 `/v1` API 또는 Vite proxy 오류를 그대로 보여줍니다.
 
-Feature별 mock handler는 해당 feature 아래에 둡니다. `app/mocks`는 feature handler를 조합만 하며, `shared`는 feature를 참조하지 않습니다.
+Contract test는 MSW node server로 `/v1/**` 요청을 intercept합니다. Feature별 test handler는 해당 feature 아래에 두고, `app/mocks`는 feature handler를 조합만 합니다. `shared`는 feature를 참조하지 않습니다.
 
 ## Security And Privacy
 

@@ -8,11 +8,12 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
-    "test": "VITE_APP_ENV=local VITE_API_MODE=mock VITE_API_BASE_URL=http://localhost:8080 vitest run"
+    "test": "VITE_APP_ENV=local VITE_API_MODE=real VITE_API_BASE_URL=http://localhost:8080 vitest run"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.59.16",
     "axios": "^1.7.7",
+    "lucide-react": "^1.37.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.18.3"
