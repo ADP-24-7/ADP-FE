@@ -1,13 +1,25 @@
 import { NavLink, Outlet } from 'react-router-dom';
+import {
+  Activity,
+  BarChart3,
+  Database,
+  FileCheck2,
+  FlaskConical,
+  LayoutDashboard,
+  Settings2,
+  ShieldCheck,
+  SlidersHorizontal,
+} from 'lucide-react';
 import { env } from '../shared/config/env';
 
 const navItems = [
-  { to: '/overview', label: '운영 개요', icon: '▦' },
-  { to: '/gateway-lab', label: 'Gateway Lab', icon: '⌁' },
-  { to: '/analysis', label: '분석 및 평가', icon: '◫' },
-  { to: '/policies', label: '정책 관리', icon: '◇' },
-  { to: '/monitoring', label: '모니터링', icon: '⌁' },
-  { to: '/audit', label: '감사 추적', icon: '◎' },
+  { to: '/overview', label: '운영 개요', icon: LayoutDashboard },
+  { to: '/data-access', label: 'Workload · Data Access', icon: Database },
+  { to: '/gateway-lab', label: 'Gateway Lab', icon: FlaskConical },
+  { to: '/analysis', label: '분석 · Evidence', icon: BarChart3 },
+  { to: '/policies', label: '정책 · Review', icon: SlidersHorizontal },
+  { to: '/monitoring', label: '모니터링 · Recovery', icon: Activity },
+  { to: '/audit', label: 'Decision Trace · Audit', icon: FileCheck2 },
 ];
 
 export function ConsoleLayout() {
@@ -15,9 +27,10 @@ export function ConsoleLayout() {
     <div className="console-shell">
       <aside className="console-sidebar" aria-label="ADP Console navigation">
         <div className="console-brand">
-          <span className="console-brand-mark">ADP</span>
+          <span className="console-brand-logo" aria-hidden="true"><ShieldCheck size={20} /></span>
+          <span className="console-brand-mark">FPG</span>
           <span className="console-brand-title">Privacy Gateway</span>
-          <span className="console-brand-subtitle">Admin Console</span>
+          <span className="console-brand-subtitle">Runtime Control Plane</span>
         </div>
 
         <nav className="console-nav">
@@ -27,7 +40,7 @@ export function ConsoleLayout() {
               to={item.to}
               className={({ isActive }) => (isActive ? 'console-nav-link active' : 'console-nav-link')}
             >
-              <span className="console-nav-icon" aria-hidden="true">{item.icon}</span>
+              <span className="console-nav-icon" aria-hidden="true"><item.icon size={18} /></span>
               {item.label}
             </NavLink>
           ))}
@@ -46,9 +59,14 @@ export function ConsoleLayout() {
         <header className="console-topbar">
           <div>
             <strong>Financial Privacy Gateway</strong>
-            <span>Privacy-safe runtime operations</span>
+            <span>Request · Data Access · Egress · Response Guard · Audit</span>
           </div>
-          <span className="live-mode-badge">LIVE API</span>
+          <div className="topbar-actions">
+            <span className="live-mode-badge">LIVE API</span>
+            <button className="icon-button" type="button" aria-label="설정">
+              <Settings2 size={17} />
+            </button>
+          </div>
         </header>
         <main className="console-main">
           <Outlet />

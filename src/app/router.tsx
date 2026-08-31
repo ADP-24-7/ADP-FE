@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { ConsoleLayout } from '../layouts/ConsoleLayout';
 import { AnalysisPage } from '../pages/analysis/AnalysisPage';
 import { AuditPage } from '../pages/audit/AuditPage';
+import { DataAccessPage } from '../pages/data-access/DataAccessPage';
 import { ErrorPage } from '../pages/error/ErrorPage';
 import { GatewayLabPage } from '../pages/gateway-lab/GatewayLabPage';
 import { MonitoringPage } from '../pages/monitoring/MonitoringPage';
@@ -17,6 +18,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/overview" replace /> },
       { path: 'overview', element: <OverviewPage /> },
+      { path: 'data-access', element: <DataAccessPage /> },
       { path: 'gateway-lab', element: <GatewayLabPage /> },
       { path: 'analysis', element: <AnalysisPage /> },
       { path: 'policies', element: <PoliciesPage /> },

@@ -5,6 +5,7 @@
 | BE Phase | FE Area | Notes |
 | --- | --- | --- |
 | Auth and workload context | `features/auth`, `features/workloads` | 관리자 세션, workload scope, role 표시 |
+| Data access boundary | `features/workloads`, `pages/data-access` | Workload registry, retrieval profile, data access decision 조회 |
 | Runtime execution | `features/runtime-execution`, `pages/gateway-lab` | `POST /v1/runtime/executions` 중심 orchestration |
 | Detection | `features/detection`, `pages/gateway-lab` | execution trace stage view model |
 | Runtime decision | `features/runtime-decision`, `pages/gateway-lab` | execution trace stage view model, `policy_action`, `final_action` 분리 |

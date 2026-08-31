@@ -56,6 +56,7 @@ src/
 - Runtime action은 `ALLOW`, `TRANSFORM`, `REVIEW`, `BLOCK` 중 하나로 제한합니다.
 - Gateway Lab은 `/v1/runtime/executions` API를 중심으로 연결하고 Authorization/Retrieval/Detection/Decision/Transform/Guard/Provider/Audit 흐름을 execution trace stage로 표현합니다.
 - Mock 숫자, 정책 버전, Trace ID를 운영 UI에서 자동 생성하지 않습니다.
+- Workload · Data Access 화면은 자유 SQL이 아니라 서버가 정의한 Workload, Retrieval Profile, Data Access Decision API를 표시하는 경계로 둡니다.
 
 ## Validation
 

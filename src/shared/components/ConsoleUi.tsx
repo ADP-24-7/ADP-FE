@@ -1,3 +1,5 @@
+import { Database } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 type PageHeaderProps = {
@@ -25,9 +27,10 @@ type SectionCardProps = {
   description?: string;
   children: ReactNode;
   className?: string;
+  actions?: ReactNode;
 };
 
-export function SectionCard({ title, description, children, className = '' }: SectionCardProps) {
+export function SectionCard({ title, description, children, className = '', actions }: SectionCardProps) {
   return (
     <section className={`section-card ${className}`.trim()}>
       <div className="section-card-header">
@@ -35,6 +38,7 @@ export function SectionCard({ title, description, children, className = '' }: Se
           <h2>{title}</h2>
           {description ? <p>{description}</p> : null}
         </div>
+        {actions ? <div className="section-card-actions">{actions}</div> : null}
       </div>
       {children}
     </section>
@@ -47,12 +51,13 @@ type EmptyStateProps = {
   endpoint?: string;
   action?: ReactNode;
   compact?: boolean;
+  icon?: LucideIcon;
 };
 
-export function EmptyState({ title, description, endpoint, action, compact = false }: EmptyStateProps) {
+export function EmptyState({ title, description, endpoint, action, compact = false, icon: Icon = Database }: EmptyStateProps) {
   return (
     <div className={compact ? 'state-panel state-panel-compact' : 'state-panel'} role="status">
-      <span className="state-icon" aria-hidden="true">○</span>
+      <span className="state-icon" aria-hidden="true"><Icon size={compact ? 17 : 22} /></span>
       <strong>{title}</strong>
       <p>{description}</p>
       {endpoint ? <code>{endpoint}</code> : null}
@@ -93,11 +98,14 @@ type MetricCardProps = {
   value?: number | string | null;
   description: string;
   loading?: boolean;
+  tone?: 'blue' | 'amber' | 'red' | 'purple' | 'green' | 'neutral';
+  icon?: LucideIcon;
 };
 
-export function MetricCard({ label, value, description, loading = false }: MetricCardProps) {
+export function MetricCard({ label, value, description, loading = false, tone = 'blue', icon: Icon }: MetricCardProps) {
   return (
     <article className="metric-card">
+      {Icon ? <span className={`metric-icon metric-icon-${tone}`} aria-hidden="true"><Icon size={18} /></span> : null}
       <span>{label}</span>
       {loading ? <span className="skeleton skeleton-metric" aria-label="불러오는 중" /> : <strong>{value ?? '—'}</strong>}
       <small>{value == null && !loading ? '집계 데이터 없음' : description}</small>
@@ -109,7 +117,7 @@ export function EndpointNotice({ children }: { children: ReactNode }) {
   return <div className="endpoint-notice">연결 API <code>{children}</code></div>;
 }
 
-export function StatusBadge({ children, tone = 'neutral' }: { children: ReactNode; tone?: 'success' | 'warning' | 'danger' | 'info' | 'neutral' }) {
+export function StatusBadge({ children, tone = 'neutral' }: { children: ReactNode; tone?: 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'amber' | 'purple' }) {
   return <span className={`status-badge status-${tone}`}>{children}</span>;
 }
 
@@ -121,3 +129,15 @@ export function RestrictedValue({ label = '권한이 있는 사용자에게만 �
   );
 }
 
+export function KeyValues({ items }: { items: Array<readonly [string, ReactNode]> | ReadonlyArray<readonly [string, ReactNode]> }) {
+  return (
+    <div className="key-values">
+      {items.map(([key, value]) => (
+        <div key={key}>
+          <span>{key}</span>
+          <b>{value}</b>
+        </div>
+      ))}
+    </div>
+  );
+}

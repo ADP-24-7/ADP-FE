@@ -11,6 +11,7 @@ MSW는 브라우저 bootstrap에서 시작하지 않습니다. MSW handler는 co
 | Page | Endpoints |
 | --- | --- |
 | Overview | `GET /v1/monitoring/overview` |
+| Workload · Data Access | `GET /v1/workloads`, `GET /v1/data-access/decisions` |
 | Gateway Lab | `POST /v1/runtime/executions`, `GET /v1/runtime/executions/{executionId}`, `GET /v1/runtime/executions/{executionId}/trace` |
 | Policy artifacts | `POST /v1/policy-evaluation-artifacts`, `GET /v1/policy-evaluation-artifacts/{artifactId}` |
 | Policies | `GET /v1/policies`, `GET /v1/policies/{policyId}`, `POST /v1/policies/{policyId}/shadow`, `POST /v1/policies/{policyId}/activate`, `POST /v1/policies/{policyId}/rollback` |
@@ -18,6 +19,8 @@ MSW는 브라우저 bootstrap에서 시작하지 않습니다. MSW handler는 co
 | Audit | `GET /v1/audit-events` |
 
 Gateway Lab은 Detection, Decision, Transform API를 직접 조합하지 않습니다. FE orchestration boundary는 runtime execution API 하나로 유지하고, Detection/Decision/Transform/Connector/Audit는 execution trace의 stage view model로 표현합니다.
+
+Audit 화면의 Trace ID 검색은 원문 재구성이 아니라 `GET /v1/audit-events?traceId={traceId}` 또는 Runtime Execution trace API의 privacy-safe 응답을 표시하는 흐름으로 연결합니다.
 
 ## Runtime Execution Contract
 

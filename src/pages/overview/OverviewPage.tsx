@@ -1,18 +1,27 @@
 import { useDashboardSummary } from '../../features/monitoring';
-import { EmptyState, ErrorState, MetricCard, PageHeader, SectionCard } from '../../shared/components';
+import { AlertTriangle, BarChart3, Database, ShieldCheck, ShieldX, Workflow } from 'lucide-react';
+import { EmptyState, ErrorState, KeyValues, MetricCard, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
 
 export function OverviewPage() {
   const summary = useDashboardSummary();
 
   const hasData = summary.data != null;
+  const checkpoints = [
+    ['01', 'Request & Authorization', '인증 주체, Workload, 목적, 동의 범위를 확인'],
+    ['02', 'Data Access & Context', '허용된 Dataset, Field, Subject, 기간, 행 수만 조회'],
+    ['03', 'Input Detection & Decision', '민감정보 탐지와 정책 판정, Human Review 분기'],
+    ['04', 'Transform & Outbound Guard', '토큰화 후 외부 전송 Payload를 최종 검사'],
+    ['05', 'Provider & Response Guard', 'LLM 응답의 재식별, 유출, 정책 위반을 재검증'],
+    ['06', 'Controlled Delivery & Audit', '안전한 결과만 전달하고 전 단계 근거를 기록'],
+  ] as const;
 
   return (
     <section className="page-section">
       <PageHeader
-        eyebrow="Overview"
+        eyebrow="RUNTIME CONTROL PLANE"
         title="운영 개요"
-        description="게이트웨이의 실제 집계 데이터만 표시합니다. 응답이 없으면 임의의 숫자를 채우지 않습니다."
-        actions={<button className="button button-secondary" onClick={() => void summary.refetch()}>새로고침</button>}
+        description="요청부터 데이터 접근, 외부 전송, 응답 검증, 전달까지 전체 Gateway 상태를 확인합니다."
+        actions={<StatusBadge tone={summary.isError ? 'danger' : hasData ? 'success' : 'warning'}>{summary.isError ? 'API ERROR' : hasData ? 'LIVE DATA' : 'API 연결 대기'}</StatusBadge>}
       />
 
       {summary.isError ? (
@@ -22,39 +31,51 @@ export function OverviewPage() {
         />
       ) : (
         <div className="metric-grid">
-          <MetricCard label="오늘 요청" value={summary.data?.requestCount} description="오늘 처리된 전체 실행" loading={summary.isLoading} />
-          <MetricCard label="검토 대기" value={summary.data?.reviewCount} description="REVIEW 상태 실행" loading={summary.isLoading} />
-          <MetricCard label="차단" value={summary.data?.blockCount} description="BLOCK 상태 실행" loading={summary.isLoading} />
+          <MetricCard label="처리 요청" value={summary.data?.requestCount} description="GET /v1/monitoring/overview" loading={summary.isLoading} icon={Workflow} />
+          <MetricCard label="Data Access 차단" value={null} description="정책 외 DB 접근" loading={summary.isLoading} icon={Database} tone="amber" />
+          <MetricCard label="Raw Egress 방지" value={summary.data?.blockCount} description="원문 외부 전송 차단" loading={summary.isLoading} icon={ShieldX} tone="red" />
+          <MetricCard label="Response Leakage" value={null} description="응답 재검증 탐지" loading={summary.isLoading} icon={ShieldCheck} tone="purple" />
         </div>
       )}
 
-      <div className="content-grid content-grid-two">
-        <SectionCard title="결정 분포" description="ALLOW · TRANSFORM · REVIEW · BLOCK">
+      <div className="content-grid content-grid-wide-left">
+        <SectionCard title="End-to-End 처리 현황" description="단계별 처리량과 최종 판정 추이">
           <EmptyState
-            compact
+            icon={BarChart3}
             title={hasData ? '데이터가 없습니다' : 'API 연결 대기'}
-            description="분포 응답이 추가되면 실제 비율과 건수를 표시합니다."
-            endpoint="GET /v1/monitoring/decisions"
+            description="Metrics API 연결 후 실제 요청 추이와 최종 판정 분포를 표시합니다."
+            endpoint="GET /v1/metrics/summary"
           />
         </SectionCard>
 
-        <SectionCard title="활성 정책" description="현재 런타임에서 사용하는 정책 스냅샷">
-          <EmptyState
-            compact
-            title="API 연결 대기"
-            description="ACTIVE 정책이 없거나 정책 조회 API가 아직 연결되지 않았습니다."
-            endpoint="GET /v1/policies?status=ACTIVE"
+        <SectionCard title="Runtime Version Context" description="결정을 재현하기 위한 버전 고정 정보">
+          <KeyValues
+            items={[
+              ['Application', '—'],
+              ['Policy Snapshot', '—'],
+              ['Analysis Artifact', '—'],
+              ['Dataset Snapshot', '—'],
+            ]}
           />
         </SectionCard>
       </div>
 
-      <SectionCard title="최근 운영 알림" description="감사 누락, 전송 상태 불명확, 정책 변경 등의 운영 이벤트">
-        <EmptyState
-          title="API 연결 대기"
-          description="서버에서 실제 알림이 발생하면 최신순으로 표시됩니다."
-          endpoint="GET /v1/operations?severity=WARNING,CRITICAL"
-        />
-      </SectionCard>
+      <div className="content-grid content-grid-two">
+        <SectionCard title="운영 경계" description="현재 설계가 보호해야 하는 핵심 지점">
+          <div className="boundary-list">
+            {checkpoints.map(([number, title, description]) => (
+              <div key={number} className="boundary-item">
+                <span>{number}</span>
+                <p><b>{title}</b><small>{description}</small></p>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+
+        <SectionCard title="최근 운영 이벤트" description="Review, Block, Recovery 대상">
+          <EmptyState icon={AlertTriangle} title="API 연결 대기" description="Audit API가 연결되기 전에는 임의 이벤트를 표시하지 않습니다." endpoint="GET /v1/audit-events" />
+        </SectionCard>
+      </div>
     </section>
   );
 }
