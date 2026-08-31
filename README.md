@@ -55,7 +55,7 @@ src/
 - `policy_action`과 `final_action`은 별도 필드로 유지합니다.
 - Runtime action은 `ALLOW`, `TRANSFORM`, `REVIEW`, `BLOCK` 중 하나로 제한합니다.
 - Mock mode에서는 콘솔 전역에 `LOCAL`, `MOCK DATA`, `PROJECT_PROVISIONAL` 배지를 표시합니다.
-- Gateway Lab은 `/v1/runtime/executions` API를 중심으로 연결하고 Detection/Decision/Transform API를 FE에서 직접 조합하지 않습니다.
+- Gateway Lab은 `/v1/runtime/executions` API를 중심으로 연결하고 Authorization/Retrieval/Detection/Decision/Transform/Guard/Provider/Audit 흐름을 execution trace stage로 표현합니다.
 
 ## Validation
 

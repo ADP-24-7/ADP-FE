@@ -12,11 +12,36 @@
 | --- | --- |
 | Overview | `GET /v1/monitoring/overview` |
 | Gateway Lab | `POST /v1/runtime/executions`, `GET /v1/runtime/executions/{executionId}`, `GET /v1/runtime/executions/{executionId}/trace` |
-| Policies | `/v1/policy-artifacts`, `/v1/policy-artifacts/{id}/shadow`, `/activate`, `/rollback` |
+| Policy artifacts | `POST /v1/policy-evaluation-artifacts`, `GET /v1/policy-evaluation-artifacts/{artifactId}` |
+| Policies | `GET /v1/policies`, `GET /v1/policies/{policyId}`, `POST /v1/policies/{policyId}/shadow`, `POST /v1/policies/{policyId}/activate`, `POST /v1/policies/{policyId}/rollback` |
 | Monitoring | `/v1/monitoring/runtime`, `/v1/monitoring/privacy`, `/v1/monitoring/governance` |
-| Audit | `/v1/audits`, `/v1/audits/{traceId}` |
+| Audit | `GET /v1/audit-events` |
 
 Gateway Lab은 Detection, Decision, Transform API를 직접 조합하지 않습니다. FE orchestration boundary는 runtime execution API 하나로 유지하고, Detection/Decision/Transform/Connector/Audit는 execution trace의 stage view model로 표현합니다.
+
+## Runtime Execution Contract
+
+```ts
+type RuntimeExecutionRequest = {
+  workloadId: string;
+  purposeCode: string;
+  subjectScope: string;
+  providerProfileId: string;
+  input: Record<string, unknown>;
+  idempotencyKey: string;
+};
+
+type RuntimeExecution = {
+  executionId: string;
+  traceId: string;
+  status: RuntimeExecutionStatus;
+  finalAction?: FinalAction;
+  reasonCodes: string[];
+  policyVersion?: string;
+  artifactVersion?: string;
+  stages: RuntimeExecutionTraceStage[];
+};
+```
 
 ## Runtime Action Contract
 
