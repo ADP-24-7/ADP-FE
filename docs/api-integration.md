@@ -2,9 +2,9 @@
 
 ## Mode
 
-`VITE_API_MODE=mock`이면 MSW가 `/v1/**` 요청을 HTTP layer에서 intercept합니다. `real`이면 동일한 Axios 호출이 Vite proxy 또는 배포 reverse proxy를 통해 BE로 전달됩니다.
+일반 개발 실행은 `VITE_API_MODE=real`을 기본으로 사용합니다. Axios는 same-origin `/v1/**` 요청을 보내고, 로컬에서는 Vite proxy가 `VITE_API_BASE_URL`로 전달합니다. 배포 환경에서는 같은 `/v1/**` 경로를 reverse proxy가 처리해야 합니다.
 
-`VITE_API_MODE`는 fail-closed로 검증합니다. 값이 없거나 `mock`, `real` 외 값이면 앱이 시작되지 않습니다. `mock`은 `VITE_APP_ENV=local`에서만 허용합니다.
+MSW는 브라우저 bootstrap에서 시작하지 않습니다. MSW handler는 contract test에서만 사용하며, 운영 UI가 Mock 숫자나 임시 Trace를 생성하지 않도록 유지합니다.
 
 ## Planned Endpoints
 

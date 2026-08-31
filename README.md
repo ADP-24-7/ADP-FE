@@ -32,10 +32,10 @@ cp .env.example .env.local
 | Variable | Description |
 | --- | --- |
 | `VITE_API_BASE_URL` | ADP BE API base URL |
-| `VITE_API_MODE` | `mock` 또는 `real` |
+| `VITE_API_MODE` | 기본값 `real`; 테스트 fixture 검증 시에만 `mock` 사용 |
 | `VITE_APP_ENV` | `local`, `dev`, `staging`, `prod` |
 
-`VITE_API_MODE`는 `mock` 또는 `real`만 허용합니다. `mock`은 `local` 환경에서만 사용할 수 있습니다.
+일반 `npm run dev`는 MSW browser worker를 시작하지 않습니다. 로컬 화면은 `/v1` Vite proxy를 통해 실제 BE에 연결됩니다.
 
 ## Project Structure
 
@@ -54,8 +54,8 @@ src/
 - 계좌 원문, 토큰 맵, 민감 필드 원문은 저장하지 않습니다.
 - `policy_action`과 `final_action`은 별도 필드로 유지합니다.
 - Runtime action은 `ALLOW`, `TRANSFORM`, `REVIEW`, `BLOCK` 중 하나로 제한합니다.
-- Mock mode에서는 콘솔 전역에 `LOCAL`, `MOCK DATA`, `PROJECT_PROVISIONAL` 배지를 표시합니다.
 - Gateway Lab은 `/v1/runtime/executions` API를 중심으로 연결하고 Authorization/Retrieval/Detection/Decision/Transform/Guard/Provider/Audit 흐름을 execution trace stage로 표현합니다.
+- Mock 숫자, 정책 버전, Trace ID를 운영 UI에서 자동 생성하지 않습니다.
 
 ## Validation
 
