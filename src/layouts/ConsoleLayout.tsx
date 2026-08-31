@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import {
   Activity,
@@ -6,6 +7,8 @@ import {
   FileCheck2,
   FlaskConical,
   LayoutDashboard,
+  PanelLeftClose,
+  PanelLeftOpen,
   Settings2,
   ShieldCheck,
   SlidersHorizontal,
@@ -23,14 +26,29 @@ const navItems = [
 ];
 
 export function ConsoleLayout() {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
   return (
-    <div className="console-shell">
+    <div className={isSidebarCollapsed ? 'console-shell console-shell-collapsed' : 'console-shell'}>
       <aside className="console-sidebar" aria-label="ADP Console navigation">
-        <div className="console-brand">
-          <span className="console-brand-logo" aria-hidden="true"><ShieldCheck size={20} /></span>
-          <span className="console-brand-mark">FPG</span>
-          <span className="console-brand-title">Privacy Gateway</span>
-          <span className="console-brand-subtitle">Runtime Control Plane</span>
+        <div className="console-brand-row">
+          <div className="console-brand">
+            <span className="console-brand-logo" aria-hidden="true"><ShieldCheck size={20} /></span>
+            <span className="console-brand-copy">
+              <span className="console-brand-mark">FPG</span>
+              <span className="console-brand-title">Privacy Gateway</span>
+              <span className="console-brand-subtitle">Runtime Control Plane</span>
+            </span>
+          </div>
+          <button
+            className="sidebar-toggle"
+            type="button"
+            aria-label={isSidebarCollapsed ? '사이드바 펼치기' : '사이드바 접기'}
+            aria-pressed={isSidebarCollapsed}
+            onClick={() => setIsSidebarCollapsed((current) => !current)}
+          >
+            {isSidebarCollapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
+          </button>
         </div>
 
         <nav className="console-nav">
@@ -38,10 +56,11 @@ export function ConsoleLayout() {
             <NavLink
               key={item.to}
               to={item.to}
+              title={item.label}
               className={({ isActive }) => (isActive ? 'console-nav-link active' : 'console-nav-link')}
             >
               <span className="console-nav-icon" aria-hidden="true"><item.icon size={18} /></span>
-              {item.label}
+              <span className="console-nav-label">{item.label}</span>
             </NavLink>
           ))}
         </nav>
