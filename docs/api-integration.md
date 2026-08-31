@@ -2,7 +2,7 @@
 
 ## Mode
 
-`VITE_API_MODE=mock`이면 MSW가 `/api/**` 요청을 HTTP layer에서 intercept합니다. `real`이면 동일한 Axios 호출이 Vite proxy 또는 배포 reverse proxy를 통해 BE로 전달됩니다.
+`VITE_API_MODE=mock`이면 MSW가 `/v1/**` 요청을 HTTP layer에서 intercept합니다. `real`이면 동일한 Axios 호출이 Vite proxy 또는 배포 reverse proxy를 통해 BE로 전달됩니다.
 
 `VITE_API_MODE`는 fail-closed로 검증합니다. 값이 없거나 `mock`, `real` 외 값이면 앱이 시작되지 않습니다. `mock`은 `VITE_APP_ENV=local`에서만 허용합니다.
 
@@ -10,11 +10,13 @@
 
 | Page | Endpoints |
 | --- | --- |
-| Overview | `/api/admin/dashboard/summary`, `/api/admin/alerts` |
-| Gateway Lab | `/api/detection/evaluate`, `/api/runtime/decisions`, `/api/transforms/preview` |
-| Policies | `/api/admin/policy-artifacts`, `/api/admin/policy-artifacts/{id}/shadow`, `/activate`, `/rollback` |
-| Monitoring | `/api/admin/metrics/runtime`, `/api/admin/metrics/privacy`, `/api/admin/metrics/governance` |
-| Audit | `/api/admin/audits`, `/api/admin/audits/{traceId}` |
+| Overview | `GET /v1/monitoring/overview` |
+| Gateway Lab | `POST /v1/runtime/executions`, `GET /v1/runtime/executions/{executionId}`, `GET /v1/runtime/executions/{executionId}/trace` |
+| Policies | `/v1/policy-artifacts`, `/v1/policy-artifacts/{id}/shadow`, `/activate`, `/rollback` |
+| Monitoring | `/v1/monitoring/runtime`, `/v1/monitoring/privacy`, `/v1/monitoring/governance` |
+| Audit | `/v1/audits`, `/v1/audits/{traceId}` |
+
+Gateway Lab은 Detection, Decision, Transform API를 직접 조합하지 않습니다. FE orchestration boundary는 runtime execution API 하나로 유지하고, Detection/Decision/Transform/Connector/Audit는 execution trace의 stage view model로 표현합니다.
 
 ## Runtime Action Contract
 
@@ -34,10 +36,11 @@ BE error response는 다음 필드를 기준으로 normalize합니다.
 ```ts
 type ApiError = {
   status?: number;
-  reasonCode: string;
+  errorCode: string;
   message: string;
   requestId?: string;
   traceId?: string;
-  timestamp?: string;
 };
 ```
+
+전환 기간 동안 legacy `reasonCode`는 `errorCode`로 normalize합니다.

@@ -60,6 +60,23 @@ select {
   font-size: 13px;
 }
 
+.environment-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.environment-badges span {
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius-control);
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 6px;
+}
+
 .console-nav {
   display: grid;
   gap: 6px;

@@ -8,5 +8,7 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { name: '운영 개요' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '분석 및 평가' })).toHaveAttribute('href', '/analysis');
+    expect(screen.getByText('MOCK DATA')).toBeInTheDocument();
+    expect(screen.getByText('PROJECT_PROVISIONAL')).toBeInTheDocument();
   });
 });

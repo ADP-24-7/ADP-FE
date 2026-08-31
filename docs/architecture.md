@@ -24,7 +24,9 @@ app -> pages -> features -> shared
 
 ## Mocking
 
-Local mock은 MSW가 HTTP layer에서 `/api/**` 요청을 intercept합니다. Production code는 mock/real 분기를 갖지 않고 항상 동일한 HTTP contract를 사용합니다.
+Local mock은 MSW가 HTTP layer에서 `/v1/**` 요청을 intercept합니다. Production code는 mock/real 분기를 갖지 않고 항상 동일한 HTTP contract를 사용합니다. Mock mode에서 처리되지 않은 `/v1/**` 요청은 실제 BE로 우회하지 않고 실패로 드러나야 합니다.
+
+Feature별 mock handler는 해당 feature 아래에 둡니다. `app/mocks`는 feature handler를 조합만 하며, `shared`는 feature를 참조하지 않습니다.
 
 ## Security And Privacy
 

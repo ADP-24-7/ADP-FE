@@ -6,11 +6,10 @@ describe('normalizeApiError', () => {
   it('preserves BE error contract fields', () => {
     const error = new AxiosError('Request failed', undefined, undefined, undefined, {
       data: {
-        reasonCode: 'AUTHORIZATION_DENIED',
+        errorCode: 'AUTHORIZATION_DENIED',
         message: 'Access denied',
         requestId: 'req-1',
         traceId: 'trace-1',
-        timestamp: '2026-08-31T00:00:00Z',
       },
       status: 403,
       statusText: 'Forbidden',
@@ -20,11 +19,29 @@ describe('normalizeApiError', () => {
 
     expect(normalizeApiError(error)).toEqual({
       status: 403,
-      reasonCode: 'AUTHORIZATION_DENIED',
+      errorCode: 'AUTHORIZATION_DENIED',
       message: 'Access denied',
       requestId: 'req-1',
       traceId: 'trace-1',
-      timestamp: '2026-08-31T00:00:00Z',
+    });
+  });
+
+  it('maps legacy reasonCode to errorCode during BE contract transition', () => {
+    const error = new AxiosError('Request failed', undefined, undefined, undefined, {
+      data: {
+        reasonCode: 'LEGACY_DENIED',
+        message: 'Legacy error',
+      },
+      status: 403,
+      statusText: 'Forbidden',
+      headers: {},
+      config: { headers: new AxiosHeaders() },
+    });
+
+    expect(normalizeApiError(error)).toMatchObject({
+      status: 403,
+      errorCode: 'LEGACY_DENIED',
+      message: 'Legacy error',
     });
   });
 });

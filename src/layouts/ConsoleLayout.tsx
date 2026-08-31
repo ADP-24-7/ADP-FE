@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
+import { env } from '../shared/config/env';
 
 const navItems = [
   { to: '/overview', label: '운영 개요' },
@@ -16,6 +17,13 @@ export function ConsoleLayout() {
         <div className="console-brand">
           <span className="console-brand-mark">ADP</span>
           <span className="console-brand-subtitle">Admin Console</span>
+          {env.apiMode === 'mock' ? (
+            <div className="environment-badges" aria-label="Environment mode">
+              <span>LOCAL</span>
+              <span>MOCK DATA</span>
+              <span>PROJECT_PROVISIONAL</span>
+            </div>
+          ) : null}
         </div>
         <nav className="console-nav">
           {navItems.map((item) => (

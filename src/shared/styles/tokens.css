@@ -6,6 +6,9 @@
   --color-page: #f7f8fb;
   --color-accent-bg: #eef4ff;
   --color-accent-text: #1957b8;
+  --color-warning-bg: #fff8e6;
+  --color-warning-border: #f0c96a;
+  --color-warning-text: #6f4d00;
   --space-page: 32px;
   --radius-control: 8px;
 }

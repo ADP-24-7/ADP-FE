@@ -9,9 +9,15 @@ async function enableMocking() {
     return;
   }
 
-  const { worker } = await import('./shared/mocks/browser');
+  const { worker } = await import('./app/mocks/browser');
   await worker.start({
-    onUnhandledRequest: 'bypass',
+    onUnhandledRequest(request, print) {
+      const url = new URL(request.url);
+
+      if (url.pathname.startsWith('/v1/')) {
+        print.error();
+      }
+    },
   });
 }
 
