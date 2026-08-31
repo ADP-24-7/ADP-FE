@@ -3,6 +3,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 const navItems = [
   { to: '/overview', label: '운영 개요' },
   { to: '/gateway-lab', label: 'Gateway Lab' },
+  { to: '/analysis', label: '분석 및 평가' },
   { to: '/policies', label: '정책 관리' },
   { to: '/monitoring', label: '모니터링' },
   { to: '/audit', label: '감사 추적' },

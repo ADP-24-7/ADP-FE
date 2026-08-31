@@ -15,6 +15,7 @@ ADP 관리자 콘솔 프론트엔드입니다. 현재 단계는 Phase 0 foundati
 
 ```bash
 npm install
+cp .env.example .env.local
 npm run dev
 ```
 
@@ -34,6 +35,8 @@ cp .env.example .env.local
 | `VITE_API_MODE` | `mock` 또는 `real` |
 | `VITE_APP_ENV` | `local`, `dev`, `staging`, `prod` |
 
+`VITE_API_MODE`는 `mock` 또는 `real`만 허용합니다. `mock`은 `local` 환경에서만 사용할 수 있습니다.
+
 ## Project Structure
 
 ```text
@@ -51,5 +54,13 @@ src/
 - 계좌 원문, 토큰 맵, 민감 필드 원문은 저장하지 않습니다.
 - `policy_action`과 `final_action`은 별도 필드로 유지합니다.
 - Runtime action은 `ALLOW`, `TRANSFORM`, `REVIEW`, `BLOCK` 중 하나로 제한합니다.
+
+## Validation
+
+```bash
+npm run lint
+npm run test
+npm run build
+```
 
 자세한 내용은 [docs/architecture.md](docs/architecture.md)와 [docs/api-integration.md](docs/api-integration.md)를 참고합니다.

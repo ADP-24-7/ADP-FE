@@ -1,6 +1,8 @@
+@import './tokens.css';
+
 :root {
-  color: #17202a;
-  background: #f7f8fb;
+  color: var(--color-text);
+  background: var(--color-page);
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
@@ -36,8 +38,8 @@ select {
 }
 
 .console-sidebar {
-  border-right: 1px solid #dce1e8;
-  background: #ffffff;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-surface);
   padding: 24px 18px;
 }
 
@@ -54,7 +56,7 @@ select {
 }
 
 .console-brand-subtitle {
-  color: #687385;
+  color: var(--color-muted);
   font-size: 13px;
 }
 
@@ -70,14 +72,14 @@ select {
 }
 
 .console-nav-link.active {
-  background: #eef4ff;
-  color: #1957b8;
+  background: var(--color-accent-bg);
+  color: var(--color-accent-text);
   font-weight: 700;
 }
 
 .console-main {
   min-width: 0;
-  padding: 32px;
+  padding: var(--space-page);
 }
 
 .page-section {
@@ -92,7 +94,7 @@ select {
 
 .page-kicker {
   margin: 0;
-  color: #607087;
+  color: var(--color-muted);
   font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
@@ -111,9 +113,9 @@ select {
 
 .metric-card,
 .empty-panel {
-  border: 1px solid #dce1e8;
-  border-radius: 8px;
-  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
   padding: 18px;
 }
 
@@ -124,11 +126,11 @@ select {
 
 .metric-card span,
 .empty-panel {
-  color: #607087;
+  color: var(--color-muted);
 }
 
 .metric-card strong {
-  color: #17202a;
+  color: var(--color-text);
   font-size: 30px;
 }
 
@@ -139,7 +141,7 @@ select {
 
   .console-sidebar {
     border-right: 0;
-    border-bottom: 1px solid #dce1e8;
+    border-bottom: 1px solid var(--color-border);
   }
 
   .console-main {

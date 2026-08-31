@@ -8,6 +8,7 @@
 | Detection | `features/detection`, `pages/gateway-lab` | 민감정보 탐지 평가 결과 표시 |
 | Runtime decision | `features/runtime-decision`, `pages/gateway-lab` | `policy_action`, `final_action` 분리 |
 | Transformation | `features/transformation`, `pages/gateway-lab` | 원문 prompt 저장 없이 preview metadata 표시 |
+| Analysis and evaluation | `features/analysis`, `pages/analysis` | 평가 결과와 분석 대시보드 표시 |
 | Policy lifecycle | `features/policy-lifecycle`, `pages/policies` | shadow, activate, rollback workflow |
 | Audit trace | `features/audit-trace`, `pages/audit` | traceId 기반 검색과 상세 표시 |
 

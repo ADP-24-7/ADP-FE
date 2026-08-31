@@ -1,11 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
-import { getDashboardSummary } from '../../shared/api/adminApi';
+import { useDashboardSummary } from '../../features/monitoring';
 
 export function OverviewPage() {
-  const { data } = useQuery({
-    queryKey: ['dashboard-summary'],
-    queryFn: getDashboardSummary,
-  });
+  const { data } = useDashboardSummary();
 
   return (
     <section className="page-section">

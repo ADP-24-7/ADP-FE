@@ -1,10 +1,11 @@
 export const RUNTIME_ACTIONS = ['ALLOW', 'TRANSFORM', 'REVIEW', 'BLOCK'] as const;
 
-export type RuntimeAction = (typeof RUNTIME_ACTIONS)[number];
+export type PolicyAction = (typeof RUNTIME_ACTIONS)[number];
+export type FinalAction = (typeof RUNTIME_ACTIONS)[number];
 
 export type RuntimeDecision = {
   traceId: string;
-  policyAction: RuntimeAction;
-  finalAction: RuntimeAction;
+  policyAction: PolicyAction;
+  finalAction: FinalAction;
   reasonCode: string;
 };

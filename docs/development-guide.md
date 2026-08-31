@@ -14,6 +14,12 @@ npm run dev
 npm run build
 ```
 
+## Test
+
+```bash
+npm run test
+```
+
 ## Lint
 
 ```bash
@@ -40,4 +46,5 @@ VITE_API_BASE_URL=http://localhost:8080
 - route-level page는 `src/pages`에 둡니다.
 - 재사용 도메인 로직은 `src/features`로 이동합니다.
 - BE DTO와 직접 공유되는 타입은 `src/shared/types`에서 시작하고, 도메인별로 커지면 feature 내부로 옮깁니다.
-- API 함수는 mock/real 전환을 함수 내부 또는 adapter 단에서 처리해 화면 컴포넌트에 분기 로직을 만들지 않습니다.
+- Page는 feature hook을 호출하고, feature API가 shared HTTP client를 사용합니다.
+- Mock은 MSW handler에서 HTTP contract 기준으로 관리합니다.
