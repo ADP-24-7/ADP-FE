@@ -81,8 +81,8 @@ export function ConsoleLayout() {
             <span>Request · Data Access · Egress · Response Guard · Audit</span>
           </div>
           <div className="topbar-actions">
-            <span className="live-mode-badge">LIVE API</span>
-            <button className="icon-button" type="button" aria-label="설정">
+            <span className="live-mode-badge">REAL API MODE</span>
+            <button className="icon-button" type="button" aria-label="설정" disabled title="Auth Integration 이후 활성화">
               <Settings2 size={17} />
             </button>
           </div>

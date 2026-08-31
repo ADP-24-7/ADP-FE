@@ -5,7 +5,7 @@ import { EmptyState, ErrorState, KeyValues, MetricCard, PageHeader, SectionCard,
 export function OverviewPage() {
   const summary = useDashboardSummary();
 
-  const hasData = summary.data != null;
+  const overviewState = summary.isLoading ? 'loading' : summary.isError ? 'error' : summary.data ? 'value' : 'unconnected';
   const checkpoints = [
     ['01', 'Request & Authorization', '인증 주체, Workload, 목적, 동의 범위를 확인'],
     ['02', 'Data Access & Context', '허용된 Dataset, Field, Subject, 기간, 행 수만 조회'],
@@ -21,7 +21,7 @@ export function OverviewPage() {
         eyebrow="RUNTIME CONTROL PLANE"
         title="운영 개요"
         description="요청부터 데이터 접근, 외부 전송, 응답 검증, 전달까지 전체 Gateway 상태를 확인합니다."
-        actions={<StatusBadge tone={summary.isError ? 'danger' : hasData ? 'success' : 'warning'}>{summary.isError ? 'API ERROR' : hasData ? 'LIVE DATA' : 'API 연결 대기'}</StatusBadge>}
+        actions={<StatusBadge tone={summary.isError ? 'danger' : summary.data ? 'success' : 'warning'}>{summary.isError ? 'API ERROR' : summary.data ? 'REAL DATA' : 'API 연결 대기'}</StatusBadge>}
       />
 
       {summary.isError ? (
@@ -31,10 +31,10 @@ export function OverviewPage() {
         />
       ) : (
         <div className="metric-grid">
-          <MetricCard label="처리 요청" value={summary.data?.requestCount} description="GET /v1/monitoring/overview" loading={summary.isLoading} icon={Workflow} />
-          <MetricCard label="Data Access 차단" value={null} description="정책 외 DB 접근" loading={summary.isLoading} icon={Database} tone="amber" />
-          <MetricCard label="Raw Egress 방지" value={summary.data?.blockCount} description="원문 외부 전송 차단" loading={summary.isLoading} icon={ShieldX} tone="red" />
-          <MetricCard label="Response Leakage" value={null} description="응답 재검증 탐지" loading={summary.isLoading} icon={ShieldCheck} tone="purple" />
+          <MetricCard label="처리 요청" value={summary.data?.requestCount} description="GET /v1/monitoring/overview" state={overviewState} icon={Workflow} />
+          <MetricCard label="Data Access 차단" value={null} description="GET /v1/monitoring/data-access" state="unconnected" icon={Database} tone="amber" />
+          <MetricCard label="Raw Egress 방지" value={summary.data?.blockCount} description="GET /v1/monitoring/overview" state={overviewState} icon={ShieldX} tone="red" />
+          <MetricCard label="Response Leakage" value={null} description="GET /v1/monitoring/privacy" state="unconnected" icon={ShieldCheck} tone="purple" />
         </div>
       )}
 
@@ -42,7 +42,7 @@ export function OverviewPage() {
         <SectionCard title="End-to-End 처리 현황" description="단계별 처리량과 최종 판정 추이">
           <EmptyState
             icon={BarChart3}
-            title={hasData ? '데이터가 없습니다' : 'API 연결 대기'}
+            title="API 연결 대기"
             description="Metrics API 연결 후 실제 요청 추이와 최종 판정 분포를 표시합니다."
             endpoint="GET /v1/metrics/summary"
           />

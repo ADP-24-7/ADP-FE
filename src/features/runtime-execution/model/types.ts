@@ -1,25 +1,18 @@
-import type { FinalAction } from '../../../shared/types/runtime';
+import type { FinalAction, PolicyAction } from '../../../shared/types/runtime';
 
 export type RuntimeExecutionStage =
+  | 'RECEIVED'
   | 'AUTHORIZATION'
   | 'RETRIEVAL'
-  | 'DETECTION'
+  | 'CANONICAL_CONTEXT'
   | 'DECISION'
-  | 'TRANSFORM'
-  | 'OUTBOUND_GUARD'
-  | 'PROVIDER'
-  | 'RESPONSE_GUARD'
-  | 'AUDIT';
+  | 'RUNTIME_EXECUTION';
 
 export type RuntimeExecutionStatus =
   | 'RECEIVED'
-  | 'AUTHORIZED'
-  | 'RETRIEVED'
   | 'DECIDED'
-  | 'TRANSFORMED'
-  | 'EGRESSING'
   | 'COMPLETED'
-  | 'REVIEW_REQUIRED'
+  | 'DENIED'
   | 'BLOCKED'
   | 'FAILED';
 
@@ -32,36 +25,58 @@ export type RuntimeExecutionRequest = {
   providerProfileId: string;
   input: RuntimeExecutionInput;
   idempotencyKey: string;
+  processingContexts: string[];
 };
 
 export type RuntimeExecution = {
   executionId: string;
-  traceId: string;
   status: RuntimeExecutionStatus;
-  finalAction?: FinalAction;
-  reasonCodes: string[];
+  decisionId: string;
+  policyAction: PolicyAction;
+  finalAction: FinalAction;
+  authorizationResult: 'ALLOWED' | 'DENIED';
+  applicabilityResult: 'APPLICABLE' | 'NOT_APPLICABLE' | 'INCOMPLETE';
+  runtimeContextDigest: string;
   policyVersion?: string;
-  artifactVersion?: string;
-  stages: RuntimeExecutionTraceStage[];
-  output?: RuntimeExecutionOutput;
+  snapshotDigest?: string;
+  sourceArtifactId?: string;
+  sourceArtifactVersion?: string;
+  sourceArtifactDigestAlgorithm?: string;
+  sourceArtifactDigestValue?: string;
+  connectorStatus?: string;
+  auditId?: string;
 };
 
 export type RuntimeExecutionTraceStage = {
   stage: RuntimeExecutionStage;
   status: RuntimeExecutionStatus;
-  reasonCodes?: string[];
-  startedAt?: string;
-  completedAt?: string;
+  observedAt?: string;
 };
 
 export type RuntimeExecutionTrace = {
   executionId: string;
   traceId: string;
+  status: RuntimeExecutionStatus;
   stages: RuntimeExecutionTraceStage[];
 };
 
-export type RuntimeExecutionOutput = {
-  displayText?: string;
-  redactionApplied?: boolean;
-  metadata?: Record<string, unknown>;
+export type RuntimeExecutionDetail = {
+  executionId: string;
+  requestId: string;
+  traceId: string;
+  idempotencyKey: string;
+  workloadId: string;
+  purposeCode: string;
+  subjectRefDigest: string;
+  providerProfileId: string;
+  inputDigest: string;
+  canonicalContextDigest?: string;
+  runtimeContextDigest?: string;
+  policyVersion?: string;
+  snapshotDigest?: string;
+  decisionId?: string;
+  finalAction?: FinalAction;
+  status: RuntimeExecutionStatus;
+  createdAt: string;
+  updatedAt: string;
 };

@@ -64,7 +64,8 @@ src/
 - 계좌 원문, 토큰 맵, 민감 필드 원문은 저장하지 않습니다.
 - `policy_action`과 `final_action`은 별도 필드로 유지합니다.
 - Runtime action은 `ALLOW`, `TRANSFORM`, `REVIEW`, `BLOCK` 중 하나로 제한합니다.
-- Gateway Lab은 `/v1/runtime/executions` API를 중심으로 연결하고 Authorization/Retrieval/Detection/Decision/Transform/Guard/Provider/Audit 흐름을 execution trace stage로 표현합니다.
+- 브라우저에는 `X-ADP-API-Key`를 노출하지 않습니다. Gateway Lab Execute는 Admin 인증 또는 Local BFF 연결 전까지 비활성화합니다.
+- Gateway Lab은 `/v1/runtime/executions` API를 중심으로 연결하고 POST 응답의 `executionId`로 `/trace`를 조회합니다.
 - Mock 숫자, 정책 버전, Trace ID를 운영 UI에서 자동 생성하지 않습니다.
 - Workload · Data Access 화면은 자유 SQL이 아니라 서버가 정의한 Workload, Retrieval Profile, Data Access Decision API를 표시하는 경계로 둡니다.
 

@@ -18,7 +18,9 @@ MSW는 브라우저 bootstrap에서 시작하지 않습니다. MSW handler는 co
 | Monitoring | `/v1/monitoring/runtime`, `/v1/monitoring/privacy`, `/v1/monitoring/governance` |
 | Audit | `GET /v1/audit-events` |
 
-Gateway Lab은 Detection, Decision, Transform API를 직접 조합하지 않습니다. FE orchestration boundary는 runtime execution API 하나로 유지하고, Detection/Decision/Transform/Connector/Audit는 execution trace의 stage view model로 표현합니다.
+Gateway Lab은 Detection, Decision, Transform API를 직접 조합하지 않습니다. FE orchestration boundary는 runtime execution API 하나로 유지합니다. 현재 BE #5에서 실제 관측 가능한 stage는 `RECEIVED`, `AUTHORIZATION`, `RETRIEVAL`, `CANONICAL_CONTEXT`, `DECISION`이며, Transform/Provider/Response Guard/Audit는 Target Pipeline으로만 구분해 표시합니다.
+
+브라우저 FE는 `X-ADP-API-Key`를 환경변수로 주입하지 않습니다. Admin 인증 또는 Local BFF에서 서버 측 credential을 붙이기 전까지 Gateway Lab의 Execute control은 비활성화합니다.
 
 Audit 화면의 Trace ID 검색은 원문 재구성이 아니라 `GET /v1/audit-events?traceId={traceId}` 또는 Runtime Execution trace API의 privacy-safe 응답을 표시하는 흐름으로 연결합니다.
 
@@ -30,19 +32,39 @@ type RuntimeExecutionRequest = {
   purposeCode: string;
   subjectScope: string;
   providerProfileId: string;
-  input: Record<string, unknown>;
   idempotencyKey: string;
+  processingContexts: string[];
+  input: Record<string, unknown>;
 };
 
 type RuntimeExecution = {
   executionId: string;
+  status: 'DECIDED' | 'BLOCKED' | 'FAILED';
+  decisionId: string;
+  policyAction: PolicyAction;
+  finalAction: FinalAction;
+  authorizationResult: 'ALLOWED' | 'DENIED';
+  applicabilityResult: 'APPLICABLE' | 'NOT_APPLICABLE' | 'INCOMPLETE';
+  runtimeContextDigest: string;
+  policyVersion?: string;
+  snapshotDigest?: string;
+  sourceArtifactId?: string;
+  sourceArtifactVersion?: string;
+  sourceArtifactDigestAlgorithm?: string;
+  sourceArtifactDigestValue?: string;
+  connectorStatus?: string;
+  auditId?: string;
+};
+
+type RuntimeExecutionTrace = {
+  executionId: string;
   traceId: string;
   status: RuntimeExecutionStatus;
-  finalAction?: FinalAction;
-  reasonCodes: string[];
-  policyVersion?: string;
-  artifactVersion?: string;
-  stages: RuntimeExecutionTraceStage[];
+  stages: Array<{
+    stage: 'RECEIVED' | 'AUTHORIZATION' | 'RETRIEVAL' | 'CANONICAL_CONTEXT' | 'DECISION' | 'RUNTIME_EXECUTION';
+    status: RuntimeExecutionStatus;
+    observedAt?: string;
+  }>;
 };
 ```
 

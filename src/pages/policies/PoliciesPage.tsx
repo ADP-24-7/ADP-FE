@@ -30,7 +30,7 @@ export function PoliciesPage() {
         <SectionCard
           title="Policy Snapshots"
           description="교체·Rollback 가능한 불변 정책 단위"
-          actions={<div className="search-field"><Search size={15} /><input placeholder="Version 또는 Artifact 검색" aria-label="Version 또는 Artifact 검색" /></div>}
+          actions={<div className="search-field search-field-disabled"><Search size={15} /><input placeholder="API 연결 후 검색 활성화" aria-label="Version 또는 Artifact 검색" disabled /></div>}
         >
           <EmptyState
             title="API 연결 대기"

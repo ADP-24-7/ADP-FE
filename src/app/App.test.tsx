@@ -11,6 +11,6 @@ describe('App', () => {
     expect(screen.getByRole('link', { name: '분석 · Evidence' })).toHaveAttribute('href', '/analysis');
     expect(screen.queryByText('MOCK DATA')).not.toBeInTheDocument();
     expect(screen.queryByText('PROJECT_PROVISIONAL')).not.toBeInTheDocument();
-    expect(screen.getByText('LIVE API')).toBeInTheDocument();
+    expect(screen.getByText('REAL API MODE')).toBeInTheDocument();
   });
 });

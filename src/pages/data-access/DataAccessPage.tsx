@@ -38,9 +38,9 @@ export function DataAccessPage() {
         title="Data Access Decisions"
         description="요청 목적과 데이터 최소화 규칙에 따른 조회 허용·축소·차단 결과"
         actions={(
-          <div className="search-field">
+          <div className="search-field search-field-disabled">
             <Search size={15} />
-            <input placeholder="Trace ID 또는 Workload 검색" aria-label="Trace ID 또는 Workload 검색" />
+            <input placeholder="API 연결 후 검색 활성화" aria-label="Trace ID 또는 Workload 검색" disabled />
           </div>
         )}
       >

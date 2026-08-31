@@ -15,6 +15,8 @@
 | 권한 제한 | Blur 또는 `권한 없음` | DOM에 원문 값 포함 |
 | 실제 값 0 | 숫자 `0` 표시 | 빈 상태로 처리 |
 
+API가 연결되지 않은 검색, 설정, 실행 control은 활성 입력처럼 노출하지 않고 `disabled`로 표시합니다. 특히 Runtime Execute는 브라우저에 API key를 노출하지 않기 위해 Auth Integration 또는 Local BFF 연결 전까지 비활성화합니다.
+
 ## Blur 규칙
 
 Blur는 단지 CSS로 값을 가리는 보안 기능이 아닙니다. 브라우저에 원문이 전달되면 개발자 도구에서 확인할 수 있습니다.
@@ -39,4 +41,3 @@ FE는 `visibility=RESTRICTED`를 확인한 후 Blur Placeholder나 권한 안내
 - 실제 집계값이 0: `value: 0`
 - 부분 집계: `completeness` 또는 `partial=true` 제공
 - 모든 시간은 ISO-8601 UTC
-

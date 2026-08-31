@@ -124,9 +124,9 @@ ADP-FE UI 적용 결과를 검증해라.
 - PROJECT_PROVISIONAL
 - MOCK DATA
 - 하드코딩된 requestCount/reviewCount/blockCount
-- policy-v1, artifact-v1, trace_001, exec_001
+- FE-only trace_001, exec_001, policy-v1, artifact-v1
 
-운영 bootstrap과 페이지에서 위 값이 사용되지 않는지 확인한다. 테스트 fixture에만 남아 있으면 위치와 목적을 보고한다.
+운영 bootstrap과 페이지에서 위 값이 사용되지 않는지 확인한다. 테스트 fixture는 BE Controller test의 실제 JSON shape와 맞아야 하며 FE가 임의로 만든 response 구조를 검증하지 않는다.
 
 검증 명령:
 - npm ci

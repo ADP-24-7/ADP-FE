@@ -98,17 +98,35 @@ type MetricCardProps = {
   value?: number | string | null;
   description: string;
   loading?: boolean;
+  state?: 'loading' | 'value' | 'empty' | 'unconnected' | 'error';
   tone?: 'blue' | 'amber' | 'red' | 'purple' | 'green' | 'neutral';
   icon?: LucideIcon;
 };
 
-export function MetricCard({ label, value, description, loading = false, tone = 'blue', icon: Icon }: MetricCardProps) {
+export function MetricCard({ label, value, description, loading = false, state, tone = 'blue', icon: Icon }: MetricCardProps) {
+  const resolvedState = state ?? (loading ? 'loading' : value == null ? 'empty' : 'value');
+  const metricValue = {
+    loading: <span className="skeleton skeleton-metric" aria-label="불러오는 중" />,
+    value: <strong>{value}</strong>,
+    empty: <strong>—</strong>,
+    unconnected: <strong>—</strong>,
+    error: <strong>!</strong>,
+  }[resolvedState];
+
+  const helperText = {
+    loading: description,
+    value: description,
+    empty: '데이터가 없습니다',
+    unconnected: 'API 연결 대기',
+    error: 'API 오류',
+  }[resolvedState];
+
   return (
     <article className="metric-card">
       {Icon ? <span className={`metric-icon metric-icon-${tone}`} aria-hidden="true"><Icon size={18} /></span> : null}
       <span>{label}</span>
-      {loading ? <span className="skeleton skeleton-metric" aria-label="불러오는 중" /> : <strong>{value ?? '—'}</strong>}
-      <small>{value == null && !loading ? '집계 데이터 없음' : description}</small>
+      {metricValue}
+      <small>{helperText}</small>
     </article>
   );
 }
