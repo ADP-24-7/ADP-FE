@@ -1,5 +1,6 @@
 import { CircleGauge, RefreshCw, RotateCcw, ShieldX } from 'lucide-react';
-import { EmptyState, KeyValues, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
+import { EmptyState, KeyValues, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
+import { useExecutionPack } from '../../shared/prototype';
 
 const categories = [
   ['Data Access', '조회 필드·행·기간·차단된 접근', '/v1/monitoring/data-access'],
@@ -10,14 +11,18 @@ const categories = [
 ];
 
 export function MonitoringPage() {
+  const { selectedPack } = useExecutionPack();
+
   return (
     <section className="page-section">
       <PageHeader
         eyebrow="OBSERVABILITY & RECOVERY"
         title="모니터링 · Recovery"
-        description="데이터 접근, Privacy, Utility, Runtime, Governance를 분리해 관찰하고 불확실한 전송 상태를 복구합니다."
+        description={`${selectedPack.label}의 데이터 접근, Privacy, Utility, Runtime, Governance를 분리해 관찰하고 불확실한 전송 상태를 복구합니다.`}
         actions={<StatusBadge tone="warning">METRICS API 대기</StatusBadge>}
       />
+
+      <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} />
 
       <div className="monitoring-grid">
         {categories.map(([title, description, endpoint]) => (

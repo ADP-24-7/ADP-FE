@@ -15,6 +15,7 @@ import {
   SlidersHorizontal,
 } from 'lucide-react';
 import { env } from '../shared/config/env';
+import { executionPacks, useExecutionPack } from '../shared/prototype';
 
 const navItems = [
   { to: '/overview', label: '운영 개요', icon: LayoutDashboard },
@@ -28,8 +29,10 @@ const navItems = [
 
 export function ConsoleLayout() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isPackMenuOpen, setIsPackMenuOpen] = useState(false);
   const [isPolicyMenuOpen, setIsPolicyMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const { selectedPack, selectedPackKey, selectPack } = useExecutionPack();
 
   return (
     <div className={isSidebarCollapsed ? 'console-shell console-shell-collapsed' : 'console-shell'}>
@@ -86,12 +89,52 @@ export function ConsoleLayout() {
           <div className="topbar-actions">
             <div className="dropdown">
               <button
+                className="pack-trigger"
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded={isPackMenuOpen}
+                onClick={() => {
+                  setIsPackMenuOpen((current) => !current);
+                  setIsPolicyMenuOpen(false);
+                  setIsSettingsOpen(false);
+                }}
+              >
+                <span>Pack</span>
+                <b>{selectedPack.label}</b>
+                <ChevronDown size={14} />
+              </button>
+              {isPackMenuOpen ? (
+                <div className="dropdown-menu dropdown-menu-right pack-menu" role="menu">
+                  {executionPacks.map((pack) => (
+                    <button
+                      key={pack.key}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={pack.key === selectedPackKey}
+                      onClick={() => {
+                        selectPack(pack.key);
+                        setIsPackMenuOpen(false);
+                      }}
+                    >
+                      <span>
+                        <b>{pack.label}</b>
+                        <small>{pack.scope}</small>
+                      </span>
+                      <em>{pack.badge}</em>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            <div className="dropdown">
+              <button
                 className="policy-trigger"
                 type="button"
                 aria-haspopup="menu"
                 aria-expanded={isPolicyMenuOpen}
                 onClick={() => {
                   setIsPolicyMenuOpen((current) => !current);
+                  setIsPackMenuOpen(false);
                   setIsSettingsOpen(false);
                 }}
               >
@@ -119,6 +162,7 @@ export function ConsoleLayout() {
                 aria-expanded={isSettingsOpen}
                 onClick={() => {
                   setIsSettingsOpen((current) => !current);
+                  setIsPackMenuOpen(false);
                   setIsPolicyMenuOpen(false);
                 }}
               >

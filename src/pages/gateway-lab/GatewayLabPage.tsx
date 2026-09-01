@@ -3,7 +3,8 @@ import { Play, TerminalSquare } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { createRuntimeExecution, getRuntimeExecutionTrace } from '../../features/runtime-execution';
 import type { RuntimeExecutionRequest } from '../../features/runtime-execution';
-import { EmptyState, ErrorState, KeyValues, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
+import { EmptyState, ErrorState, KeyValues, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
+import { useExecutionPack } from '../../shared/prototype';
 
 const actionTone = {
   ALLOW: 'success',
@@ -90,6 +91,7 @@ const stageTone = {
 } as const;
 
 export function GatewayLabPage() {
+  const { selectedPack } = useExecutionPack();
   const [workloadId, setWorkloadId] = useState('');
   const [purposeCode, setPurposeCode] = useState('');
   const [subjectScope, setSubjectScope] = useState('');
@@ -131,9 +133,11 @@ export function GatewayLabPage() {
       <PageHeader
         eyebrow="END-TO-END CONTRACT LAB"
         title="탐지 및 런타임 결정 검증"
-        description="최종 Gateway 흐름과 현재 BE에서 관측 가능한 Runtime Stage를 분리해 확인합니다."
+        description={`${selectedPack.label} 기준으로 최종 Gateway 흐름과 현재 BE에서 관측 가능한 Runtime Stage를 분리해 확인합니다.`}
         actions={<StatusBadge tone="warning">AUTH REQUIRED</StatusBadge>}
       />
+
+      <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} />
 
       <div className="notice notice-security">
         브라우저에는 `X-ADP-API-Key`를 주입하지 않습니다. Admin 인증 또는 Local BFF가 붙기 전까지 실제 Execute는 비활성화합니다.

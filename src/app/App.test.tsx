@@ -30,5 +30,7 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { name: 'Workload · Data Access' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Workload · Data Access' })).toHaveClass('active');
+    expect(screen.getByLabelText('선택된 Execution Pack')).toHaveTextContent('SaaS');
+    expect(screen.getByText(/SaaS 흐름이 DB에 직접 접근하지 않도록/)).toBeInTheDocument();
   });
 });

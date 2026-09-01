@@ -61,6 +61,7 @@ button, a { transition: background-color .16s ease, border-color .16s ease, colo
 .icon-button { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface); color: var(--color-muted); }
 .icon-button:hover:not(:disabled),
 .policy-trigger:hover,
+.pack-trigger:hover,
 .select-trigger:hover { border-color: var(--color-border-strong); color: var(--color-ink); box-shadow: 0 5px 18px rgba(22, 32, 51, .08); }
 .console-main { min-width: 0; padding: var(--space-page); }
 
@@ -104,7 +105,10 @@ button, a { transition: background-color .16s ease, border-color .16s ease, colo
 
 .dropdown { position: relative; }
 .policy-trigger,
+.pack-trigger,
 .select-trigger { display: inline-flex; align-items: center; gap: 8px; min-height: 34px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface); color: var(--color-text); padding: 0 10px; font-size: 12px; font-weight: 750; }
+.pack-trigger span { color: var(--color-soft); font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.pack-trigger b { max-width: 118px; overflow: hidden; color: var(--color-ink); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .policy-trigger b { color: var(--color-soft); }
 .topbar-status-pill { border: 1px solid var(--color-border); border-radius: 999px; background: #f4f6f9; color: var(--color-muted); padding: 3px 7px; font-size: 10px; font-weight: 850; text-transform: uppercase; }
 .dropdown-menu { position: absolute; top: calc(100% + 8px); left: 0; z-index: 40; display: grid; min-width: 190px; overflow: hidden; border: 1px solid var(--color-border); border-radius: 8px; background: #fff; box-shadow: 0 18px 50px rgba(22, 32, 51, .14); padding: 6px; }
@@ -112,6 +116,14 @@ button, a { transition: background-color .16s ease, border-color .16s ease, colo
 .dropdown-menu button { display: flex; width: 100%; align-items: center; justify-content: space-between; border: 0; border-radius: 6px; background: transparent; color: var(--color-text); padding: 9px 10px; font-size: 12px; font-weight: 700; text-align: left; }
 .dropdown-menu button:hover:not(:disabled),
 .dropdown-menu button[aria-checked="true"] { background: var(--color-primary-soft); color: var(--color-primary); }
+.pack-menu { min-width: 282px; }
+.pack-menu button { align-items: flex-start; gap: 12px; }
+.pack-menu button span { display: grid; gap: 3px; min-width: 0; }
+.pack-menu button b { color: inherit; font-size: 12px; }
+.pack-menu button small { color: var(--color-muted); font-size: 11px; font-weight: 600; line-height: 1.35; }
+.pack-menu button em { flex: 0 0 auto; border-radius: 999px; background: #f4f6f9; color: var(--color-soft); padding: 3px 6px; font-size: 10px; font-style: normal; font-weight: 850; }
+.pack-menu button[aria-checked="true"] small { color: #6274b7; }
+.pack-menu button[aria-checked="true"] em { background: #fff; color: var(--color-primary); }
 .dropdown-empty { display: grid; gap: 4px; padding: 10px; }
 .dropdown-empty strong { color: var(--color-ink); font-size: 12px; }
 .dropdown-empty span { color: var(--color-muted); font-size: 11px; line-height: 1.45; }
@@ -129,6 +141,11 @@ button, a { transition: background-color .16s ease, border-color .16s ease, colo
 .selected-pack-panel span { color: var(--color-primary); font-size: 10px; font-weight: 900; letter-spacing: .1em; }
 .selected-pack-panel h2 { margin: 4px 0 0; color: var(--color-ink); font-size: 20px; letter-spacing: 0; }
 .selected-pack-panel p { margin: 4px 0 0; color: var(--color-muted); font-size: 13px; }
+.pack-context-summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; border: 1px solid var(--color-border); border-radius: 8px; background: #fbfcff; padding: 13px 15px; }
+.pack-context-summary > div { display: grid; gap: 3px; min-width: 0; }
+.pack-context-summary span { color: var(--color-primary); font-size: 10px; font-weight: 900; letter-spacing: .08em; }
+.pack-context-summary strong { overflow: hidden; color: var(--color-ink); font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
+.pack-context-summary p { margin: 0; color: var(--color-muted); font-size: 12px; line-height: 1.45; }
 
 .state-panel { display: grid; justify-items: center; gap: 8px; min-height: 220px; place-content: center; border: 1px dashed var(--color-border-strong); border-radius: 10px; background: #fbfcfe; padding: 26px; text-align: center; }
 .state-panel-compact { min-height: 170px; }
@@ -292,7 +309,7 @@ button, a { transition: background-color .16s ease, border-color .16s ease, colo
   .console-topbar { display: none; }
   .page-header-row { align-items: flex-start; flex-direction: column; }
   .metric-grid, .execution-pack-grid, .content-grid-two, .monitoring-grid, .result-summary, .boundary-list { grid-template-columns: 1fr; }
-  .selected-pack-panel, .boundary-detail { align-items: flex-start; flex-direction: column; }
+  .selected-pack-panel, .pack-context-summary, .boundary-detail { align-items: flex-start; flex-direction: column; }
   .monitoring-grid > .section-card:last-child { grid-column: auto; }
   .form-grid { grid-template-columns: 1fr; }
   .field-full, .form-grid > .button { grid-column: auto; }

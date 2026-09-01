@@ -3,18 +3,16 @@ import { AlertTriangle, ArrowRight, BarChart3, ChevronDown, Database, ShieldChec
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EmptyState, ErrorState, KeyValues, MetricCard, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
-import { executionPacks, timeRanges } from '../../shared/prototype/executionPacks';
-import type { ExecutionPackKey } from '../../shared/prototype/executionPacks';
+import { executionPacks, timeRanges, useExecutionPack } from '../../shared/prototype';
 
 export function OverviewPage() {
   const summary = useDashboardSummary();
   const navigate = useNavigate();
-  const [selectedPackKey, setSelectedPackKey] = useState<ExecutionPackKey>('common');
+  const { selectedPack, selectedPackKey, selectPack } = useExecutionPack();
   const [selectedBoundary, setSelectedBoundary] = useState('01');
   const [selectedRange, setSelectedRange] = useState<(typeof timeRanges)[number]>('최근 24시간');
   const [isRangeOpen, setIsRangeOpen] = useState(false);
 
-  const selectedPack = executionPacks.find((pack) => pack.key === selectedPackKey) ?? executionPacks[0];
   const overviewState = summary.isLoading ? 'loading' : summary.isError ? 'error' : summary.data ? 'value' : 'unconnected';
   const selectedBoundaryDetail = selectedPack.boundaries.find((boundary) => boundary.number === selectedBoundary) ?? selectedPack.boundaries[0];
 
@@ -37,7 +35,7 @@ export function OverviewPage() {
               role="tab"
               aria-selected={pack.key === selectedPackKey}
               onClick={() => {
-                setSelectedPackKey(pack.key);
+                selectPack(pack.key);
                 setSelectedBoundary('01');
               }}
             >
