@@ -152,7 +152,7 @@ export function ConsoleLayout() {
                 </div>
               ) : null}
             </div>
-            <span className="live-mode-badge">REAL API MODE</span>
+            <span className="live-mode-badge">NO MOCK DATA</span>
             <div className="dropdown">
               <button
                 className="icon-button"

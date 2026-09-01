@@ -12,7 +12,7 @@ describe('App', () => {
     expect(screen.getByRole('link', { name: '분석 · Evidence' })).toHaveAttribute('href', '/analysis');
     expect(screen.queryByText('MOCK DATA')).not.toBeInTheDocument();
     expect(screen.queryByText('PROJECT_PROVISIONAL')).not.toBeInTheDocument();
-    expect(screen.getByText('REAL API MODE')).toBeInTheDocument();
+    expect(screen.getByText('NO MOCK DATA')).toBeInTheDocument();
   });
 
   it('updates overview pack state and navigates main content without page reload', async () => {

@@ -6,11 +6,20 @@ export type RuntimeExecutionStage =
   | 'RETRIEVAL'
   | 'CANONICAL_CONTEXT'
   | 'DECISION'
+  | 'TRANSFORM'
+  | 'OUTBOUND_GUARD'
+  | 'CONNECTOR'
+  | 'RESPONSE_GUARD'
   | 'RUNTIME_EXECUTION';
 
 export type RuntimeExecutionStatus =
   | 'RECEIVED'
+  | 'AUTHORIZED'
+  | 'RETRIEVED'
   | 'DECIDED'
+  | 'TRANSFORMED'
+  | 'EGRESSING'
+  | 'REVIEW_REQUIRED'
   | 'COMPLETED'
   | 'DENIED'
   | 'BLOCKED'
@@ -22,7 +31,7 @@ export type RuntimeExecutionRequest = {
   workloadId: string;
   purposeCode: string;
   subjectScope: string;
-  providerProfileId: string;
+  destinationProfileId: string;
   input: RuntimeExecutionInput;
   idempotencyKey: string;
   processingContexts: string[];
@@ -68,7 +77,7 @@ export type RuntimeExecutionDetail = {
   workloadId: string;
   purposeCode: string;
   subjectRefDigest: string;
-  providerProfileId: string;
+  destinationProfileId: string;
   inputDigest: string;
   canonicalContextDigest?: string;
   runtimeContextDigest?: string;

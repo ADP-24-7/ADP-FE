@@ -259,6 +259,10 @@ button, a { transition: background-color .16s ease, border-color .16s ease, colo
 
 .sticky-card { position: sticky; top: 88px; }
 .input-meta { display: flex; justify-content: space-between; color: var(--color-soft); font-size: 11px; }
+.idempotency-panel { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--color-border); border-radius: 8px; background: #fbfcfe; padding: 10px 12px; }
+.idempotency-panel > div { display: grid; gap: 5px; min-width: 0; }
+.idempotency-panel span { color: var(--color-muted); font-size: 11px; font-weight: 800; }
+.idempotency-panel code { overflow-wrap: anywhere; color: var(--color-ink); font-size: 11px; }
 .checkpoint-list { display: grid; gap: 0; }
 .checkpoint-list > button { display: flex; align-items: center; gap: 11px; width: 100%; border: 0; border-bottom: 1px solid #edf0f4; border-radius: 8px; background: transparent; color: var(--color-text); padding: 10px 0; text-align: left; }
 .checkpoint-list > button:hover,
@@ -313,6 +317,7 @@ button, a { transition: background-color .16s ease, border-color .16s ease, colo
   .monitoring-grid > .section-card:last-child { grid-column: auto; }
   .form-grid { grid-template-columns: 1fr; }
   .field-full, .form-grid > .button { grid-column: auto; }
+  .idempotency-panel { align-items: stretch; flex-direction: column; }
   .lifecycle-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .table-head { display: none; }
   .search-row { align-items: stretch; flex-direction: column; }
