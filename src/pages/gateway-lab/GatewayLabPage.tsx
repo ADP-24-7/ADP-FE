@@ -24,10 +24,60 @@ const targetPipeline = [
 ] as const;
 
 const checkpointDetails = [
-  ['Input', 'principal, workloadId, purposeCode, consentRef'],
-  ['검증 항목', '인증, 권한, 목적 제한, 동의 범위'],
-  ['Output', 'executionId, decisionId, finalAction'],
-  ['연결 API', 'POST /v1/runtime/executions'],
+  {
+    number: '01',
+    items: [
+      ['Input', 'principal, workloadId, purposeCode, consentRef'],
+      ['검증 항목', '인증, 권한, 목적 제한, 동의 범위'],
+      ['Output', 'authorizationResult'],
+      ['연결 API', 'POST /v1/runtime/executions'],
+    ],
+  },
+  {
+    number: '02',
+    items: [
+      ['Input', 'workloadId, subjectScope, processingContexts'],
+      ['검증 항목', 'Dataset, Field Allowlist, Time Window, Row Limit'],
+      ['Output', 'canonicalContextDigest'],
+      ['연결 API', 'GET /v1/runtime/executions/{executionId}/trace'],
+    ],
+  },
+  {
+    number: '03',
+    items: [
+      ['Input', 'inputDigest, runtimeContextDigest, policy snapshot'],
+      ['검증 항목', 'applicabilityResult, policyAction, finalAction'],
+      ['Output', 'decisionId, reason codes'],
+      ['연결 API', 'POST /v1/runtime/executions'],
+    ],
+  },
+  {
+    number: '04',
+    items: [
+      ['Input', 'policyAction, transform profile'],
+      ['검증 항목', 'Tokenization, raw-value residual, provider allowlist'],
+      ['Output', 'outboundPayload, egressDecision'],
+      ['연결 API', 'Future transform/egress stage'],
+    ],
+  },
+  {
+    number: '05',
+    items: [
+      ['Input', 'providerResponse, response policy'],
+      ['검증 항목', '재식별, 민감정보 회귀, 금칙 응답, citation'],
+      ['Output', 'responseDecision, guardedResponse'],
+      ['연결 API', 'Future provider/response guard stage'],
+    ],
+  },
+  {
+    number: '06',
+    items: [
+      ['Input', 'guardedResponse, decision evidence'],
+      ['검증 항목', 'Delivery 조건, Idempotency, Audit 완전성'],
+      ['Output', 'auditId, traceId'],
+      ['연결 API', 'GET /v1/audit-events'],
+    ],
+  },
 ] as const;
 
 const stageTone = {
@@ -46,6 +96,9 @@ export function GatewayLabPage() {
   const [providerProfileId, setProviderProfileId] = useState('');
   const [processingContextsText, setProcessingContextsText] = useState('AI_USE');
   const [content, setContent] = useState('');
+  const [selectedCheckpoint, setSelectedCheckpoint] = useState('01');
+
+  const checkpoint = checkpointDetails.find((item) => item.number === selectedCheckpoint) ?? checkpointDetails[0];
 
   const execution = useMutation({
     mutationFn: async (request: RuntimeExecutionRequest) => {
@@ -128,11 +181,16 @@ export function GatewayLabPage() {
           <SectionCard title="Target Pipeline" description="최종 아키텍처가 목표로 하는 Gateway 처리 단계" actions={<StatusBadge tone="purple">TARGET</StatusBadge>}>
             <div className="checkpoint-list">
               {targetPipeline.map(([number, title, description]) => (
-                <div key={number}>
+                <button
+                  key={number}
+                  type="button"
+                  className={number === selectedCheckpoint ? 'active' : ''}
+                  onClick={() => setSelectedCheckpoint(number)}
+                >
                   <span>{number}</span>
                   <p><b>{title}</b><small>{description}</small></p>
                   <StatusBadge>설계</StatusBadge>
-                </div>
+                </button>
               ))}
             </div>
           </SectionCard>
@@ -155,8 +213,8 @@ export function GatewayLabPage() {
             )}
           </SectionCard>
 
-          <SectionCard title="Checkpoint Detail" description="단계별 입력, 검증, 출력, 연결 API">
-            <KeyValues items={checkpointDetails} />
+          <SectionCard title="Checkpoint Detail" description="선택한 단계의 입력, 검증, 출력, 연결 API">
+            <KeyValues items={checkpoint.items} />
             <p className="helper-text">POST 응답의 executionId를 받은 뒤 `/trace`를 조회해 관측 단계를 표시합니다.</p>
           </SectionCard>
 
