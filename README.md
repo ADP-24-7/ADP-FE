@@ -11,7 +11,27 @@ ADP 관리자 콘솔 프론트엔드입니다. 현재 단계는 Phase 0 foundati
 - TanStack Query
 - Axios
 
-## Getting Started
+## 기본 구조
+
+```text
+ADP-FE/
+├── src/
+│   ├── app/          # App composition, router, providers
+│   ├── layouts/      # Console shell layouts
+│   ├── pages/        # Route-level pages
+│   ├── features/     # Domain feature modules
+│   ├── shared/       # API, config, styles, shared types/components
+│   └── test/         # FE test setup
+├── docs              # FE architecture and API integration docs
+├── Dockerfile        # CI/NCP 배포용 preview image
+├── Dockerfile.dev    # 로컬 개발용 Vite dev server image
+├── docker-compose.yml # 로컬 통합 개발 스택
+├── Makefile
+├── package.json
+└── vite.config.ts
+```
+
+## 빠른 시작
 
 ```bash
 npm install
@@ -19,17 +39,21 @@ cp .env.example .env.local
 npm run dev
 ```
 
-기본 개발 서버는 `http://localhost:5173`에서 실행됩니다.
+## Docker 개발 환경
 
-## Docker Preview
-
-로컬에서 빌드된 SPA를 계속 띄워 확인할 때는 Docker Compose를 사용합니다.
+ADP-FE의 `docker-compose.yml`은 로컬 통합 개발 스택의 진입점입니다. FE 레포에서 실행하면 같은 상위 폴더에 있는 `ADP-BE`, `ADP-FE`, `ADP-DA`, `ADP-Docs` 네 레포와 PostgreSQL이 함께 실행됩니다.
 
 ```bash
-docker compose up -d --build
+make env
+make docker-up
 ```
 
-미리보기는 `http://localhost:4173`에서 열립니다. 컨테이너는 기본적으로 호스트의 BE를 `http://host.docker.internal:8080`으로 바라봅니다.
+## Docker 파일 기준
+
+- `Dockerfile`: CI/NCP 배포용 preview image build
+- `Dockerfile.dev`: 로컬 개발용 Vite dev server
+- `docker-compose.yml`: BE/FE/DA/Docs/PostgreSQL 통합 개발 스택
+- `.env.example`: 팀 공통 로컬 환경변수 샘플
 
 ## Environment
 
@@ -47,15 +71,15 @@ cp .env.example .env.local
 
 일반 `npm run dev`는 MSW browser worker를 시작하지 않습니다. 로컬 화면은 `/v1` Vite proxy를 통해 실제 BE에 연결됩니다.
 
-## Project Structure
+## Make 명령
 
-```text
-src/
-  app/                 # App composition, router, providers
-  layouts/             # Console shell layouts
-  pages/               # Route-level pages
-  features/            # Domain feature modules
-  shared/              # API, config, styles, shared types/components
+```bash
+make env
+make docker-up
+make docker-logs
+make docker-ps
+make docker-down
+make check
 ```
 
 ## Frontend Policy
