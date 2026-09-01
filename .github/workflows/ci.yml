@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - feature/**
 
 jobs:
   frontend:
@@ -16,6 +17,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Validate Docker Compose
+        run: |
+          mkdir -p ../ADP-BE ../ADP-DA ../ADP-Docs
+          touch ../ADP-BE/Dockerfile.dev
+          touch ../ADP-DA/Dockerfile.dev
+          docker compose --profile test config
 
       - name: Setup Node
         uses: actions/setup-node@v4
