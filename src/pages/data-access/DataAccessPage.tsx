@@ -1,15 +1,20 @@
 import { Boxes, LockKeyhole, Search } from 'lucide-react';
-import { EmptyState, KeyValues, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
+import { EmptyState, KeyValues, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
+import { useExecutionPack } from '../../shared/prototype';
 
 export function DataAccessPage() {
+  const { selectedPack } = useExecutionPack();
+
   return (
     <section className="page-section">
       <PageHeader
         eyebrow="DATA MINIMIZATION BOUNDARY"
         title="Workload · Data Access"
-        description="AI가 DB에 직접 접근하지 않도록 Workload별 허용 범위와 사전 정의 Query Adapter를 관리합니다."
+        description={`${selectedPack.label} 흐름이 DB에 직접 접근하지 않도록 Workload별 허용 범위와 사전 정의 Query Adapter를 관리합니다.`}
         actions={<StatusBadge tone="warning">DEFAULT DENY</StatusBadge>}
       />
+
+      <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} />
 
       <div className="content-grid content-grid-two">
         <SectionCard

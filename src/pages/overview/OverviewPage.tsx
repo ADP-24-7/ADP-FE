@@ -1,19 +1,20 @@
 import { useDashboardSummary } from '../../features/monitoring';
-import { AlertTriangle, BarChart3, Database, ShieldCheck, ShieldX, Workflow } from 'lucide-react';
+import { AlertTriangle, ArrowRight, BarChart3, ChevronDown, Database, ShieldCheck, ShieldX, Workflow } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { EmptyState, ErrorState, KeyValues, MetricCard, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
+import { executionPacks, timeRanges, useExecutionPack } from '../../shared/prototype';
 
 export function OverviewPage() {
   const summary = useDashboardSummary();
+  const navigate = useNavigate();
+  const { selectedPack, selectedPackKey, selectPack } = useExecutionPack();
+  const [selectedBoundary, setSelectedBoundary] = useState('01');
+  const [selectedRange, setSelectedRange] = useState<(typeof timeRanges)[number]>('최근 24시간');
+  const [isRangeOpen, setIsRangeOpen] = useState(false);
 
   const overviewState = summary.isLoading ? 'loading' : summary.isError ? 'error' : summary.data ? 'value' : 'unconnected';
-  const checkpoints = [
-    ['01', 'Request & Authorization', '인증 주체, Workload, 목적, 동의 범위를 확인'],
-    ['02', 'Data Access & Context', '허용된 Dataset, Field, Subject, 기간, 행 수만 조회'],
-    ['03', 'Input Detection & Decision', '민감정보 탐지와 정책 판정, Human Review 분기'],
-    ['04', 'Transform & Outbound Guard', '토큰화 후 외부 전송 Payload를 최종 검사'],
-    ['05', 'Provider & Response Guard', 'LLM 응답의 재식별, 유출, 정책 위반을 재검증'],
-    ['06', 'Controlled Delivery & Audit', '안전한 결과만 전달하고 전 단계 근거를 기록'],
-  ] as const;
+  const selectedBoundaryDetail = selectedPack.boundaries.find((boundary) => boundary.number === selectedBoundary) ?? selectedPack.boundaries[0];
 
   return (
     <section className="page-section">
@@ -23,6 +24,40 @@ export function OverviewPage() {
         description="요청부터 데이터 접근, 외부 전송, 응답 검증, 전달까지 전체 Gateway 상태를 확인합니다."
         actions={<StatusBadge tone={summary.isError ? 'danger' : summary.data ? 'success' : 'warning'}>{summary.isError ? 'API ERROR' : summary.data ? 'REAL DATA' : 'API 연결 대기'}</StatusBadge>}
       />
+
+      <SectionCard title="Execution Pack 선택" description="채널별 Gateway 계약 범위를 선택하면 아래 운영 경계와 버전 컨텍스트가 즉시 바뀝니다.">
+        <div className="execution-pack-grid" role="tablist" aria-label="Execution Pack 선택">
+          {executionPacks.map((pack) => (
+            <button
+              key={pack.key}
+              type="button"
+              className={pack.key === selectedPackKey ? 'execution-pack-card active' : 'execution-pack-card'}
+              role="tab"
+              aria-selected={pack.key === selectedPackKey}
+              onClick={() => {
+                selectPack(pack.key);
+                setSelectedBoundary('01');
+              }}
+            >
+              <span>{pack.label}</span>
+              <b>{pack.role}</b>
+              <small>{pack.scope}</small>
+              <em>{pack.badge}</em>
+            </button>
+          ))}
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Selected Execution Pack" description={`${selectedPack.label} 기준의 prototype contract metadata`}>
+        <div className="selected-pack-panel">
+          <div>
+            <span>SELECTED EXECUTION PACK</span>
+            <h2>{selectedPack.label}</h2>
+            <p>{selectedPack.scope}</p>
+          </div>
+          <StatusBadge tone="purple">{selectedPack.descriptor}</StatusBadge>
+        </div>
+      </SectionCard>
 
       {summary.isError ? (
         <ErrorState
@@ -39,40 +74,86 @@ export function OverviewPage() {
       )}
 
       <div className="content-grid content-grid-wide-left">
-        <SectionCard title="End-to-End 처리 현황" description="단계별 처리량과 최종 판정 추이">
+        <SectionCard
+          title={`${selectedPack.label} End-to-End 처리 현황`}
+          description="선택 Pack의 단계별 처리량과 최종 판정 추이"
+          actions={(
+            <div className="dropdown">
+              <button
+                className="select-trigger"
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded={isRangeOpen}
+                onClick={() => setIsRangeOpen((current) => !current)}
+              >
+                {selectedRange}
+                <ChevronDown size={14} />
+              </button>
+              {isRangeOpen ? (
+                <div className="dropdown-menu" role="menu">
+                  {timeRanges.map((range) => (
+                    <button
+                      key={range}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={range === selectedRange}
+                      onClick={() => {
+                        setSelectedRange(range);
+                        setIsRangeOpen(false);
+                      }}
+                    >
+                      {range}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          )}
+        >
           <EmptyState
             icon={BarChart3}
             title="API 연결 대기"
-            description="Metrics API 연결 후 실제 요청 추이와 최종 판정 분포를 표시합니다."
+            description={`${selectedRange} Metrics API 연결 후 실제 요청 추이와 최종 판정 분포를 표시합니다.`}
             endpoint="GET /v1/metrics/summary"
           />
         </SectionCard>
 
-        <SectionCard title="Runtime Version Context" description="결정을 재현하기 위한 버전 고정 정보">
-          <KeyValues
-            items={[
-              ['Application', '—'],
-              ['Policy Snapshot', '—'],
-              ['Analysis Artifact', '—'],
-              ['Dataset Snapshot', '—'],
-            ]}
-          />
+        <SectionCard title="Runtime Version Context" description="결정을 재현하기 위한 공통·도메인 버전">
+          <KeyValues items={selectedPack.versionContext} />
         </SectionCard>
       </div>
 
       <div className="content-grid content-grid-two">
-        <SectionCard title="운영 경계" description="현재 설계가 보호해야 하는 핵심 지점">
+        <SectionCard title="선택 Pack 운영 경계" description="보호해야 하는 핵심 지점">
           <div className="boundary-list">
-            {checkpoints.map(([number, title, description]) => (
-              <div key={number} className="boundary-item">
-                <span>{number}</span>
-                <p><b>{title}</b><small>{description}</small></p>
-              </div>
+            {selectedPack.boundaries.map((boundary) => (
+              <button
+                key={boundary.number}
+                type="button"
+                className={boundary.number === selectedBoundary ? 'boundary-item active' : 'boundary-item'}
+                onClick={() => setSelectedBoundary(boundary.number)}
+              >
+                <span>{boundary.number}</span>
+                <p><b>{boundary.title}</b><small>{boundary.description}</small></p>
+                <ArrowRight size={14} />
+              </button>
             ))}
+          </div>
+          <div className="boundary-detail">
+            <span>{selectedBoundaryDetail.number}</span>
+            <p><b>{selectedBoundaryDetail.title}</b><small>{selectedBoundaryDetail.description}</small></p>
+            <button className="button button-secondary" type="button" onClick={() => navigate(selectedBoundaryDetail.route)}>
+              관련 화면으로 이동
+              <ArrowRight size={14} />
+            </button>
           </div>
         </SectionCard>
 
-        <SectionCard title="최근 운영 이벤트" description="Review, Block, Recovery 대상">
+        <SectionCard
+          title="최근 운영 이벤트"
+          description="Review, Block, Recovery 대상"
+          actions={<button className="button button-secondary" type="button" onClick={() => navigate('/audit')}>전체 추적 <ArrowRight size={14} /></button>}
+        >
           <EmptyState icon={AlertTriangle} title="API 연결 대기" description="Audit API가 연결되기 전에는 임의 이벤트를 표시하지 않습니다." endpoint="GET /v1/audit-events" />
         </SectionCard>
       </div>

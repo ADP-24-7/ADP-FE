@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from 'react';
 import { FileCheck2, KeyRound, LockKeyhole, Search } from 'lucide-react';
-import { EmptyState, KeyValues, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
+import { EmptyState, KeyValues, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
+import { useExecutionPack } from '../../shared/prototype';
 
 export function AuditPage() {
+  const { selectedPack } = useExecutionPack();
   const [traceId, setTraceId] = useState('');
   const [submittedTraceId, setSubmittedTraceId] = useState('');
   const timeline = ['Request', 'Workload', 'Data Access', 'Context', 'Detection', 'Decision', 'Transform', 'Egress', 'Provider', 'Response Guard', 'Delivery', 'Audit'];
@@ -17,9 +19,11 @@ export function AuditPage() {
       <PageHeader
         eyebrow="END-TO-END TRACEABILITY"
         title="Decision Trace · Audit"
-        description="원문 없이 누가, 왜, 어떤 데이터와 정책 버전으로 무엇을 결정했는지 전체 흐름을 재현합니다."
+        description={`${selectedPack.label} 실행에 대해 원문 없이 누가, 왜, 어떤 데이터와 정책 버전으로 무엇을 결정했는지 전체 흐름을 재현합니다.`}
         actions={<button className="button button-secondary" type="button" disabled><FileCheck2 size={15} />Evidence Packet</button>}
       />
+
+      <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} />
 
       <SectionCard title="Trace 검색" description="정확한 Trace ID로 실행 이력을 조회합니다.">
         <form className="search-row" onSubmit={submit}>

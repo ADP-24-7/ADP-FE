@@ -1,17 +1,22 @@
 import { ArrowRight, LockKeyhole, RefreshCw, Search } from 'lucide-react';
-import { EmptyState, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
+import { EmptyState, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
+import { useExecutionPack } from '../../shared/prototype';
 
 const lifecycle = ['VALIDATED', 'CANDIDATE', 'SHADOW', 'ACTIVE'];
 
 export function PoliciesPage() {
+  const { selectedPack } = useExecutionPack();
+
   return (
     <section className="page-section">
       <PageHeader
         eyebrow="GOVERNANCE CONTROL"
         title="정책 · Review"
-        description="검증된 Analysis Artifact를 Candidate로 인수하고 Shadow 검증과 승인 후 Runtime에 활성화합니다."
+        description={`${selectedPack.label}에 적용할 검증된 Analysis Artifact를 Candidate로 인수하고 Shadow 검증과 승인 후 Runtime에 활성화합니다.`}
         actions={<button className="button button-secondary" type="button" disabled><RefreshCw size={15} />Artifact 동기화</button>}
       />
+
+      <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} />
 
       <SectionCard title="정책 라이프사이클" description="승인된 전이만 순서대로 수행합니다.">
         <div className="lifecycle-row lifecycle-flow">

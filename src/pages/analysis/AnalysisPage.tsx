@@ -1,5 +1,6 @@
 import { BarChart3, Gauge } from 'lucide-react';
-import { EmptyState, KeyValues, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
+import { EmptyState, KeyValues, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
+import { useExecutionPack } from '../../shared/prototype';
 
 const analysisSections = [
   ['데이터셋', '검증 데이터셋 버전과 범위', 'GET /v1/analysis/datasets'],
@@ -8,6 +9,7 @@ const analysisSections = [
 ];
 
 export function AnalysisPage() {
+  const { selectedPack } = useExecutionPack();
   const gates = [
     ['Privacy Gate', '재식별 위험과 민감정보 누출'],
     ['Utility Gate', '정확도, 완전성, Task 성능'],
@@ -19,9 +21,11 @@ export function AnalysisPage() {
       <PageHeader
         eyebrow="ANALYSIS ARTIFACT & EVIDENCE"
         title="분석 · Evidence"
-        description="DA 실험 결과를 운영 정책으로 넘기기 전에 재현성, Privacy-Utility, 실패 구간과 Handoff 상태를 검증합니다."
+        description={`${selectedPack.label} 정책으로 넘기기 전에 재현성, Privacy-Utility, 실패 구간과 Handoff 상태를 검증합니다.`}
         actions={<StatusBadge>NO ARTIFACT</StatusBadge>}
       />
+
+      <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} />
 
       <SectionCard title="Artifact Version Context" description="운영 정책으로 인수 가능한 검증 산출물">
         <KeyValues

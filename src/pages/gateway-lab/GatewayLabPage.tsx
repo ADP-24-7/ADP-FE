@@ -1,9 +1,10 @@
 import { useMutation } from '@tanstack/react-query';
-import { Play, TerminalSquare } from 'lucide-react';
+import { Play, RotateCcw, TerminalSquare } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
-import { createRuntimeExecution, getRuntimeExecutionTrace } from '../../features/runtime-execution';
-import type { RuntimeExecutionRequest } from '../../features/runtime-execution';
-import { EmptyState, ErrorState, KeyValues, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
+import { createRuntimeExecution, getRuntimeExecutionTrace, runtimeExecutionCapabilities } from '../../features/runtime-execution';
+import type { RuntimeExecutionRequest, RuntimeExecutionStatus } from '../../features/runtime-execution';
+import { EmptyState, ErrorState, KeyValues, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
+import { useExecutionPack } from '../../shared/prototype';
 
 const actionTone = {
   ALLOW: 'success',
@@ -11,8 +12,6 @@ const actionTone = {
   REVIEW: 'warning',
   BLOCK: 'danger',
 } as const;
-
-const AUTH_INTEGRATION_READY = false;
 
 const targetPipeline = [
   ['01', 'Request & Authorization', '인증 주체, Workload, 목적, 동의 범위를 확인'],
@@ -24,28 +23,93 @@ const targetPipeline = [
 ] as const;
 
 const checkpointDetails = [
-  ['Input', 'principal, workloadId, purposeCode, consentRef'],
-  ['검증 항목', '인증, 권한, 목적 제한, 동의 범위'],
-  ['Output', 'executionId, decisionId, finalAction'],
-  ['연결 API', 'POST /v1/runtime/executions'],
+  {
+    number: '01',
+    items: [
+      ['Input', 'principal, workloadId, purposeCode, consentRef'],
+      ['검증 항목', '인증, 권한, 목적 제한, 동의 범위'],
+      ['Output', 'authorizationResult'],
+      ['연결 API', 'POST /v1/runtime/executions'],
+    ],
+  },
+  {
+    number: '02',
+    items: [
+      ['Input', 'workloadId, subjectScope, processingContexts'],
+      ['검증 항목', 'Dataset, Field Allowlist, Time Window, Row Limit'],
+      ['Output', 'canonicalContextDigest'],
+      ['연결 API', 'GET /v1/runtime/executions/{executionId}/trace'],
+    ],
+  },
+  {
+    number: '03',
+    items: [
+      ['Input', 'inputDigest, runtimeContextDigest, policy snapshot'],
+      ['검증 항목', 'applicabilityResult, policyAction, finalAction'],
+      ['Output', 'decisionId, reason codes'],
+      ['연결 API', 'POST /v1/runtime/executions'],
+    ],
+  },
+  {
+    number: '04',
+    items: [
+      ['Input', 'policyAction, transform profile'],
+      ['검증 항목', 'Tokenization, raw-value residual, provider allowlist'],
+      ['Output', 'outboundPayload, egressDecision'],
+      ['연결 API', 'POST /v1/runtime/executions · GET /v1/runtime/executions/{executionId}/trace'],
+    ],
+  },
+  {
+    number: '05',
+    items: [
+      ['Input', 'providerResponse, response policy'],
+      ['검증 항목', '재식별, 민감정보 회귀, 금칙 응답, citation'],
+      ['Output', 'responseDecision, guardedResponse'],
+      ['연결 API', 'POST /v1/runtime/executions · GET /v1/runtime/executions/{executionId}/trace'],
+    ],
+  },
+  {
+    number: '06',
+    items: [
+      ['Input', 'guardedResponse, decision evidence'],
+      ['검증 항목', 'Delivery 조건, Idempotency, Audit 완전성'],
+      ['Output', 'auditId, traceId'],
+      ['연결 API', 'GET /v1/audit-events'],
+    ],
+  },
 ] as const;
 
-const stageTone = {
+const statusTone: Record<RuntimeExecutionStatus, 'success' | 'warning' | 'danger' | 'info' | 'neutral'> = {
+  RECEIVED: 'info',
+  AUTHORIZED: 'info',
+  RETRIEVED: 'info',
+  DECIDED: 'info',
+  TRANSFORMED: 'info',
+  EGRESSING: 'warning',
+  REVIEW_REQUIRED: 'warning',
   COMPLETED: 'success',
   DENIED: 'danger',
   BLOCKED: 'danger',
   FAILED: 'danger',
-  DECIDED: 'info',
-  RECEIVED: 'info',
-} as const;
+};
+
+function createIdempotencyKey() {
+  return crypto.randomUUID();
+}
 
 export function GatewayLabPage() {
+  const { selectedPack } = useExecutionPack();
   const [workloadId, setWorkloadId] = useState('');
   const [purposeCode, setPurposeCode] = useState('');
   const [subjectScope, setSubjectScope] = useState('');
-  const [providerProfileId, setProviderProfileId] = useState('');
+  const [destinationProfileId, setDestinationProfileId] = useState('');
   const [processingContextsText, setProcessingContextsText] = useState('AI_USE');
   const [content, setContent] = useState('');
+  const [idempotencyKey, setIdempotencyKey] = useState(createIdempotencyKey);
+  const [selectedCheckpoint, setSelectedCheckpoint] = useState('01');
+
+  const checkpoint = checkpointDetails.find((item) => item.number === selectedCheckpoint) ?? checkpointDetails[0];
+  const canExecute = runtimeExecutionCapabilities.canExecute;
 
   const execution = useMutation({
     mutationFn: async (request: RuntimeExecutionRequest) => {
@@ -57,7 +121,7 @@ export function GatewayLabPage() {
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!AUTH_INTEGRATION_READY) {
+    if (!canExecute) {
       return;
     }
 
@@ -65,12 +129,17 @@ export function GatewayLabPage() {
       workloadId,
       purposeCode,
       subjectScope,
-      providerProfileId,
+      destinationProfileId,
       input: { content },
-      idempotencyKey: crypto.randomUUID(),
+      idempotencyKey,
       processingContexts: processingContextsText.split(',').map((value) => value.trim()).filter(Boolean),
     };
     execution.mutate(request);
+  }
+
+  function markLogicalRequestChanged(update: () => void) {
+    update();
+    setIdempotencyKey(createIdempotencyKey());
   }
 
   return (
@@ -78,9 +147,11 @@ export function GatewayLabPage() {
       <PageHeader
         eyebrow="END-TO-END CONTRACT LAB"
         title="탐지 및 런타임 결정 검증"
-        description="최종 Gateway 흐름과 현재 BE에서 관측 가능한 Runtime Stage를 분리해 확인합니다."
+        description={`${selectedPack.label} 기준으로 최종 Gateway 흐름과 현재 BE에서 관측 가능한 Runtime Stage를 분리해 확인합니다.`}
         actions={<StatusBadge tone="warning">AUTH REQUIRED</StatusBadge>}
       />
+
+      <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} />
 
       <div className="notice notice-security">
         브라우저에는 `X-ADP-API-Key`를 주입하지 않습니다. Admin 인증 또는 Local BFF가 붙기 전까지 실제 Execute는 비활성화합니다.
@@ -91,33 +162,43 @@ export function GatewayLabPage() {
           <form className="form-grid" onSubmit={submit}>
             <label className="field">
               <span>Workload ID</span>
-              <input value={workloadId} onChange={(event) => setWorkloadId(event.target.value)} placeholder="BE에 등록된 workload ID" required />
+              <input value={workloadId} onChange={(event) => markLogicalRequestChanged(() => setWorkloadId(event.target.value))} placeholder="BE에 등록된 workload ID" required />
             </label>
             <label className="field">
               <span>Purpose Code</span>
-              <input value={purposeCode} onChange={(event) => setPurposeCode(event.target.value)} placeholder="승인된 purpose code" required />
+              <input value={purposeCode} onChange={(event) => markLogicalRequestChanged(() => setPurposeCode(event.target.value))} placeholder="승인된 purpose code" required />
             </label>
             <label className="field">
               <span>Subject Scope</span>
-              <input value={subjectScope} onChange={(event) => setSubjectScope(event.target.value)} placeholder="마스킹된 subject scope" required />
+              <input value={subjectScope} onChange={(event) => markLogicalRequestChanged(() => setSubjectScope(event.target.value))} placeholder="마스킹된 subject scope" required />
             </label>
             <label className="field">
-              <span>Provider Profile ID</span>
-              <input value={providerProfileId} onChange={(event) => setProviderProfileId(event.target.value)} placeholder="BE에 등록된 provider profile" required />
+              <span>Destination Profile ID</span>
+              <input value={destinationProfileId} onChange={(event) => markLogicalRequestChanged(() => setDestinationProfileId(event.target.value))} placeholder="BE에 등록된 destination profile" required />
             </label>
             <label className="field field-full">
               <span>Processing Contexts</span>
-              <input value={processingContextsText} onChange={(event) => setProcessingContextsText(event.target.value)} placeholder="AI_USE" required />
+              <input value={processingContextsText} onChange={(event) => markLogicalRequestChanged(() => setProcessingContextsText(event.target.value))} placeholder="AI_USE" required />
             </label>
             <label className="field field-full">
               <span>사용자 질문</span>
-              <textarea value={content} onChange={(event) => setContent(event.target.value)} placeholder="민감한 실제 고객정보 대신 테스트용 입력을 사용하세요." rows={8} required />
+              <textarea value={content} onChange={(event) => markLogicalRequestChanged(() => setContent(event.target.value))} placeholder="민감한 실제 고객정보 대신 테스트용 입력을 사용하세요." rows={8} required />
             </label>
             <div className="input-meta field-full">
               <span>{content.length} chars</span>
               <span>Raw Prompt · Token Map 저장 금지</span>
             </div>
-            <button className="button button-primary" type="submit" disabled={!AUTH_INTEGRATION_READY || execution.isPending} title="Auth Integration 또는 Local BFF 연결 후 활성화">
+            <div className="idempotency-panel field-full">
+              <div>
+                <span>Idempotency Key</span>
+                <code>{idempotencyKey}</code>
+              </div>
+              <button className="button button-secondary" type="button" onClick={() => setIdempotencyKey(createIdempotencyKey())}>
+                <RotateCcw size={14} />
+                새 실행 키
+              </button>
+            </div>
+            <button className="button button-primary" type="submit" disabled={!canExecute || execution.isPending} title="Auth Integration 또는 Local BFF 연결 후 활성화">
               <Play size={16} fill="currentColor" />
               {execution.isPending ? '실행 중...' : 'Auth 연결 후 실행'}
             </button>
@@ -128,11 +209,16 @@ export function GatewayLabPage() {
           <SectionCard title="Target Pipeline" description="최종 아키텍처가 목표로 하는 Gateway 처리 단계" actions={<StatusBadge tone="purple">TARGET</StatusBadge>}>
             <div className="checkpoint-list">
               {targetPipeline.map(([number, title, description]) => (
-                <div key={number}>
+                <button
+                  key={number}
+                  type="button"
+                  className={number === selectedCheckpoint ? 'active' : ''}
+                  onClick={() => setSelectedCheckpoint(number)}
+                >
                   <span>{number}</span>
                   <p><b>{title}</b><small>{description}</small></p>
                   <StatusBadge>설계</StatusBadge>
-                </div>
+                </button>
               ))}
             </div>
           </SectionCard>
@@ -145,7 +231,7 @@ export function GatewayLabPage() {
                     <span className="trace-index">{index + 1}</span>
                     <div>
                       <strong>{stage.stage}</strong>
-                      <StatusBadge tone={stageTone[stage.status]}>{stage.status}</StatusBadge>
+                      <StatusBadge tone={statusTone[stage.status]}>{stage.status}</StatusBadge>
                     </div>
                   </li>
                 ))}
@@ -155,8 +241,8 @@ export function GatewayLabPage() {
             )}
           </SectionCard>
 
-          <SectionCard title="Checkpoint Detail" description="단계별 입력, 검증, 출력, 연결 API">
-            <KeyValues items={checkpointDetails} />
+          <SectionCard title="Checkpoint Detail" description="선택한 단계의 입력, 검증, 출력, 연결 API">
+            <KeyValues items={checkpoint.items} />
             <p className="helper-text">POST 응답의 executionId를 받은 뒤 `/trace`를 조회해 관측 단계를 표시합니다.</p>
           </SectionCard>
 

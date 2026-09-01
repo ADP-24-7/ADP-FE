@@ -3,6 +3,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 import {
   Activity,
   BarChart3,
+  ChevronDown,
   Database,
   FileCheck2,
   FlaskConical,
@@ -14,6 +15,7 @@ import {
   SlidersHorizontal,
 } from 'lucide-react';
 import { env } from '../shared/config/env';
+import { executionPacks, useExecutionPack } from '../shared/prototype';
 
 const navItems = [
   { to: '/overview', label: '운영 개요', icon: LayoutDashboard },
@@ -27,6 +29,10 @@ const navItems = [
 
 export function ConsoleLayout() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isPackMenuOpen, setIsPackMenuOpen] = useState(false);
+  const [isPolicyMenuOpen, setIsPolicyMenuOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const { selectedPack, selectedPackKey, selectPack } = useExecutionPack();
 
   return (
     <div className={isSidebarCollapsed ? 'console-shell console-shell-collapsed' : 'console-shell'}>
@@ -76,15 +82,100 @@ export function ConsoleLayout() {
 
       <div className="console-content">
         <header className="console-topbar">
-          <div>
+          <div className="console-topbar-copy">
             <strong>Financial Privacy Gateway</strong>
             <span>Request · Data Access · Egress · Response Guard · Audit</span>
           </div>
           <div className="topbar-actions">
-            <span className="live-mode-badge">REAL API MODE</span>
-            <button className="icon-button" type="button" aria-label="설정" disabled title="Auth Integration 이후 활성화">
-              <Settings2 size={17} />
-            </button>
+            <div className="dropdown">
+              <button
+                className="pack-trigger"
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded={isPackMenuOpen}
+                onClick={() => {
+                  setIsPackMenuOpen((current) => !current);
+                  setIsPolicyMenuOpen(false);
+                  setIsSettingsOpen(false);
+                }}
+              >
+                <span>Pack</span>
+                <b>{selectedPack.label}</b>
+                <ChevronDown size={14} />
+              </button>
+              {isPackMenuOpen ? (
+                <div className="dropdown-menu dropdown-menu-right pack-menu" role="menu">
+                  {executionPacks.map((pack) => (
+                    <button
+                      key={pack.key}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={pack.key === selectedPackKey}
+                      onClick={() => {
+                        selectPack(pack.key);
+                        setIsPackMenuOpen(false);
+                      }}
+                    >
+                      <span>
+                        <b>{pack.label}</b>
+                        <small>{pack.scope}</small>
+                      </span>
+                      <em>{pack.badge}</em>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            <div className="dropdown">
+              <button
+                className="policy-trigger"
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded={isPolicyMenuOpen}
+                onClick={() => {
+                  setIsPolicyMenuOpen((current) => !current);
+                  setIsPackMenuOpen(false);
+                  setIsSettingsOpen(false);
+                }}
+              >
+                <ShieldCheck size={15} />
+                <span>Policy <b>—</b></span>
+                <StatusPill>No Data</StatusPill>
+                <ChevronDown size={14} />
+              </button>
+              {isPolicyMenuOpen ? (
+                <div className="dropdown-menu dropdown-menu-right" role="menu">
+                  <div className="dropdown-empty">
+                    <strong>Policy 없음</strong>
+                    <span>GET /v1/policies 연결 후 선택할 수 있습니다.</span>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+            <span className="live-mode-badge">NO MOCK DATA</span>
+            <div className="dropdown">
+              <button
+                className="icon-button"
+                type="button"
+                aria-label="설정"
+                aria-haspopup="menu"
+                aria-expanded={isSettingsOpen}
+                onClick={() => {
+                  setIsSettingsOpen((current) => !current);
+                  setIsPackMenuOpen(false);
+                  setIsPolicyMenuOpen(false);
+                }}
+              >
+                <Settings2 size={17} />
+              </button>
+              {isSettingsOpen ? (
+                <div className="dropdown-menu dropdown-menu-right" role="menu">
+                  <button type="button" role="menuitem" disabled>Auth Integration</button>
+                  <button type="button" role="menuitem" disabled>API Health</button>
+                  <button type="button" role="menuitem" disabled>Console Preferences</button>
+                </div>
+              ) : null}
+            </div>
           </div>
         </header>
         <main className="console-main">
@@ -93,4 +184,8 @@ export function ConsoleLayout() {
       </div>
     </div>
   );
+}
+
+function StatusPill({ children }: { children: string }) {
+  return <span className="topbar-status-pill">{children}</span>;
 }

@@ -139,6 +139,25 @@ export function StatusBadge({ children, tone = 'neutral' }: { children: ReactNod
   return <span className={`status-badge status-${tone}`}>{children}</span>;
 }
 
+type PackContextSummaryProps = {
+  label: string;
+  scope: string;
+  descriptor: string;
+};
+
+export function PackContextSummary({ label, scope, descriptor }: PackContextSummaryProps) {
+  return (
+    <div className="pack-context-summary" aria-label="선택된 Execution Pack">
+      <div>
+        <span>SELECTED EXECUTION PACK</span>
+        <strong>{label}</strong>
+        <p>{scope}</p>
+      </div>
+      <StatusBadge tone="purple">{descriptor}</StatusBadge>
+    </div>
+  );
+}
+
 export function RestrictedValue({ label = '권한이 있는 사용자에게만 표시됩니다' }: { label?: string }) {
   return (
     <span className="restricted-value" aria-label={label} title={label}>
