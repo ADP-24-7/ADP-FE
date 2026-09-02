@@ -1,5 +1,5 @@
 import { Boxes, LockKeyhole, Search } from 'lucide-react';
-import { EmptyState, KeyValues, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
+import { BulletList, EmptyState, KeyValues, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
 import { useExecutionPack } from '../../shared/prototype';
 
 export function DataAccessPage() {
@@ -14,7 +14,7 @@ export function DataAccessPage() {
         actions={<StatusBadge tone="warning">DEFAULT DENY</StatusBadge>}
       />
 
-      <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} />
+      <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} objective={selectedPack.objective} />
 
       <div className="content-grid content-grid-two">
         <SectionCard
@@ -28,14 +28,24 @@ export function DataAccessPage() {
         <SectionCard title="Retrieval Profile" description="자유 SQL 대신 허용된 조회 계약만 실행" actions={<StatusBadge>NOT CONFIGURED</StatusBadge>}>
           <KeyValues
             items={[
-              ['Dataset', '—'],
-              ['Field Allowlist', '—'],
-              ['Subject Scope', '—'],
-              ['Time Window', '—'],
-              ['Row Limit', '—'],
-              ['Query Adapter', '—'],
+              ['Execution Surface', selectedPack.executionSurfaces.join(' · ')],
+              ['Field Allowlist', 'API 연결 대기'],
+              ['Subject Scope', '승인된 Workload 범위'],
+              ['Time Window', '기관 정책 기준'],
+              ['Row Limit', 'Policy Snapshot 기준'],
+              ['Query Adapter', '자유 SQL 금지'],
             ]}
           />
+        </SectionCard>
+      </div>
+
+      <div className="content-grid content-grid-two">
+        <SectionCard title={`${selectedPack.label} Field Treatment`} description="외부 실행 전 필드별 처리 정책">
+          <KeyValues items={selectedPack.fieldTreatments} />
+        </SectionCard>
+        <SectionCard title="기존 통제 입력" description="FPG가 대체하지 않고 재사용하는 승인·보안 근거">
+          <p className="plain-copy">{selectedPack.baseline}</p>
+          <BulletList items={selectedPack.evidenceChecks.map(([title, description]) => `${title}: ${description}`)} />
         </SectionCard>
       </div>
 

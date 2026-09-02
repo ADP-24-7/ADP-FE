@@ -25,14 +25,15 @@ export function AnalysisPage() {
         actions={<StatusBadge>NO ARTIFACT</StatusBadge>}
       />
 
-      <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} />
+      <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} objective={selectedPack.objective} />
 
       <SectionCard title="Artifact Version Context" description="운영 정책으로 인수 가능한 검증 산출물">
         <KeyValues
           items={[
             ['Artifact Version', '—'],
             ['Schema Version', '—'],
-            ['Dataset Snapshot', '—'],
+            ['Execution Pack', selectedPack.label],
+            ['Dataset Snapshot', selectedPack.executionSurfaces.join(' · ')],
             ['Experiment ID', '—'],
             ['Digest', '—'],
             ['Valid Until', '—'],
@@ -51,6 +52,14 @@ export function AnalysisPage() {
                 ['Confidence', '—'],
               ]}
             />
+          </SectionCard>
+        ))}
+      </div>
+
+      <div className="content-grid content-grid-three">
+        {selectedPack.evidenceChecks.map(([title, description]) => (
+          <SectionCard key={title} title={title} description={description} actions={<StatusBadge>API 대기</StatusBadge>}>
+            <EmptyState compact title="API 연결 대기" description="검증 결과가 적재되면 실제 Evidence 상태만 표시합니다." endpoint="GET /v1/analysis/evidence" />
           </SectionCard>
         ))}
       </div>

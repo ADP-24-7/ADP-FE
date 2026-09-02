@@ -22,7 +22,7 @@ export function MonitoringPage() {
         actions={<StatusBadge tone="warning">METRICS API 대기</StatusBadge>}
       />
 
-      <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} />
+      <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} objective={selectedPack.objective} />
 
       <div className="monitoring-grid">
         {categories.map(([title, description, endpoint]) => (
@@ -61,6 +61,10 @@ export function MonitoringPage() {
           <EmptyState compact icon={CircleGauge} title="API 연결 대기" description="Gateway, DB, Vault, Provider, Audit Outbox 상태를 연결합니다." endpoint="GET /v1/health" />
         </SectionCard>
       </div>
+
+      <SectionCard title={`${selectedPack.label} 관측 지점`} description="실제 수치가 아닌 API 연결 전 관측 계약만 표시합니다.">
+        <KeyValues items={selectedPack.runtimeFocus} />
+      </SectionCard>
     </section>
   );
 }

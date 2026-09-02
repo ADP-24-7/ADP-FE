@@ -143,18 +143,60 @@ type PackContextSummaryProps = {
   label: string;
   scope: string;
   descriptor: string;
+  objective?: string;
 };
 
-export function PackContextSummary({ label, scope, descriptor }: PackContextSummaryProps) {
+export function PackContextSummary({ label, scope, descriptor, objective }: PackContextSummaryProps) {
   return (
     <div className="pack-context-summary" aria-label="선택된 Execution Pack">
       <div>
         <span>SELECTED EXECUTION PACK</span>
         <strong>{label}</strong>
-        <p>{scope}</p>
+        <p>{objective ?? scope}</p>
       </div>
       <StatusBadge tone="purple">{descriptor}</StatusBadge>
     </div>
+  );
+}
+
+type DomainSwitchProps<T extends string> = {
+  label: string;
+  value: T;
+  options: ReadonlyArray<{
+    key: T;
+    label: string;
+    description: string;
+    badge: string;
+  }>;
+  onChange: (value: T) => void;
+};
+
+export function DomainSwitch<T extends string>({ label, value, options, onChange }: DomainSwitchProps<T>) {
+  return (
+    <div className="domain-switch" role="tablist" aria-label={label}>
+      {options.map((option) => (
+        <button
+          key={option.key}
+          type="button"
+          role="tab"
+          aria-selected={option.key === value}
+          className={option.key === value ? 'active' : ''}
+          onClick={() => onChange(option.key)}
+        >
+          <span>{option.label}</span>
+          <b>{option.description}</b>
+          <em>{option.badge}</em>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export function BulletList({ items }: { items: ReadonlyArray<string> }) {
+  return (
+    <ul className="bullet-list">
+      {items.map((item) => <li key={item}>{item}</li>)}
+    </ul>
   );
 }
 

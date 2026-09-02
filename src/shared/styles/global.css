@@ -146,6 +146,22 @@ button, a { transition: background-color .16s ease, border-color .16s ease, colo
 .pack-context-summary span { color: var(--color-primary); font-size: 10px; font-weight: 900; letter-spacing: .08em; }
 .pack-context-summary strong { overflow: hidden; color: var(--color-ink); font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
 .pack-context-summary p { margin: 0; color: var(--color-muted); font-size: 12px; line-height: 1.45; }
+.domain-switch { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.domain-switch button { display: grid; min-height: 104px; gap: 7px; border: 1px solid var(--color-border); border-radius: 8px; background: #fff; color: var(--color-text); padding: 14px; text-align: left; }
+.domain-switch button:hover { border-color: #b9c5d7; box-shadow: 0 10px 24px rgba(22, 32, 51, .08); transform: translateY(-1px); }
+.domain-switch button.active { border-color: #9bb0ff; background: linear-gradient(180deg, #f7f9ff 0%, #fff 100%); box-shadow: 0 0 0 3px rgba(49,94,251,.08); }
+.domain-switch span { color: var(--color-ink); font-size: 15px; font-weight: 850; }
+.domain-switch b { color: var(--color-muted); font-size: 12px; line-height: 1.35; }
+.domain-switch em { align-self: end; justify-self: start; border-radius: 999px; background: #f4f6f9; color: var(--color-muted); padding: 4px 7px; font-size: 10px; font-style: normal; font-weight: 850; }
+.domain-switch button.active em { background: var(--color-primary-soft); color: var(--color-primary); }
+.plain-copy { margin: 0 0 12px; color: var(--color-muted); font-size: 13px; line-height: 1.62; }
+.bullet-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.bullet-list li { position: relative; color: var(--color-text); font-size: 12px; line-height: 1.48; padding-left: 14px; }
+.bullet-list li::before { position: absolute; top: .62em; left: 0; width: 5px; height: 5px; border-radius: 50%; background: var(--color-primary); content: ''; }
+.pack-inline-summary { display: grid; gap: 4px; border: 1px solid var(--color-border); border-radius: 8px; background: #fbfcff; padding: 12px; }
+.pack-inline-summary span { color: var(--color-primary); font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.pack-inline-summary strong { color: var(--color-ink); font-size: 13px; }
+.pack-inline-summary p { margin: 0; color: var(--color-muted); font-size: 12px; line-height: 1.45; }
 
 .state-panel { display: grid; justify-items: center; gap: 8px; min-height: 220px; place-content: center; border: 1px dashed var(--color-border-strong); border-radius: 10px; background: #fbfcfe; padding: 26px; text-align: center; }
 .state-panel-compact { min-height: 170px; }
@@ -193,6 +209,11 @@ button, a { transition: background-color .16s ease, border-color .16s ease, colo
 .status-amber { border-color: #ead19c; background: var(--color-warning-soft); color: var(--color-warning) !important; }
 .status-purple { border-color: #d5cef8; background: #efedff; color: #5d4dcc !important; }
 .status-neutral { border-color: var(--color-border); background: #f4f6f9; color: var(--color-muted) !important; }
+
+.policy-harness-list { display: grid; gap: 10px; }
+.policy-harness-list article { border: 1px solid var(--color-border); border-radius: 8px; background: #fbfcfe; padding: 12px; }
+.policy-harness-list strong { color: var(--color-ink); font-size: 13px; }
+.policy-harness-list p { margin: 5px 0 0; color: var(--color-muted); font-size: 12px; line-height: 1.55; }
 
 .lifecycle-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .lifecycle-step { position: relative; display: flex; align-items: center; gap: 9px; border: 1px solid var(--color-border); border-radius: 9px; background: #fafbfc; padding: 13px; }
@@ -312,7 +333,7 @@ button, a { transition: background-color .16s ease, border-color .16s ease, colo
   .sidebar-status { display: none; }
   .console-topbar { display: none; }
   .page-header-row { align-items: flex-start; flex-direction: column; }
-  .metric-grid, .execution-pack-grid, .content-grid-two, .monitoring-grid, .result-summary, .boundary-list { grid-template-columns: 1fr; }
+  .metric-grid, .execution-pack-grid, .domain-switch, .content-grid-two, .monitoring-grid, .result-summary, .boundary-list { grid-template-columns: 1fr; }
   .selected-pack-panel, .pack-context-summary, .boundary-detail { align-items: flex-start; flex-direction: column; }
   .monitoring-grid > .section-card:last-child { grid-column: auto; }
   .form-grid { grid-template-columns: 1fr; }

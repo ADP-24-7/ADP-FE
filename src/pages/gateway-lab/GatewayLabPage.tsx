@@ -3,7 +3,7 @@ import { Play, RotateCcw, TerminalSquare } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { createRuntimeExecution, getRuntimeExecutionTrace, runtimeExecutionCapabilities } from '../../features/runtime-execution';
 import type { RuntimeExecutionRequest, RuntimeExecutionStatus } from '../../features/runtime-execution';
-import { EmptyState, ErrorState, KeyValues, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
+import { BulletList, EmptyState, ErrorState, KeyValues, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
 import { useExecutionPack } from '../../shared/prototype';
 
 const actionTone = {
@@ -151,7 +151,7 @@ export function GatewayLabPage() {
         actions={<StatusBadge tone="warning">AUTH REQUIRED</StatusBadge>}
       />
 
-      <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} />
+      <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} objective={selectedPack.objective} />
 
       <div className="notice notice-security">
         브라우저에는 `X-ADP-API-Key`를 주입하지 않습니다. Admin 인증 또는 Local BFF가 붙기 전까지 실제 Execute는 비활성화합니다.
@@ -160,6 +160,11 @@ export function GatewayLabPage() {
       <div className="lab-grid">
         <SectionCard title="Gateway 요청 구성" description="실제 API 계약에 필요한 최소 식별자만 입력합니다." className="sticky-card">
           <form className="form-grid" onSubmit={submit}>
+            <div className="pack-inline-summary field-full">
+              <span>{selectedPack.implementation}</span>
+              <strong>{selectedPack.scope}</strong>
+              <p>{selectedPack.executionSurfaces.join(' · ')}</p>
+            </div>
             <label className="field">
               <span>Workload ID</span>
               <input value={workloadId} onChange={(event) => markLogicalRequestChanged(() => setWorkloadId(event.target.value))} placeholder="BE에 등록된 workload ID" required />
@@ -244,6 +249,11 @@ export function GatewayLabPage() {
           <SectionCard title="Checkpoint Detail" description="선택한 단계의 입력, 검증, 출력, 연결 API">
             <KeyValues items={checkpoint.items} />
             <p className="helper-text">POST 응답의 executionId를 받은 뒤 `/trace`를 조회해 관측 단계를 표시합니다.</p>
+          </SectionCard>
+
+          <SectionCard title={`${selectedPack.label} Runtime Focus`} description="선택된 실행 축에서 특히 확인해야 하는 Runtime 경계">
+            <KeyValues items={selectedPack.runtimeFocus} />
+            <BulletList items={selectedPack.executionSurfaces} />
           </SectionCard>
 
           <SectionCard title="실행 결과" description="BE의 policyAction, finalAction, digest, audit id만 표시합니다.">

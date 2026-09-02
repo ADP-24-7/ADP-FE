@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { App } from './App';
@@ -20,10 +20,12 @@ describe('App', () => {
     render(<App />);
 
     await screen.findByRole('heading', { name: '운영 개요' });
-    await user.click(screen.getByRole('tab', { name: /SaaS/ }));
+    await user.click(within(screen.getByRole('tablist', { name: '실행 축 선택' })).getByRole('tab', { name: /SaaS/ }));
 
+    expect(window.location.pathname).toBe('/overview');
     expect(screen.getByRole('heading', { name: 'SaaS' })).toBeInTheDocument();
     expect(screen.getByText('SAAS · CONTRACT VALIDATION')).toBeInTheDocument();
+    expect(screen.getByText('SaaS Destination Profile')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /Data Access & Context/ }));
     await user.click(screen.getByRole('button', { name: /관련 화면으로 이동/ }));

@@ -23,7 +23,7 @@ export function AuditPage() {
         actions={<button className="button button-secondary" type="button" disabled><FileCheck2 size={15} />Evidence Packet</button>}
       />
 
-      <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} />
+      <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} objective={selectedPack.objective} />
 
       <SectionCard title="Trace 검색" description="정확한 Trace ID로 실행 이력을 조회합니다.">
         <form className="search-row" onSubmit={submit}>
@@ -85,7 +85,11 @@ export function AuditPage() {
 
       <SectionCard title="Execution Version Set" description="동일 결정을 재현하기 위해 Trace에 고정되는 전체 버전" actions={<StatusBadge>NO TRACE</StatusBadge>}>
         <KeyValues
-          items={['Application', 'Policy', 'Artifact', 'Dataset', 'Detector', 'Transform', 'Provider'].map((item) => [`${item} Version`, '—'] as const)}
+          items={[
+            ['Execution Pack', selectedPack.label],
+            ['Implementation Priority', selectedPack.priority],
+            ...['Application', 'Policy', 'Artifact', 'Dataset', 'Detector', 'Transform', 'Destination'].map((item) => [`${item} Version`, '—'] as const),
+          ]}
         />
       </SectionCard>
 
