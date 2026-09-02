@@ -14,12 +14,11 @@ import {
   ShieldCheck,
   SlidersHorizontal,
 } from 'lucide-react';
-import { env } from '../shared/config/env';
 import { executionPacks, useExecutionPack } from '../shared/prototype';
 
 const navItems = [
   { to: '/overview', label: '운영 개요', icon: LayoutDashboard },
-  { to: '/data-access', label: 'Workload · Data Access', icon: Database },
+  { to: '/data-access', label: 'Workload · Profiles', icon: Database },
   { to: '/gateway-lab', label: 'Gateway Lab', icon: FlaskConical },
   { to: '/analysis', label: '분석 · Evidence', icon: BarChart3 },
   { to: '/policies', label: '정책 · Review', icon: SlidersHorizontal },
@@ -43,7 +42,7 @@ export function ConsoleLayout() {
             <span className="console-brand-copy">
               <span className="console-brand-mark">FPG</span>
               <span className="console-brand-title">Privacy Gateway</span>
-              <span className="console-brand-subtitle">Runtime Control Plane</span>
+              <span className="console-brand-subtitle">Multi-channel Gateway</span>
             </span>
           </div>
           <button
@@ -72,10 +71,11 @@ export function ConsoleLayout() {
         </nav>
 
         <div className="sidebar-status">
-          <span className="connection-dot" aria-hidden="true" />
+          <span className="connection-dot connection-dot-warning" aria-hidden="true" />
           <div>
-            <strong>{env.appEnv.toUpperCase()}</strong>
-            <span>실제 API 연결 모드</span>
+            <strong>DATA SOURCE</strong>
+            <span>API 미연결</span>
+            <small>Prototype UI · 가상 운영 데이터 없음</small>
           </div>
         </div>
       </aside>

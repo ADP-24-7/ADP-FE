@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { App } from './App';
@@ -8,7 +8,7 @@ describe('App', () => {
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: '운영 개요' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Workload · Data Access' })).toHaveAttribute('href', '/data-access');
+    expect(screen.getByRole('link', { name: 'Workload · Profiles' })).toHaveAttribute('href', '/data-access');
     expect(screen.getByRole('link', { name: '분석 · Evidence' })).toHaveAttribute('href', '/analysis');
     expect(screen.queryByText('MOCK DATA')).not.toBeInTheDocument();
     expect(screen.queryByText('PROJECT_PROVISIONAL')).not.toBeInTheDocument();
@@ -20,17 +20,38 @@ describe('App', () => {
     render(<App />);
 
     await screen.findByRole('heading', { name: '운영 개요' });
-    await user.click(screen.getByRole('tab', { name: /SaaS/ }));
+    await user.click(within(screen.getByRole('tablist', { name: 'Execution Pack 선택' })).getByRole('tab', { name: /SaaS/ }));
 
+    expect(window.location.pathname).toBe('/overview');
     expect(screen.getByRole('heading', { name: 'SaaS' })).toBeInTheDocument();
     expect(screen.getByText('SAAS · CONTRACT VALIDATION')).toBeInTheDocument();
+    expect(screen.getByText('SaaS Destination Profile')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /Data Access & Context/ }));
     await user.click(screen.getByRole('button', { name: /관련 화면으로 이동/ }));
 
     expect(await screen.findByRole('heading', { name: 'Workload · Data Access' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Workload · Data Access' })).toHaveClass('active');
+    expect(screen.getByRole('link', { name: 'Workload · Profiles' })).toHaveClass('active');
     expect(screen.getByLabelText('선택된 Execution Pack')).toHaveTextContent('SaaS');
     expect(screen.getByText(/SaaS 흐름이 DB에 직접 접근하지 않도록/)).toBeInTheDocument();
+  });
+
+  it('uses the global pack selector for Gateway Lab without a duplicate axis picker', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(await screen.findByRole('link', { name: '운영 개요' }));
+    await screen.findByRole('heading', { name: '운영 개요' });
+    await user.click(screen.getByRole('button', { name: /Pack/ }));
+    await user.click(screen.getByRole('menuitemradio', { name: /Digital Asset/ }));
+    await user.click(screen.getByRole('link', { name: 'Gateway Lab' }));
+
+    expect(await screen.findByRole('heading', { name: 'Gateway Lab' })).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/gateway-lab');
+    expect(screen.queryByRole('tablist', { name: 'Gateway 실행 축 선택' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Gateway 실행 축')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('선택된 Execution Pack')).toHaveTextContent('Digital Asset');
+    expect(screen.getByText('정산·이벤트 Payload')).toBeInTheDocument();
+    expect(screen.getByText('Protocol 필수값과 개인정보성 필드 분리')).toBeInTheDocument();
   });
 });

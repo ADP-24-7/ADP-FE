@@ -1,5 +1,5 @@
 import { ArrowRight, LockKeyhole, RefreshCw, Search } from 'lucide-react';
-import { EmptyState, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
+import { EmptyState, KeyValues, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
 import { useExecutionPack } from '../../shared/prototype';
 
 const lifecycle = ['VALIDATED', 'CANDIDATE', 'SHADOW', 'ACTIVE'];
@@ -16,7 +16,7 @@ export function PoliciesPage() {
         actions={<button className="button button-secondary" type="button" disabled><RefreshCw size={15} />Artifact 동기화</button>}
       />
 
-      <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} />
+      <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} objective={selectedPack.objective} />
 
       <SectionCard title="정책 라이프사이클" description="승인된 전이만 순서대로 수행합니다.">
         <div className="lifecycle-row lifecycle-flow">
@@ -49,6 +49,22 @@ export function PoliciesPage() {
             description="관리 명령 요청이 생성되면 승인자와 사유를 표시합니다."
             endpoint="GET /v1/reviews"
           />
+        </SectionCard>
+      </div>
+
+      <div className="content-grid content-grid-two">
+        <SectionCard title={`${selectedPack.label} Policy Harness`} description="법규·내규·승인·Provider 계약을 Runtime 정책으로 고정">
+          <div className="policy-harness-list">
+            {selectedPack.policyHarness.map((item) => (
+              <article key={item.title}>
+                <strong>{item.title}</strong>
+                <p>{item.description}</p>
+              </article>
+            ))}
+          </div>
+        </SectionCard>
+        <SectionCard title="Destination Profile" description="외부 대상별 Provider·Tenant·Region·Retention 조건">
+          <KeyValues items={selectedPack.destinationProfile} />
         </SectionCard>
       </div>
 
