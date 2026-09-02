@@ -2,7 +2,7 @@ import { useDashboardSummary } from '../../features/monitoring';
 import { AlertTriangle, ArrowRight, BarChart3, ChevronDown, Database, ShieldCheck, ShieldX, Workflow } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BulletList, DomainSwitch, EmptyState, ErrorState, KeyValues, MetricCard, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
+import { BulletList, EmptyState, ErrorState, KeyValues, MetricCard, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
 import { executionPacks, timeRanges, useExecutionPack } from '../../shared/prototype';
 
 export function OverviewPage() {
@@ -15,44 +15,40 @@ export function OverviewPage() {
 
   const overviewState = summary.isLoading ? 'loading' : summary.isError ? 'error' : summary.data ? 'value' : 'unconnected';
   const selectedBoundaryDetail = selectedPack.boundaries.find((boundary) => boundary.number === selectedBoundary) ?? selectedPack.boundaries[0];
-  const domainPacks = executionPacks.filter((pack) => pack.key !== 'common');
-  const selectedDomainKey = selectedPack.key === 'common' ? 'ai' : selectedPack.key;
 
   return (
     <section className="page-section">
       <PageHeader
-        eyebrow="RUNTIME CONTROL PLANE"
+        eyebrow="EXISTING CONTROL + EXTENDED EXECUTION BOUNDARY"
         title="운영 개요"
-        description="요청부터 데이터 접근, 외부 전송, 응답 검증, 전달까지 전체 Gateway 상태를 확인합니다."
+        description="기존 금융권 통제를 대체하지 않고, 승인 결과를 새로운 외부 실행 경계까지 일관되게 집행합니다."
         actions={<StatusBadge tone={summary.isError ? 'danger' : summary.data ? 'success' : 'warning'}>{summary.isError ? 'API ERROR' : summary.data ? 'REAL DATA' : 'API 연결 대기'}</StatusBadge>}
       />
 
-      <SectionCard title="실행 축 선택" description="AI, SaaS, Digital Asset 축을 같은 라우트 안에서 전환해 정책 Harness와 실행 경계를 비교합니다.">
-        <DomainSwitch
-          label="실행 축 선택"
-          value={selectedDomainKey}
-          options={domainPacks.map((pack) => ({
-            key: pack.key,
-            label: pack.label,
-            description: pack.scope,
-            badge: pack.implementation,
-          }))}
-          onChange={(packKey) => {
-            selectPack(packKey);
-            setSelectedBoundary('01');
-          }}
-        />
-      </SectionCard>
+      <div className="control-boundary-grid">
+        <article className="control-boundary-card">
+          <span className="control-card-number">01</span>
+          <small>EXISTING CONTROL BASELINE</small>
+          <h2>기존 금융권 통제</h2>
+          <StatusBadge tone="info">상속</StatusBadge>
+          <BulletList items={['접근권한·기간제 승인', '기본 마스킹·해제 절차', '기존 DLP Finding', '파일·메일 반출 승인', '암호화·망연계', '서비스 이용 로그']} />
+        </article>
 
-      <div className="content-grid content-grid-two">
-        <SectionCard title="Existing Control Baseline" description="기존 금융권 통제는 대체하지 않고 Runtime 판단의 입력 근거로 사용합니다.">
-          <p className="plain-copy">{selectedPack.baseline}</p>
-          <BulletList items={['접근권한·기간제 승인', '마스킹·해제 절차', 'DLP Finding·반출승인', '감사 로그·사후 소명']} />
-        </SectionCard>
+        <article className="control-boundary-card">
+          <span className="control-card-number">02</span>
+          <small>FPG EXTENDED BOUNDARY</small>
+          <h2>새로운 외부 실행 경계</h2>
+          <StatusBadge tone="purple">확장</StatusBadge>
+          <BulletList items={['Prompt·RAG Context', 'API JSON·Attachment Metadata', 'Provider·Tenant·Region', 'Retention·Training Use', 'Webhook·External Response', 'Protocol Field·Required Exact']} />
+        </article>
 
-        <SectionCard title="FPG Extended Boundary" description="Prompt, API, Webhook, Response처럼 기존 반출 통제 밖의 실행 경계를 다룹니다.">
-          <BulletList items={selectedPack.executionSurfaces} />
-        </SectionCard>
+        <article className="control-boundary-card control-boundary-card-accent">
+          <span className="control-card-number">03</span>
+          <small>SECURITY FIRST</small>
+          <h2>Zero-Unapproved Raw Egress</h2>
+          <p>승인 Scope와 실제 Released Field를 매 실행마다 비교하고 하나의 Decision Trace로 연결합니다.</p>
+          <BulletList items={['승인 조건 재사용·Review 분기', 'Response Leakage 차단', 'Policy·Profile Expiry 탐지']} />
+        </article>
       </div>
 
       <SectionCard title="Execution Pack 선택" description="채널별 Gateway 계약 범위를 선택하면 아래 운영 경계와 버전 컨텍스트가 즉시 바뀝니다.">
@@ -96,10 +92,10 @@ export function OverviewPage() {
         />
       ) : (
         <div className="metric-grid">
-          <MetricCard label="처리 요청" value={summary.data?.requestCount} description="GET /v1/monitoring/overview" state={overviewState} icon={Workflow} />
-          <MetricCard label="Data Access 차단" value={null} description="GET /v1/monitoring/data-access" state="unconnected" icon={Database} tone="amber" />
-          <MetricCard label="Raw Egress 방지" value={summary.data?.blockCount} description="GET /v1/monitoring/overview" state={overviewState} icon={ShieldX} tone="red" />
-          <MetricCard label="Response Leakage" value={null} description="GET /v1/monitoring/privacy" state="unconnected" icon={ShieldCheck} tone="purple" />
+          <MetricCard label="처리 요청" value={summary.data?.requestCount} description="GET /v1/metrics/summary" state={overviewState} icon={Workflow} />
+          <MetricCard label="Data Access 차단" value={null} description="정책 외 내부 데이터 접근" state="unconnected" icon={Database} tone="amber" />
+          <MetricCard label="외부 전송 방지" value={summary.data?.blockCount} description="Raw·금지 Field Egress 차단" state={overviewState} icon={ShieldX} tone="red" />
+          <MetricCard label="결과 Guard" value={null} description="응답·Webhook·State 재검증" state="unconnected" icon={ShieldCheck} tone="purple" />
         </div>
       )}
 

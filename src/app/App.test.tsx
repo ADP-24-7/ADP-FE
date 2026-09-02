@@ -8,7 +8,7 @@ describe('App', () => {
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: '운영 개요' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Workload · Data Access' })).toHaveAttribute('href', '/data-access');
+    expect(screen.getByRole('link', { name: 'Workload · Profiles' })).toHaveAttribute('href', '/data-access');
     expect(screen.getByRole('link', { name: '분석 · Evidence' })).toHaveAttribute('href', '/analysis');
     expect(screen.queryByText('MOCK DATA')).not.toBeInTheDocument();
     expect(screen.queryByText('PROJECT_PROVISIONAL')).not.toBeInTheDocument();
@@ -20,7 +20,7 @@ describe('App', () => {
     render(<App />);
 
     await screen.findByRole('heading', { name: '운영 개요' });
-    await user.click(within(screen.getByRole('tablist', { name: '실행 축 선택' })).getByRole('tab', { name: /SaaS/ }));
+    await user.click(within(screen.getByRole('tablist', { name: 'Execution Pack 선택' })).getByRole('tab', { name: /SaaS/ }));
 
     expect(window.location.pathname).toBe('/overview');
     expect(screen.getByRole('heading', { name: 'SaaS' })).toBeInTheDocument();
@@ -31,7 +31,7 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: /관련 화면으로 이동/ }));
 
     expect(await screen.findByRole('heading', { name: 'Workload · Data Access' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Workload · Data Access' })).toHaveClass('active');
+    expect(screen.getByRole('link', { name: 'Workload · Profiles' })).toHaveClass('active');
     expect(screen.getByLabelText('선택된 Execution Pack')).toHaveTextContent('SaaS');
     expect(screen.getByText(/SaaS 흐름이 DB에 직접 접근하지 않도록/)).toBeInTheDocument();
   });
