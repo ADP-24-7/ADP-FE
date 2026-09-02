@@ -20,6 +20,15 @@ export type ExecutionPack = {
   fieldTreatments: ReadonlyArray<readonly [string, string]>;
   evidenceChecks: ReadonlyArray<readonly [string, string]>;
   runtimeFocus: ReadonlyArray<readonly [string, string]>;
+  defaultProcessingContexts: ReadonlyArray<string>;
+  gatewayRequest: {
+    workloadPlaceholder: string;
+    purposePlaceholder: string;
+    subjectPlaceholder: string;
+    destinationPlaceholder: string;
+    inputLabel: string;
+    inputPlaceholder: string;
+  };
   versionContext: ReadonlyArray<readonly [string, string]>;
   boundaries: ReadonlyArray<{
     number: string;
@@ -108,6 +117,15 @@ export const executionPacks: ExecutionPack[] = [
       ['Decision', 'ALLOW · TRANSFORM · REVIEW · BLOCK'],
       ['Trace', '요청부터 전달까지 단일 Decision Trace'],
     ],
+    defaultProcessingContexts: ['REGULATED_EXTERNAL_EXECUTION'],
+    gatewayRequest: {
+      workloadPlaceholder: '승인된 workload ID',
+      purposePlaceholder: '승인된 purpose code',
+      subjectPlaceholder: '마스킹된 subject scope',
+      destinationPlaceholder: '승인된 destination profile',
+      inputLabel: '실행 입력',
+      inputPlaceholder: '민감한 실제 고객정보 대신 테스트용 입력을 사용하세요.',
+    },
     versionContext: [
       ['Application', '—'],
       ['Policy Snapshot', '—'],
@@ -157,6 +175,15 @@ export const executionPacks: ExecutionPack[] = [
       ['Outbound', 'Provider payload raw-value residual 검사'],
       ['Inbound', 'Response Guard 후 Controlled Delivery'],
     ],
+    defaultProcessingContexts: ['AI_USE', 'CUSTOMER_SUPPORT'],
+    gatewayRequest: {
+      workloadPlaceholder: 'customer-advisory-rag',
+      purposePlaceholder: 'CUSTOMER_SUPPORT',
+      subjectPlaceholder: 'customer:{masked-id}',
+      destinationPlaceholder: 'llm-provider-approved',
+      inputLabel: '사용자 질문',
+      inputPlaceholder: '고객 상담 또는 문서 RAG 테스트 질문을 입력하세요. 실제 고객 원문은 넣지 마세요.',
+    },
     versionContext: [
       ['Application', '—'],
       ['Policy Snapshot', '—'],
@@ -206,6 +233,15 @@ export const executionPacks: ExecutionPack[] = [
       ['Outbound', '허용 Field만 SaaS API로 전송'],
       ['Inbound', 'Webhook·External Response Guard'],
     ],
+    defaultProcessingContexts: ['SAAS_WORKFLOW', 'DOCUMENT_EXPORT'],
+    gatewayRequest: {
+      workloadPlaceholder: 'saas-document-workflow',
+      purposePlaceholder: 'DOCUMENT_COLLABORATION',
+      subjectPlaceholder: 'workspace:{approved-scope}',
+      destinationPlaceholder: 'saas-connector-approved',
+      inputLabel: 'Workflow Payload',
+      inputPlaceholder: '문서 요약, 첨부 메타데이터, Webhook 처리 등 SaaS 업무 Payload를 입력하세요.',
+    },
     versionContext: [
       ['Application', '—'],
       ['Policy Snapshot', '—'],
@@ -255,6 +291,15 @@ export const executionPacks: ExecutionPack[] = [
       ['Outbound', 'Protocol 필수값과 개인정보성 필드 분리'],
       ['Inbound', '외부 상태·이벤트 재검증'],
     ],
+    defaultProcessingContexts: ['DIGITAL_ASSET_SETTLEMENT', 'ONCHAIN_EVENT'],
+    gatewayRequest: {
+      workloadPlaceholder: 'digital-asset-settlement',
+      purposePlaceholder: 'SETTLEMENT_RECONCILIATION',
+      subjectPlaceholder: 'counterparty:{approved-scope}',
+      destinationPlaceholder: 'protocol-network-approved',
+      inputLabel: '정산·이벤트 Payload',
+      inputPlaceholder: '정산 요청, 지갑 참조, 온체인 이벤트 등 테스트 Payload를 입력하세요.',
+    },
     versionContext: [
       ['Application', '—'],
       ['Policy Snapshot', '—'],

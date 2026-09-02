@@ -1,10 +1,13 @@
 import { useMutation } from '@tanstack/react-query';
 import { Play, RotateCcw, TerminalSquare } from 'lucide-react';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { createRuntimeExecution, getRuntimeExecutionTrace, runtimeExecutionCapabilities } from '../../features/runtime-execution';
 import type { RuntimeExecutionRequest, RuntimeExecutionStatus } from '../../features/runtime-execution';
-import { BulletList, EmptyState, ErrorState, KeyValues, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
-import { useExecutionPack } from '../../shared/prototype';
+import { BulletList, DomainSwitch, EmptyState, ErrorState, KeyValues, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
+import { executionPacks, useExecutionPack } from '../../shared/prototype';
+import type { ExecutionPack } from '../../shared/prototype';
+
+type DomainPackKey = Exclude<ExecutionPack['key'], 'common'>;
 
 const actionTone = {
   ALLOW: 'success',
@@ -13,14 +16,18 @@ const actionTone = {
   BLOCK: 'danger',
 } as const;
 
-const targetPipeline = [
-  ['01', 'Request & Authorization', '인증 주체, Workload, 목적, 동의 범위를 확인'],
-  ['02', 'Data Access & Context', '허용된 Dataset, Field, Subject, 기간, 행 수만 조회'],
-  ['03', 'Input Detection & Decision', '민감정보 탐지와 정책 판정, Human Review 분기'],
-  ['04', 'Transform & Outbound Guard', '토큰화 후 외부 전송 Payload를 최종 검사'],
-  ['05', 'Provider & Response Guard', 'LLM 응답의 재식별, 유출, 정책 위반을 재검증'],
-  ['06', 'Controlled Delivery & Audit', '안전한 결과만 전달하고 전 단계 근거를 기록'],
-] as const;
+function createTargetPipeline(pack: ExecutionPack) {
+  const [primarySurface = 'External Payload', secondarySurface = 'Runtime Context', outboundSurface = 'Provider Request', inboundSurface = 'External Response'] = pack.executionSurfaces;
+
+  return [
+    ['01', 'Request & Authorization', `${pack.label} 주체, Workload, 목적, 승인 범위를 확인`],
+    ['02', 'Data Access & Context', `${secondarySurface}에 필요한 Dataset, Field, Subject 범위만 조회`],
+    ['03', 'Input Detection & Decision', `${primarySurface}의 민감정보 탐지와 정책 판정, Review 분기`],
+    ['04', 'Transform & Outbound Guard', `${outboundSurface} 전송 전 Field Treatment와 raw-value residual 검사`],
+    ['05', 'Destination & Response Guard', `${inboundSurface}의 재식별, 상태 오염, 정책 위반을 재검증`],
+    ['06', 'Controlled Delivery & Audit', '안전한 결과만 전달하고 전 단계 Evidence를 하나의 Trace로 기록'],
+  ] as const;
+}
 
 const checkpointDetails = [
   {
@@ -98,18 +105,21 @@ function createIdempotencyKey() {
 }
 
 export function GatewayLabPage() {
-  const { selectedPack } = useExecutionPack();
+  const { selectedPack, selectPack } = useExecutionPack();
   const [workloadId, setWorkloadId] = useState('');
   const [purposeCode, setPurposeCode] = useState('');
   const [subjectScope, setSubjectScope] = useState('');
   const [destinationProfileId, setDestinationProfileId] = useState('');
-  const [processingContextsText, setProcessingContextsText] = useState('AI_USE');
+  const [processingContextsText, setProcessingContextsText] = useState(selectedPack.defaultProcessingContexts.join(', '));
   const [content, setContent] = useState('');
   const [idempotencyKey, setIdempotencyKey] = useState(createIdempotencyKey);
   const [selectedCheckpoint, setSelectedCheckpoint] = useState('01');
 
   const checkpoint = checkpointDetails.find((item) => item.number === selectedCheckpoint) ?? checkpointDetails[0];
   const canExecute = runtimeExecutionCapabilities.canExecute;
+  const domainPacks = executionPacks.filter((pack): pack is ExecutionPack & { key: DomainPackKey } => pack.key !== 'common');
+  const selectedDomainKey: DomainPackKey = selectedPack.key === 'common' ? 'ai' : selectedPack.key;
+  const targetPipeline = createTargetPipeline(selectedPack);
 
   const execution = useMutation({
     mutationFn: async (request: RuntimeExecutionRequest) => {
@@ -142,6 +152,21 @@ export function GatewayLabPage() {
     setIdempotencyKey(createIdempotencyKey());
   }
 
+  function changeExecutionPack(packKey: DomainPackKey) {
+    selectPack(packKey);
+    setSelectedCheckpoint('01');
+    setProcessingContextsText((current) => (
+      selectedPack.defaultProcessingContexts.join(', ') === current
+        ? executionPacks.find((pack) => pack.key === packKey)?.defaultProcessingContexts.join(', ') ?? current
+        : current
+    ));
+    setIdempotencyKey(createIdempotencyKey());
+  }
+
+  useEffect(() => {
+    setProcessingContextsText(selectedPack.defaultProcessingContexts.join(', '));
+  }, [selectedPack.defaultProcessingContexts]);
+
   return (
     <section className="page-section">
       <PageHeader
@@ -152,6 +177,20 @@ export function GatewayLabPage() {
       />
 
       <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} objective={selectedPack.objective} />
+
+      <SectionCard title="Gateway 실행 축" description="라우팅을 바꾸지 않고 AI, SaaS, Digital Asset의 Runtime 계약을 같은 Lab 안에서 비교합니다.">
+        <DomainSwitch
+          label="Gateway 실행 축 선택"
+          value={selectedDomainKey}
+          options={domainPacks.map((pack) => ({
+            key: pack.key,
+            label: pack.label,
+            description: pack.scope,
+            badge: pack.implementation,
+          }))}
+          onChange={changeExecutionPack}
+        />
+      </SectionCard>
 
       <div className="notice notice-security">
         브라우저에는 `X-ADP-API-Key`를 주입하지 않습니다. Admin 인증 또는 Local BFF가 붙기 전까지 실제 Execute는 비활성화합니다.
@@ -167,27 +206,27 @@ export function GatewayLabPage() {
             </div>
             <label className="field">
               <span>Workload ID</span>
-              <input value={workloadId} onChange={(event) => markLogicalRequestChanged(() => setWorkloadId(event.target.value))} placeholder="BE에 등록된 workload ID" required />
+              <input value={workloadId} onChange={(event) => markLogicalRequestChanged(() => setWorkloadId(event.target.value))} placeholder={selectedPack.gatewayRequest.workloadPlaceholder} required />
             </label>
             <label className="field">
               <span>Purpose Code</span>
-              <input value={purposeCode} onChange={(event) => markLogicalRequestChanged(() => setPurposeCode(event.target.value))} placeholder="승인된 purpose code" required />
+              <input value={purposeCode} onChange={(event) => markLogicalRequestChanged(() => setPurposeCode(event.target.value))} placeholder={selectedPack.gatewayRequest.purposePlaceholder} required />
             </label>
             <label className="field">
               <span>Subject Scope</span>
-              <input value={subjectScope} onChange={(event) => markLogicalRequestChanged(() => setSubjectScope(event.target.value))} placeholder="마스킹된 subject scope" required />
+              <input value={subjectScope} onChange={(event) => markLogicalRequestChanged(() => setSubjectScope(event.target.value))} placeholder={selectedPack.gatewayRequest.subjectPlaceholder} required />
             </label>
             <label className="field">
               <span>Destination Profile ID</span>
-              <input value={destinationProfileId} onChange={(event) => markLogicalRequestChanged(() => setDestinationProfileId(event.target.value))} placeholder="BE에 등록된 destination profile" required />
+              <input value={destinationProfileId} onChange={(event) => markLogicalRequestChanged(() => setDestinationProfileId(event.target.value))} placeholder={selectedPack.gatewayRequest.destinationPlaceholder} required />
             </label>
             <label className="field field-full">
               <span>Processing Contexts</span>
-              <input value={processingContextsText} onChange={(event) => markLogicalRequestChanged(() => setProcessingContextsText(event.target.value))} placeholder="AI_USE" required />
+              <input value={processingContextsText} onChange={(event) => markLogicalRequestChanged(() => setProcessingContextsText(event.target.value))} placeholder={selectedPack.defaultProcessingContexts.join(', ')} required />
             </label>
             <label className="field field-full">
-              <span>사용자 질문</span>
-              <textarea value={content} onChange={(event) => markLogicalRequestChanged(() => setContent(event.target.value))} placeholder="민감한 실제 고객정보 대신 테스트용 입력을 사용하세요." rows={8} required />
+              <span>{selectedPack.gatewayRequest.inputLabel}</span>
+              <textarea value={content} onChange={(event) => markLogicalRequestChanged(() => setContent(event.target.value))} placeholder={selectedPack.gatewayRequest.inputPlaceholder} rows={8} required />
             </label>
             <div className="input-meta field-full">
               <span>{content.length} chars</span>
@@ -255,6 +294,15 @@ export function GatewayLabPage() {
             <KeyValues items={selectedPack.runtimeFocus} />
             <BulletList items={selectedPack.executionSurfaces} />
           </SectionCard>
+
+          <div className="content-grid content-grid-two">
+            <SectionCard title="Destination Profile" description="외부 대상별 Provider·Tenant·Region·Retention 조건">
+              <KeyValues items={selectedPack.destinationProfile} />
+            </SectionCard>
+            <SectionCard title="Field Treatment" description="Outbound 전송 전 필드 처리 계약">
+              <KeyValues items={selectedPack.fieldTreatments} />
+            </SectionCard>
+          </div>
 
           <SectionCard title="실행 결과" description="BE의 policyAction, finalAction, digest, audit id만 표시합니다.">
           {execution.isError ? (
