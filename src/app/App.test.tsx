@@ -35,4 +35,23 @@ describe('App', () => {
     expect(screen.getByLabelText('선택된 Execution Pack')).toHaveTextContent('SaaS');
     expect(screen.getByText(/SaaS 흐름이 DB에 직접 접근하지 않도록/)).toBeInTheDocument();
   });
+
+  it('uses the global pack selector for Gateway Lab without a duplicate axis picker', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(await screen.findByRole('link', { name: '운영 개요' }));
+    await screen.findByRole('heading', { name: '운영 개요' });
+    await user.click(screen.getByRole('button', { name: /Pack/ }));
+    await user.click(screen.getByRole('menuitemradio', { name: /Digital Asset/ }));
+    await user.click(screen.getByRole('link', { name: 'Gateway Lab' }));
+
+    expect(await screen.findByRole('heading', { name: 'Gateway Lab' })).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/gateway-lab');
+    expect(screen.queryByRole('tablist', { name: 'Gateway 실행 축 선택' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Gateway 실행 축')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('선택된 Execution Pack')).toHaveTextContent('Digital Asset');
+    expect(screen.getByText('정산·이벤트 Payload')).toBeInTheDocument();
+    expect(screen.getByText('Protocol 필수값과 개인정보성 필드 분리')).toBeInTheDocument();
+  });
 });
