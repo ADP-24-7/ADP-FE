@@ -8,13 +8,13 @@ const executionPackStorageKey = 'adp.selectedExecutionPack';
 
 function readInitialExecutionPackKey(): ExecutionPackKey {
   if (typeof window === 'undefined' || !window.localStorage) {
-    return 'common';
+    return 'ai';
   }
 
   const storedKey = window.localStorage.getItem(executionPackStorageKey);
   const matchedPack = executionPacks.find((pack) => pack.key === storedKey);
 
-  return matchedPack?.key ?? 'common';
+  return matchedPack?.key ?? 'ai';
 }
 
 export function ExecutionPackProvider({ children }: PropsWithChildren) {

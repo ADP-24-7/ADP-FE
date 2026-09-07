@@ -1,70 +1,65 @@
-import { CircleGauge, RefreshCw, RotateCcw, ShieldX } from 'lucide-react';
-import { EmptyState, KeyValues, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
+import { Filter, Search, ShieldAlert } from 'lucide-react';
+import { useState } from 'react';
+import { EmptyState, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
 import { useExecutionPack } from '../../shared/prototype';
 
-const categories = [
-  ['Data Access', '조회 필드·행·기간·차단된 접근', '/v1/monitoring/data-access'],
-  ['Privacy', '탐지·변환·차단·감사 누락', '/v1/monitoring/privacy'],
-  ['Utility', '변환 이후 업무 유용성', '/v1/monitoring/utility'],
-  ['Runtime', '가용성·지연·실패·재시도', '/v1/monitoring/runtime'],
-  ['Governance', '정책 버전·승인·변경 이력', '/v1/monitoring/governance'],
-];
+const findingFilters = ['전체', 'Authorization', 'Purpose · Action', 'Destination', 'Integrity', 'Replay'] as const;
 
 export function MonitoringPage() {
   const { selectedPack } = useExecutionPack();
+  const [selectedFilter, setSelectedFilter] = useState<(typeof findingFilters)[number]>('전체');
 
   return (
     <section className="page-section">
       <PageHeader
-        eyebrow="OBSERVABILITY & RECOVERY"
-        title="모니터링 · Recovery"
-        description={`${selectedPack.label}의 데이터 접근, Privacy, Utility, Runtime, Governance를 분리해 관찰하고 불확실한 전송 상태를 복구합니다.`}
-        actions={<StatusBadge tone="warning">METRICS API 대기</StatusBadge>}
+        eyebrow="CONTROL SIGNALS · VIOLATIONS"
+        title="Security Findings"
+        description="통제가 작동한 이유를 사건 단위 Trace로 연결합니다."
+        actions={<StatusBadge tone="warning">API 연결 대기</StatusBadge>}
       />
 
       <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} objective={selectedPack.objective} />
 
-      <div className="monitoring-grid">
-        {categories.map(([title, description, endpoint]) => (
-          <SectionCard key={title} title={title} description={description}>
-            <div className="metric-placeholder" aria-hidden="true">
-              <span /><span /><span /><span />
-            </div>
-            <EmptyState
-              compact
-              title="API 연결 대기"
-              description="백엔드 집계 API가 응답하면 이 영역에 실제 시계열을 렌더링합니다."
-              endpoint={`GET ${endpoint}`}
-            />
-          </SectionCard>
-        ))}
-      </div>
-
-      <div className="content-grid content-grid-wide-left">
-        <SectionCard title="Recovery Control" description="Timeout 이후 중복 전송과 결과 유실을 막는 운영 절차" actions={<StatusBadge>데이터 없음</StatusBadge>}>
-          <KeyValues
-            items={[
-              ['SENT_UNKNOWN', '—'],
-              ['Outbox Pending', '—'],
-              ['Replay Candidates', '—'],
-              ['Open Incidents', '—'],
-            ]}
-          />
-          <div className="action-row">
-            <button className="button button-secondary" type="button" disabled><RefreshCw size={14} />Reconcile</button>
-            <button className="button button-secondary" type="button" disabled><RotateCcw size={14} />Safe Replay</button>
-            <button className="button button-secondary" type="button" disabled><ShieldX size={14} />Rollback</button>
-          </div>
-        </SectionCard>
-
-        <SectionCard title="Infrastructure Health" description="업무 지표와 분리된 의존성 상태">
-          <EmptyState compact icon={CircleGauge} title="API 연결 대기" description="Gateway, DB, Vault, Provider, Audit Outbox 상태를 연결합니다." endpoint="GET /v1/health" />
-        </SectionCard>
-      </div>
-
-      <SectionCard title={`${selectedPack.label} 관측 지점`} description="실제 수치가 아닌 API 연결 전 관측 계약만 표시합니다.">
-        <KeyValues items={selectedPack.runtimeFocus} />
+      <SectionCard
+        title="Finding Filters"
+        description="유형별 통제 신호를 선택합니다. API 연결 전에는 필터 상태만 변경합니다."
+        actions={<div className="search-field search-field-disabled"><Search size={15} /><input placeholder="API 연결 후 검색 활성화" aria-label="Finding 검색" disabled /></div>}
+      >
+        <div className="filter-chip-row" role="tablist" aria-label="Finding filter">
+          {findingFilters.map((filter) => (
+            <button key={filter} type="button" role="tab" aria-selected={filter === selectedFilter} className={filter === selectedFilter ? 'active' : ''} onClick={() => setSelectedFilter(filter)}>
+              <Filter size={13} />
+              {filter}
+            </button>
+          ))}
+        </div>
       </SectionCard>
+
+      <SectionCard title="Security Findings" description="Severity, Finding, Workload, Decision, Trace를 서버 응답으로 표시">
+        <div className="table-shell">
+          <div className="table-head table-findings">
+            <span>SEVERITY</span><span>FINDING</span><span>WORKLOAD</span><span>DECISION</span><span>TRACE</span>
+          </div>
+          <EmptyState
+            icon={ShieldAlert}
+            title={`${selectedFilter} API 연결 대기`}
+            description="프로토타입의 Synthetic Finding은 사용하지 않습니다. BE Read Model이 준비되면 실제 사건만 표시합니다."
+            endpoint="GET /v1/security-findings"
+          />
+        </div>
+      </SectionCard>
+
+      <div className="content-grid content-grid-three">
+        <SectionCard title="Authorization" description="권한·목적·Subject Scope 위반">
+          <EmptyState compact title="API 연결 대기" description="권한 위반 집계와 최근 Trace를 표시합니다." endpoint="GET /v1/security-findings?category=AUTHORIZATION" />
+        </SectionCard>
+        <SectionCard title="Destination" description="Provider·Tenant·Region·Rail 경계 위반">
+          <EmptyState compact title="API 연결 대기" description="외부 대상 위반 신호를 표시합니다." endpoint="GET /v1/security-findings?category=DESTINATION" />
+        </SectionCard>
+        <SectionCard title="Integrity · Replay" description="Digest mismatch, idempotency, 중복 실행">
+          <EmptyState compact title="API 연결 대기" description="무결성/재시도 통제 결과를 표시합니다." endpoint="GET /v1/security-findings?category=INTEGRITY" />
+        </SectionCard>
+      </div>
     </section>
   );
 }

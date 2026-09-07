@@ -104,7 +104,7 @@ function createIdempotencyKey() {
 
 export function GatewayLabPage() {
   const { selectedPack } = useExecutionPack();
-  const [scenarioMode, setScenarioMode] = useState<'approved' | 'scope-change'>('approved');
+  const [scenarioMode, setScenarioMode] = useState<'approved' | 'scope-change' | 'destination-risk' | 'response-risk'>('approved');
   const [requesterRole, setRequesterRole] = useState<'staff' | 'reviewer'>('staff');
   const [workloadId, setWorkloadId] = useState('');
   const [purposeCode, setPurposeCode] = useState('');
@@ -118,12 +118,27 @@ export function GatewayLabPage() {
   const checkpoint = checkpointDetails.find((item) => item.number === selectedCheckpoint) ?? checkpointDetails[0];
   const canExecute = runtimeExecutionCapabilities.canExecute;
   const targetPipeline = createTargetPipeline(selectedPack);
+  const isDigitalAsset = selectedPack.key === 'digital-asset';
+  const isApprovedScenario = scenarioMode === 'approved';
+  const scenarioOptions = isDigitalAsset
+    ? [
+      ['approved', '정상 결제'],
+      ['scope-change', '금액 한도 초과'],
+      ['destination-risk', 'SENT_UNKNOWN'],
+      ['response-risk', '중복 요청'],
+    ] as const
+    : [
+      ['approved', '승인 범위 일치'],
+      ['scope-change', '권한 범위 초과'],
+      ['destination-risk', '미승인 Provider'],
+      ['response-risk', '응답 재식별 위험'],
+    ] as const;
   const fieldTreatmentRows = selectedPack.fieldTreatments.map(([field, treatment]) => {
     const [primaryTreatment = treatment] = treatment.split(' · ');
     const obligation = treatment.includes('REVIEW') ? 'REVIEW_REQUIRED' : treatment.includes('KEEP_EXACT') ? 'EXACT_REQUIRED' : treatment.includes('TOKEN') ? 'PSEUDONYMIZABLE' : 'MINIMIZABLE';
     return {
       field,
-      requested: scenarioMode === 'scope-change' ? '변경 요청' : '요청',
+      requested: isApprovedScenario ? '요청' : '검토 요청',
       retrieved: 'API 연결 대기',
       obligation,
       treatment: primaryTreatment,
@@ -168,9 +183,9 @@ export function GatewayLabPage() {
   return (
     <section className="page-section">
       <PageHeader
-        eyebrow="END-TO-END CONTRACT LAB"
+        eyebrow={isDigitalAsset ? 'TRANSACTION INTENT → VERIFIED SETTLEMENT' : 'EMPLOYEE REQUEST → SAFE AI RESPONSE'}
         title="Gateway Lab"
-        description={`${selectedPack.label} Pack 기준으로 승인 범위, 외부 전송 전 Field Treatment, 응답 Guard를 한 화면에서 검증합니다.`}
+        description={isDigitalAsset ? '거래 의도부터 정책 검증, 외부 상태 확인과 정산 복구까지 한 번에 검증합니다.' : '은행원의 요청부터 데이터 최소화, AI 응답 재검사와 최종 전달까지 한 번에 비교합니다.'}
         actions={<StatusBadge tone="warning">AUTH REQUIRED</StatusBadge>}
       />
 
@@ -181,26 +196,30 @@ export function GatewayLabPage() {
       </div>
 
       <div className="lab-toolbar" aria-label="Gateway Lab controls">
-        <div className="segmented-control" role="tablist" aria-label="Gateway scenario">
-          <button type="button" role="tab" aria-selected={scenarioMode === 'approved'} className={scenarioMode === 'approved' ? 'active' : ''} onClick={() => setScenarioMode('approved')}>승인 범위 일치</button>
-          <button type="button" role="tab" aria-selected={scenarioMode === 'scope-change'} className={scenarioMode === 'scope-change' ? 'active' : ''} onClick={() => setScenarioMode('scope-change')}>Scope 변경 요청</button>
+        <div>
+          <span className="toolbar-label">시나리오</span>
+          <div className="segmented-control" role="tablist" aria-label="Gateway scenario">
+            {scenarioOptions.map(([key, label]) => (
+              <button key={key} type="button" role="tab" aria-selected={scenarioMode === key} className={scenarioMode === key ? 'active' : ''} onClick={() => setScenarioMode(key)}>{label}</button>
+            ))}
+          </div>
         </div>
         <div className="segmented-control segmented-control-muted" role="tablist" aria-label="Requester role">
-          <button type="button" role="tab" aria-selected={requesterRole === 'staff'} className={requesterRole === 'staff' ? 'active' : ''} onClick={() => setRequesterRole('staff')}>상담직원</button>
-          <button type="button" role="tab" aria-selected={requesterRole === 'reviewer'} className={requesterRole === 'reviewer' ? 'active' : ''} onClick={() => setRequesterRole('reviewer')}>여신심사 담당자</button>
+          <button type="button" role="tab" aria-selected={requesterRole === 'staff'} className={requesterRole === 'staff' ? 'active' : ''} onClick={() => setRequesterRole('staff')}>{isDigitalAsset ? '결제운영자' : '상담직원'}</button>
+          <button type="button" role="tab" aria-selected={requesterRole === 'reviewer'} className={requesterRole === 'reviewer' ? 'active' : ''} onClick={() => setRequesterRole('reviewer')}>{isDigitalAsset ? '정산 담당자' : '여신심사 담당자'}</button>
         </div>
-        <StatusBadge tone="purple">SYNTHETIC SCENARIO</StatusBadge>
+        <StatusBadge tone="purple">NO MOCK RESULT</StatusBadge>
       </div>
 
-      <section className={scenarioMode === 'approved' ? 'policy-application-card policy-application-card-approved' : 'policy-application-card'}>
+      <section className={isApprovedScenario ? 'policy-application-card policy-application-card-approved' : 'policy-application-card'}>
         <div className="policy-application-hero">
           <span className="policy-application-icon" aria-hidden="true"><ShieldCheck size={24} /></span>
           <div>
             <p>PRE-APPROVED POLICY APPLIED</p>
-            <h2>{scenarioMode === 'approved' ? '사전 승인 정책 재사용 가능' : 'Scope 변경 요청 검토 필요'}</h2>
-            <span>{scenarioMode === 'approved' ? 'Gateway가 임의로 허용하지 않고 기존 Approval Reference와 현재 요청을 비교합니다.' : '승인된 목적과 다른 전송 범위는 Review 경로로 분기되어야 합니다.'}</span>
+            <h2>{isApprovedScenario ? '사전 승인 정책 재사용 가능' : scenarioMode === 'scope-change' ? '승인 범위 변경 검토 필요' : scenarioMode === 'destination-risk' ? '외부 대상 상태 확인 필요' : '응답 재검증 필요'}</h2>
+            <span>{isApprovedScenario ? 'Gateway가 임의로 허용하지 않고 기존 Approval Reference와 현재 요청을 비교합니다.' : isDigitalAsset ? 'FPG는 거래 적격성을 재판정하지 않고 승인된 거래 의도와 외부 상태/정산 결과를 검증합니다.' : '승인된 목적과 다른 전송 범위는 Review 경로로 분기되어야 합니다.'}</span>
           </div>
-          <StatusBadge tone={scenarioMode === 'approved' ? 'success' : 'warning'}>{scenarioMode === 'approved' ? 'REUSE_ALLOWED' : 'REVIEW_REQUIRED'}</StatusBadge>
+          <StatusBadge tone={isApprovedScenario ? 'success' : 'warning'}>{isApprovedScenario ? 'REUSE_ALLOWED' : 'REVIEW_REQUIRED'}</StatusBadge>
         </div>
         <KeyValues
           items={[
@@ -211,19 +230,19 @@ export function GatewayLabPage() {
             ['Data Profile', selectedPack.scope],
             ['Destination', destinationProfileId || selectedPack.destinationProfile[0]?.[1] || '입력 대기'],
             ['Execution Pack', selectedPack.label],
-            ['Scope Match', scenarioMode === 'approved' ? 'MATCH' : 'REVIEW'],
+            ['Scope Match', isApprovedScenario ? 'MATCH' : 'REVIEW'],
           ]}
         />
       </section>
 
       <div className="gateway-prototype-grid">
-        <SectionCard title="사용자 요청" description="업무 목적과 승인 Scope를 함께 제출합니다.">
+        <SectionCard title={isDigitalAsset ? '거래 요청' : '사용자 요청'} description="업무 목적과 실행 범위">
           <form className="form-grid compact-form-grid" onSubmit={submit}>
             <div className="requester-role-card field-full">
               <span aria-hidden="true"><BriefcaseBusiness size={20} /></span>
               <div>
                 <small>ROLE</small>
-                <strong>{requesterRole === 'staff' ? '상담직원' : '여신심사 담당자'}</strong>
+                <strong>{requesterRole === 'staff' ? (isDigitalAsset ? '카드결제 운영자' : '상담직원') : (isDigitalAsset ? '정산 담당자' : '여신심사 담당자')}</strong>
               </div>
             </div>
             <label className="field">
@@ -254,8 +273,8 @@ export function GatewayLabPage() {
               items={[
                 ['Purpose', purposeCode || '입력 대기'],
                 ['Subject Scope', subjectScope || '입력 대기'],
-                ['Requested Change', scenarioMode === 'scope-change' ? '있음' : '없음'],
-                ['Approval Reuse', scenarioMode === 'approved' ? '동일 조건' : 'Review 필요'],
+                ['Requested Change', isApprovedScenario ? '없음' : '있음'],
+                ['Approval Reuse', isApprovedScenario ? '동일 조건' : 'Review 필요'],
               ]}
             />
             <div className="input-meta field-full">
@@ -279,7 +298,7 @@ export function GatewayLabPage() {
           </form>
         </SectionCard>
 
-        <SectionCard title="외부 전송 전 데이터 미리보기" description="Requested → Retrieved → Released 차이와 Field별 처리 근거">
+        <SectionCard title={isDigitalAsset ? '실행 전 경계 검증' : '전송 전 데이터 미리보기'} description={isDigitalAsset ? '공개 정보와 가치사용 경계 표시' : '원본 대신 외부 전송값과 처리 근거 표시'}>
           <div className="field-treatment-table" role="table" aria-label="Field treatment preview">
             <div className="field-treatment-head" role="row">
               <span>FIELD</span>
@@ -291,7 +310,7 @@ export function GatewayLabPage() {
             {fieldTreatmentRows.map((row) => (
               <div className="field-treatment-row" role="row" key={row.field}>
                 <strong>{row.field}</strong>
-                <StatusBadge tone={row.requested === '변경 요청' ? 'warning' : 'info'}>{row.requested}</StatusBadge>
+                <StatusBadge tone={row.requested === '검토 요청' ? 'warning' : 'info'}>{row.requested}</StatusBadge>
                 <span>{row.retrieved}</span>
                 <span>{row.obligation}</span>
                 <StatusBadge tone={row.treatment.includes('BLOCK') || row.treatment.includes('DENY') ? 'danger' : row.treatment.includes('TOKEN') ? 'purple' : 'success'}>{row.treatment}</StatusBadge>
@@ -307,7 +326,7 @@ export function GatewayLabPage() {
           </div>
         </SectionCard>
 
-        <SectionCard title="외부 응답 및 검증" description="외부 응답도 사용자 전달 전에 다시 검사합니다.">
+        <SectionCard title={isDigitalAsset ? '외부 결과 및 정산 검증' : 'AI 응답 및 검증 결과'} description="외부 결과를 그대로 전달하지 않고 다시 검사합니다.">
           {execution.data ? (
             <div className="result-stack">
               <div className="result-summary">
