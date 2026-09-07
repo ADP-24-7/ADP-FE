@@ -1,5 +1,7 @@
 # ADP-FE UI 적용 프롬프트
 
+> 이 문서는 초기 UI 작업 이력입니다. 아래의 과거 Endpoint 예시는 현재 BE 계약이 아니며, 실제 연동은 `docs/api-integration.md`와 `docs/unconnected-api-inventory.md`를 기준으로 합니다.
+
 아래 프롬프트는 Codex 등 코드 작업 도구에 단계별로 지시할 때 사용합니다. 한 번에 전부 적용하기보다 단계별 브랜치 또는 커밋으로 나누는 편이 안전합니다.
 
 ## Prompt 1 — Overlay 적용 및 Mock 런타임 제거
@@ -41,16 +43,15 @@ ADP-FE 전체 페이지에 서버 데이터 상태 규칙을 적용해라.
 ## Prompt 3 — Overview 실제 API 연결
 
 ```text
-OverviewPage를 GET /v1/monitoring/overview에 연결해라.
+OverviewPage의 Backend 연결 상태는 GET /actuator/health/readiness에 연결하고, 운영 집계는 Read Model API가 구현될 때까지 미연결 상태로 유지해라.
 
 기존 features/monitoring/api, hooks, model 구조를 유지한다. TanStack Query의 isLoading, isError, data 상태를 모두 처리한다.
 
 검증 항목:
-- requestCount=0을 빈 데이터로 판단하지 않는다.
-- 응답 자체가 null인 경우 빈 상태를 표시한다.
+- readiness `UP`과 운영 집계 데이터 존재를 같은 의미로 취급하지 않는다.
+- 집계 API가 없으면 숫자를 만들지 않고 미연결 상태를 표시한다.
 - 실패 시 기존 숫자를 유지해 성공처럼 보이게 하지 않는다.
-- 새로고침 버튼으로 refetch할 수 있다.
-- Mock handler의 provisionalDashboardSummary를 화면에서 사용하지 않는다.
+- readiness는 주기적으로 refetch한다.
 - 응답 타입이 BE OpenAPI와 다르면 타입을 서버 계약 기준으로 수정하고 docs/api-integration.md도 갱신한다.
 ```
 
@@ -62,9 +63,9 @@ GatewayLabPage를 단일 POST /v1/runtime/executions API에 연결해라.
 FE가 Detection, Decision, Transform, Connector API를 순차 호출해서 오케스트레이션하지 않도록 한다. BE가 반환한 finalAction, reasonCodes, policyVersion, artifactVersion, stages, privacy-safe output만 표시한다.
 
 요구사항:
-- workloadId, purposeCode, subjectScope, providerProfileId, 입력 내용을 사용자가 직접 입력한다.
+- institutionId, approvalReference, workloadId, purposeCode, subjectScope, destinationProfileId, processingContexts, 입력 내용을 사용자가 직접 입력한다.
 - 샘플 개인정보나 샘플 AWS credential을 자동 주입하지 않는다.
-- idempotencyKey는 실행마다 안전하게 생성한다.
+- idempotencyKey는 논리 요청 동안 유지하고 입력 변경 또는 새 실행에서만 갱신한다.
 - 원문 입력은 Local Storage, Session Storage, console, analytics에 저장하지 않는다.
 - 실행 전, 실행 중, 성공, REVIEW, BLOCK, 실패 상태를 구분한다.
 - 서버가 raw data나 token map을 반환하더라도 UI에 렌더링하지 말고 계약 위반으로 처리한다.
@@ -77,14 +78,11 @@ FE가 Detection, Decision, Transform, Connector API를 순차 호출해서 오�
 PoliciesPage의 빈 상태 UI를 실제 정책 API에 점진적으로 연결해라.
 
 필요 API:
-- GET /v1/policies
-- GET /v1/policies/{policyId}
-- GET /v1/review-items?type=POLICY
-- POST /v1/policies/{policyId}/shadow
-- POST /v1/policies/{policyId}/activate
-- POST /v1/policies/{policyId}/rollback
+- GET /api/admin/policy-lifecycle/{artifactId}/versions/{artifactVersion}
+- POST /api/admin/policy-lifecycle
+- POST /api/admin/policy-lifecycle/{artifactId}/versions/{artifactVersion}/transitions
 
-관리 명령에는 reason, expectedVersion, idempotencyKey, 필요한 경우 approvalId를 포함한다. 확인 Modal에서 작업 대상과 영향을 보여주되 비밀번호나 민감값을 다시 입력받지 않는다.
+현재 BE에는 Review Queue API가 없으므로 별도 미연결 상태로 둔다. 관리 명령에는 서버 계약의 targetStage와 reasonCode를 사용한다. 확인 Modal에서 작업 대상과 영향을 보여주되 비밀번호나 민감값을 다시 입력받지 않는다.
 
 VALIDATED, CANDIDATE, SHADOW, ACTIVE 상태를 실제 서버 응답으로만 활성화한다. 활성 정책이 없으면 그대로 '활성 정책 없음'을 표시한다. 존재하지 않는 policy-v1 같은 값을 만들지 않는다.
 ```
@@ -104,7 +102,8 @@ Monitoring 범주:
 공통 필터는 from, to, workloadId, policyVersion으로 통일하고 UTC 기준을 표시한다. 시계열 응답이 비어 있으면 빈 차트를 그리지 말고 Empty State를 표시한다.
 
 Audit 요구사항:
-- Trace ID 검색
+- Execution ID Evidence Pack 조회
+- Institution·Workload 범위가 적용된 실행 목록
 - 안정적인 최신순 정렬
 - 페이지네이션 또는 cursor 처리
 - policyAction과 finalAction 분리

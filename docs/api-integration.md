@@ -1,96 +1,75 @@
 # API Integration
 
-## Mode
+## Contract Baseline
 
-일반 개발 실행은 `VITE_API_MODE=real`을 기본으로 사용합니다. Axios는 same-origin `/v1/**` 요청을 보내고, 로컬에서는 Vite proxy가 `VITE_API_BASE_URL`로 전달합니다. 배포 환경에서는 같은 `/v1/**` 경로를 reverse proxy가 처리해야 합니다.
+- Backend source: `ADP-BE origin/main`
+- Backend commit: `b5d8d289c76843b064c41d92ee3d8aad987c468c`
+- Reviewed: 2026-09-07
+- Product plan: Notion `개발단계 추적`
 
-MSW는 브라우저 bootstrap에서 시작하지 않습니다. MSW handler는 contract test에서만 사용하며, 운영 UI가 Mock 숫자나 임시 Trace를 생성하지 않도록 유지합니다.
+Controller, request/response DTO, controller test를 함께 확인한 결과만 연결 대상으로 분류합니다. Notion의 목표 API와 FE의 화면 문구만 존재하는 경로는 구현 완료로 보지 않습니다.
 
-## Planned Endpoints
+## Connected Endpoints
 
-| Page | Endpoints |
-| --- | --- |
-| Overview | `GET /v1/monitoring/overview` |
-| Workload · Data Access | `GET /v1/workloads`, `GET /v1/data-access/decisions` |
-| Gateway Lab | `POST /v1/runtime/executions`, `GET /v1/runtime/executions/{executionId}`, `GET /v1/runtime/executions/{executionId}/trace` |
-| Policy artifacts | `POST /v1/policy-evaluation-artifacts`, `GET /v1/policy-evaluation-artifacts/{artifactId}` |
-| Policies | `GET /v1/policies`, `GET /v1/policies/{policyId}`, `POST /v1/policies/{policyId}/shadow`, `POST /v1/policies/{policyId}/activate`, `POST /v1/policies/{policyId}/rollback` |
-| Monitoring | `/v1/monitoring/runtime`, `/v1/monitoring/privacy`, `/v1/monitoring/governance` |
-| Audit | `GET /v1/audit-events` |
+| FE | Method | Endpoint | BE role | State |
+| --- | --- | --- | --- | --- |
+| Gateway Lab | POST | `/v1/runtime/executions` | `RUNTIME_EXECUTOR` | 연결 |
+| Gateway Lab | GET | `/v1/runtime/executions/{executionId}` | `RUNTIME_EXECUTOR` | API client 연결 |
+| Gateway Lab | GET | `/v1/runtime/executions/{executionId}/trace` | `RUNTIME_EXECUTOR` | 연결 |
+| Workload · Data Access | POST | `/api/runtime/context/preview` | `RUNTIME_EXECUTOR` | 로컬 Preview 연결 |
+| Workload · Data Access | POST | `/api/runtime/data-access/preview` | `RUNTIME_EXECUTOR` | 원문 Record 포함으로 UI 미사용 |
+| Decision Trace | GET | `/api/admin/audit/executions` | `OPERATOR` | 연결 |
+| Decision Trace | GET | `/api/admin/audit/executions/{executionId}/evidence` | `PRIVILEGED_OPERATOR` | 연결 |
+| 정책 · 승인 | GET | `/api/admin/policy-lifecycle/{artifactId}/versions/{artifactVersion}` | `AUDITOR` 이상 | 연결 |
+| 정책 · 승인 | POST | `/api/admin/policy-lifecycle` | `OPERATOR` 이상 | API client만 제공 |
+| 정책 · 승인 | POST | `/api/admin/policy-lifecycle/{artifactId}/versions/{artifactVersion}/transitions` | 단계별 Maker/Checker | API client만 제공 |
+| Runtime 상태 | GET | `/actuator/health/readiness` | Public | 프록시 가능 |
+| Metrics | GET | `/actuator/prometheus` | Auth 또는 Public 설정 | 프록시 가능 |
 
-Gateway Lab은 Detection, Decision, Transform API를 직접 조합하지 않습니다. FE orchestration boundary는 runtime execution API 하나로 유지합니다. 현재 BE #5에서 실제 관측 가능한 stage는 `RECEIVED`, `AUTHORIZATION`, `RETRIEVAL`, `CANONICAL_CONTEXT`, `DECISION`이며, Transform/Provider/Response Guard/Audit는 Target Pipeline으로만 구분해 표시합니다.
+Policy create/transition은 서버 상태를 변경하므로 조회 UI와 분리했습니다. Admin 인증·권한 UX와 확인 절차가 정해지기 전에는 화면에서 임의 실행하지 않습니다.
 
-브라우저 FE는 `X-ADP-API-Key`를 환경변수로 주입하지 않습니다. Admin 인증 또는 Local BFF에서 서버 측 credential을 붙이기 전까지 Gateway Lab의 Execute control은 비활성화합니다.
+## Local BFF Boundary
 
-Audit 화면의 Trace ID 검색은 원문 재구성이 아니라 `GET /v1/audit-events?traceId={traceId}` 또는 Runtime Execution trace API의 privacy-safe 응답을 표시하는 흐름으로 연결합니다.
+브라우저 코드에는 API Key와 로컬 사용자 헤더를 넣지 않습니다. `VITE_LOCAL_BFF_ENABLED=true`일 때 Vite 개발 서버가 proxy 요청에만 아래 서버 환경변수를 사용합니다.
 
-## Runtime Execution Contract
+```dotenv
+VITE_LOCAL_BFF_ENABLED=true
+ADP_LOCAL_RUNTIME_API_KEY=local-dev-api-key
+ADP_LOCAL_USER_ID=operator-local
+ADP_LOCAL_USER_ROLES=OPERATOR,PRIVILEGED_OPERATOR
+```
+
+`ADP_LOCAL_*`에는 `VITE_` 접두사가 없으므로 client bundle에 포함되지 않습니다. 이 방식은 로컬 E2E 검증 전용이며 배포 환경에서는 Admin User 인증을 처리하는 BFF 또는 API Gateway가 같은 역할을 맡아야 합니다.
+
+## Runtime Request
 
 ```ts
 type RuntimeExecutionRequest = {
+  institutionId: string;
+  approvalReference: string;
   workloadId: string;
   purposeCode: string;
   subjectScope: string;
-  providerProfileId: string;
+  destinationProfileId: string;
   idempotencyKey: string;
   processingContexts: string[];
   input: Record<string, unknown>;
 };
-
-type RuntimeExecution = {
-  executionId: string;
-  status: 'DECIDED' | 'BLOCKED' | 'FAILED';
-  decisionId: string;
-  policyAction: PolicyAction;
-  finalAction: FinalAction;
-  authorizationResult: 'ALLOWED' | 'DENIED';
-  applicabilityResult: 'APPLICABLE' | 'NOT_APPLICABLE' | 'INCOMPLETE';
-  runtimeContextDigest: string;
-  policyVersion?: string;
-  snapshotDigest?: string;
-  sourceArtifactId?: string;
-  sourceArtifactVersion?: string;
-  sourceArtifactDigestAlgorithm?: string;
-  sourceArtifactDigestValue?: string;
-  connectorStatus?: string;
-  auditId?: string;
-};
-
-type RuntimeExecutionTrace = {
-  executionId: string;
-  traceId: string;
-  status: RuntimeExecutionStatus;
-  stages: Array<{
-    stage: 'RECEIVED' | 'AUTHORIZATION' | 'RETRIEVAL' | 'CANONICAL_CONTEXT' | 'DECISION' | 'RUNTIME_EXECUTION';
-    status: RuntimeExecutionStatus;
-    observedAt?: string;
-  }>;
-};
 ```
 
-## Runtime Action Contract
+AI Pack 입력은 `input.prompt`를 사용합니다. 현재 Digital Asset Thin E2E 입력은 정확히 `customerId`, `accountId`, `walletAddress`, `assetId`, `amount` 다섯 필드를 요구합니다. 다만 최신 Notion 기준의 `ApprovedTransaction + OutboundRequest` Realignment 계약은 아직 확정되지 않았으므로 Digital Asset UI는 현재 계약과 향후 계약을 혼동하지 않아야 합니다.
 
-FE에서 허용하는 policy/final action은 다음 값으로 고정합니다.
+## Runtime Flow
 
-```ts
-type PolicyAction = 'ALLOW' | 'TRANSFORM' | 'REVIEW' | 'BLOCK';
-type FinalAction = 'ALLOW' | 'TRANSFORM' | 'REVIEW' | 'BLOCK';
+```text
+POST /v1/runtime/executions
+  -> executionId
+  -> GET /v1/runtime/executions/{executionId}/trace
+  -> observed stages + privacy-safe evidence
 ```
 
-`policy_action`과 `final_action`은 별도로 표시하고 저장합니다.
+FE가 Detection, Decision, Transform 내부 API를 직접 조합하지 않습니다. `policyAction`과 `finalAction`은 별도 필드로 유지하고, Raw Prompt·고객/계좌 원문·Token Map은 브라우저 저장소나 로그에 기록하지 않습니다.
 
-## Error Contract
+## Error Handling
 
-BE error response는 다음 필드를 기준으로 normalize합니다.
-
-```ts
-type ApiError = {
-  status?: number;
-  errorCode: string;
-  message: string;
-  requestId?: string;
-  traceId?: string;
-};
-```
-
-전환 기간 동안 legacy `reasonCode`는 `errorCode`로 normalize합니다.
+401, 403, 404, 409, 422와 네트워크 오류는 공통 `normalizeApiError`를 통해 `status`, `errorCode`, `message`, `requestId`, `traceId`로 정규화합니다. 데이터 없음과 API 오류는 별도 UI 상태로 표시합니다.

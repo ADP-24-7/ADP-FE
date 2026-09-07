@@ -44,20 +44,20 @@ export function MonitoringPage() {
             icon={ShieldAlert}
             title={`${selectedFilter} API 연결 대기`}
             description="프로토타입의 Synthetic Finding은 사용하지 않습니다. BE Read Model이 준비되면 실제 사건만 표시합니다."
-            endpoint="GET /v1/security-findings"
+            endpoint="Security Findings Read Model API 미구현"
           />
         </div>
       </SectionCard>
 
       <div className="content-grid content-grid-three">
         <SectionCard title="Authorization" description="권한·목적·Subject Scope 위반">
-          <EmptyState compact title="API 연결 대기" description="권한 위반 집계와 최근 Trace를 표시합니다." endpoint="GET /v1/security-findings?category=AUTHORIZATION" />
+          <EmptyState compact title="API 연결 대기" description="권한 위반 집계와 최근 Trace를 표시합니다." endpoint="Authorization Finding API 미구현" />
         </SectionCard>
         <SectionCard title="Destination" description="Provider·Tenant·Region·Rail 경계 위반">
-          <EmptyState compact title="API 연결 대기" description="외부 대상 위반 신호를 표시합니다." endpoint="GET /v1/security-findings?category=DESTINATION" />
+          <EmptyState compact title="API 연결 대기" description="외부 대상 위반 신호를 표시합니다." endpoint="Destination Finding API 미구현" />
         </SectionCard>
         <SectionCard title="Integrity · Replay" description="Digest mismatch, idempotency, 중복 실행">
-          <EmptyState compact title="API 연결 대기" description="무결성/재시도 통제 결과를 표시합니다." endpoint="GET /v1/security-findings?category=INTEGRITY" />
+          <EmptyState compact title="API 연결 대기" description="무결성/재시도 통제 결과를 표시합니다." endpoint="Integrity Finding API 미구현" />
         </SectionCard>
       </div>
     </section>
