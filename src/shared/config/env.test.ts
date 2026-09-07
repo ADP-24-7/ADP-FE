@@ -11,6 +11,7 @@ function createEnv(overrides: Partial<ImportMetaEnv>): ImportMetaEnv {
     VITE_APP_ENV: 'local',
     VITE_API_MODE: 'mock',
     VITE_API_BASE_URL: 'http://localhost:8080',
+    VITE_LOCAL_BFF_ENABLED: 'false',
     ...overrides,
   };
 }
@@ -32,5 +33,10 @@ describe('env parsing', () => {
       appEnv: 'prod',
       apiMode: 'real',
     });
+  });
+
+  it('enables the credential proxy only in local environment', () => {
+    expect(parseEnv(createEnv({ VITE_LOCAL_BFF_ENABLED: 'true' })).localBffEnabled).toBe(true);
+    expect(parseEnv(createEnv({ VITE_APP_ENV: 'prod', VITE_API_MODE: 'real', VITE_LOCAL_BFF_ENABLED: 'true' })).localBffEnabled).toBe(false);
   });
 });

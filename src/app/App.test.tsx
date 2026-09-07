@@ -31,7 +31,8 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: '정책 · 승인' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /정책 · 승인/ })).toHaveClass('active');
     expect(screen.getByLabelText('선택된 Execution Pack')).toHaveTextContent('Digital Asset');
-    expect(screen.getByText('STABLECOIN_CARD_SPEND')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Policy Lifecycle 조회' })).toBeInTheDocument();
+    expect(screen.getByText(/정확한 Artifact ID\/Version 조회/)).toBeInTheDocument();
   });
 
   it('uses the global pack selector for Gateway Lab without a duplicate axis picker', async () => {
@@ -48,7 +49,8 @@ describe('App', () => {
     expect(screen.queryByRole('tablist', { name: 'Gateway 실행 축 선택' })).not.toBeInTheDocument();
     expect(screen.queryByText('Gateway 실행 축')).not.toBeInTheDocument();
     expect(screen.getByLabelText('선택된 Execution Pack')).toHaveTextContent('Digital Asset');
-    expect(screen.getByText('정산·이벤트 Payload')).toBeInTheDocument();
-    expect(screen.getByText('Protocol 필수값과 개인정보성 필드 분리')).toBeInTheDocument();
+    expect(screen.getByLabelText('선택된 Execution Pack')).toHaveTextContent('Digital Asset');
+    expect(screen.getByRole('textbox', { name: 'Customer ID' })).toBeInTheDocument();
+    expect(screen.getByRole('spinbutton', { name: 'Amount' })).toBeInTheDocument();
   });
 });

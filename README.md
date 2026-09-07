@@ -68,8 +68,12 @@ cp .env.example .env.local
 | `VITE_API_BASE_URL` | ADP BE API base URL |
 | `VITE_API_MODE` | 기본값 `real`; 테스트 fixture 검증 시에만 `mock` 사용 |
 | `VITE_APP_ENV` | `local`, `dev`, `staging`, `prod` |
+| `VITE_LOCAL_BFF_ENABLED` | 로컬 Vite credential proxy 활성화 여부 |
+| `ADP_LOCAL_RUNTIME_API_KEY` | Vite 서버 전용 로컬 Runtime API Key. 브라우저 번들에 포함되지 않음 |
+| `ADP_LOCAL_USER_ID` | 로컬 Admin API 검증용 사용자 ID |
+| `ADP_LOCAL_USER_ROLES` | 로컬 Admin API 검증용 역할 목록 |
 
-일반 `npm run dev`는 MSW browser worker를 시작하지 않습니다. 로컬 화면은 `/v1` Vite proxy를 통해 실제 BE에 연결됩니다.
+일반 `npm run dev`는 MSW browser worker를 시작하지 않습니다. 로컬 화면은 Vite proxy를 통해 실제 BE에 연결하며, `ADP_LOCAL_*` credential은 개발 서버에서만 사용합니다.
 
 ## Make 명령
 
@@ -88,7 +92,7 @@ make check
 - 계좌 원문, 토큰 맵, 민감 필드 원문은 저장하지 않습니다.
 - `policy_action`과 `final_action`은 별도 필드로 유지합니다.
 - Runtime action은 `ALLOW`, `TRANSFORM`, `REVIEW`, `BLOCK` 중 하나로 제한합니다.
-- 브라우저에는 `X-ADP-API-Key`를 노출하지 않습니다. Gateway Lab Execute는 Admin 인증 또는 Local BFF 연결 전까지 비활성화합니다.
+- 브라우저에는 `X-ADP-API-Key`를 노출하지 않습니다. Gateway Lab Execute는 로컬 BFF 또는 배포 환경의 Admin 인증 경계가 연결된 경우에만 활성화합니다.
 - Gateway Lab은 `/v1/runtime/executions` API를 중심으로 연결하고 POST 응답의 `executionId`로 `/trace`를 조회합니다.
 - Mock 숫자, 정책 버전, Trace ID를 운영 UI에서 자동 생성하지 않습니다.
 - Workload · Data Access 화면은 자유 SQL이 아니라 서버가 정의한 Workload, Retrieval Profile, Data Access Decision API를 표시하는 경계로 둡니다.
@@ -101,4 +105,4 @@ npm run test
 npm run build
 ```
 
-자세한 내용은 [docs/architecture.md](docs/architecture.md)와 [docs/api-integration.md](docs/api-integration.md)를 참고합니다.
+자세한 내용은 [docs/architecture.md](docs/architecture.md), [docs/api-integration.md](docs/api-integration.md), [docs/unconnected-api-inventory.md](docs/unconnected-api-inventory.md), [docs/local-api-verification.md](docs/local-api-verification.md)를 참고합니다.

@@ -1,17 +1,24 @@
 # Backend Phase Mapping
 
-이 문서는 BE 단계별 구현 범위와 FE 연결 위치를 추적하기 위한 작업 문서입니다.
+기준은 2026-09-07 `ADP-BE origin/main@b5d8d289`와 Notion `개발단계 추적`입니다.
 
-| BE Phase | FE Area | Notes |
+| Backend scope | FE area | Current integration |
 | --- | --- | --- |
-| Auth and workload context | `features/auth`, `features/workloads` | 관리자 세션, workload scope, role 표시 |
-| Data access boundary | `features/workloads`, `pages/data-access` | Workload registry, retrieval profile, data access decision 조회 |
-| Runtime execution | `features/runtime-execution`, `pages/gateway-lab` | `POST /v1/runtime/executions` 중심 orchestration |
-| Detection | `features/detection`, `pages/gateway-lab` | execution trace stage view model |
-| Runtime decision | `features/runtime-decision`, `pages/gateway-lab` | execution trace stage view model, `policy_action`, `final_action` 분리 |
-| Transformation | `features/transformation`, `pages/gateway-lab` | execution trace stage view model, 원문 prompt 저장 없이 preview metadata 표시 |
-| Analysis and evaluation | `features/analysis`, `pages/analysis` | 평가 결과와 분석 대시보드 표시 |
-| Policy lifecycle | `features/policy-lifecycle`, `pages/policies` | policy evaluation artifact와 policy shadow, activate, rollback workflow |
-| Audit trace | `features/audit-trace`, `pages/audit` | `/v1/audit-events` 기반 검색과 상세 표시 |
+| BE-7 AI Full E2E | Gateway Lab | Runtime POST -> executionId -> trace 연결 |
+| BE-8 Digital Asset Thin E2E | Gateway Lab | 현재 Purchase DTO 연결 가능, Runtime Realignment 후 재동기화 필요 |
+| BE-9A Idempotency | Gateway Lab | 논리 요청 동안 동일 key 유지, 입력 변경/새 실행 시 갱신 |
+| BE-9B Recovery | Runtime · Recovery | Runtime/Audit 증적에 포함, 집계·incident API 대기 |
+| BE-10 Lifecycle Skeleton | 정책 · 승인 | 정확한 Artifact 조회 연결, create/transition client 제공 |
+| BE-11A Observability | 통합 관제, Monitoring | Actuator/Prometheus 원천은 존재, FE용 aggregate API 대기 |
+| BE-11B Audit Read Model | Decision Trace | 목록 및 privileged Evidence Pack 연결 |
+| AI-EVAL-0 | Gateway Lab/Trace | Model provenance 응답 타입 수용 |
+| AI-EVAL-1~3 | Analysis | Evaluation Run/Bundle API가 main에 아직 없음 |
+| Digital Asset Realignment P0 | Gateway Lab | Canonical contract freeze 이후 현재 Purchase input 교체 필요 |
 
-Notion BE 기획 링크의 phase 정의가 확정되면 이 표를 API path, DTO, release dependency 단위로 갱신합니다.
+## Integration Rule
+
+- UI는 Runtime 내부 단계를 개별 API로 호출하지 않습니다.
+- FE DTO는 BE record와 Controller test JSON을 기준으로 갱신합니다.
+- 운영 집계는 Runtime 원천 DB를 브라우저가 직접 읽지 않고 Read Model API 또는 Prometheus aggregation을 사용합니다.
+- Digital Asset의 현재 Thin E2E 계약과 향후 승인 거래 Runtime 계약을 별도 상태로 추적합니다.
+- 정책 변경 명령은 조회와 분리하고 Maker/Checker 권한 확인 전 UI에서 활성화하지 않습니다.

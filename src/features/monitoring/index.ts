@@ -1,2 +1,3 @@
-export { useDashboardSummary } from './hooks/useDashboardSummary';
-export type { DashboardSummary } from './model/types';
+export { useBackendReadiness } from './hooks/useBackendReadiness';
+export { getBackendReadiness } from './api/getBackendReadiness';
+export type { BackendReadiness } from './api/getBackendReadiness';

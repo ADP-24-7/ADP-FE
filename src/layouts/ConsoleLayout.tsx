@@ -14,10 +14,11 @@ import {
   SlidersHorizontal,
 } from 'lucide-react';
 import { executionPacks, useExecutionPack } from '../shared/prototype';
+import { env } from '../shared/config/env';
 
 const navItems = [
   { to: '/overview', label: '통합 관제', icon: LayoutDashboard },
-  { to: '/policies', label: '정책 · 승인', icon: SlidersHorizontal, count: '4' },
+  { to: '/policies', label: '정책 · 승인', icon: SlidersHorizontal },
   { to: '/gateway-lab', label: 'Gateway Lab', icon: FlaskConical },
   { to: '/monitoring', label: 'Security Monitoring', icon: ShieldAlert },
   { to: '/analysis', label: 'Runtime · Recovery', icon: Activity },
@@ -71,16 +72,15 @@ export function ConsoleLayout() {
             >
               <span className="console-nav-icon" aria-hidden="true"><item.icon size={18} /></span>
               <span className="console-nav-label">{item.label}</span>
-              {'count' in item ? <span className="console-nav-count">{item.count}</span> : null}
             </NavLink>
           ))}
         </nav>
 
         <div className="sidebar-status">
-          <span className="connection-dot connection-dot-warning" aria-hidden="true" />
+          <span className={env.localBffEnabled ? 'connection-dot' : 'connection-dot connection-dot-warning'} aria-hidden="true" />
           <div>
             <strong>DATA SOURCE</strong>
-            <span>API 연결 대기</span>
+            <span>{env.localBffEnabled ? 'Local BFF' : 'API 연결 대기'}</span>
             <small>No mock operations</small>
           </div>
         </div>
@@ -132,7 +132,7 @@ export function ConsoleLayout() {
                 <div className="dropdown-menu dropdown-menu-right" role="menu">
                   <div className="dropdown-empty">
                     <strong>Policy 없음</strong>
-                    <span>GET /v1/policies 연결 후 선택할 수 있습니다.</span>
+                    <span>Policy 목록 API 구현 후 선택할 수 있습니다.</span>
                   </div>
                 </div>
               ) : null}

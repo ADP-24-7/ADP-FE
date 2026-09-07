@@ -5,6 +5,7 @@ export type AppConfig = {
   appEnv: AppEnv;
   apiMode: ApiMode;
   apiBaseUrl: string;
+  localBffEnabled: boolean;
 };
 
 export function readApiMode(value: string | undefined): ApiMode {
@@ -35,6 +36,7 @@ export function parseEnv(rawEnv: ImportMetaEnv): AppConfig {
     appEnv,
     apiMode,
     apiBaseUrl: rawEnv.VITE_API_BASE_URL || 'http://localhost:8080',
+    localBffEnabled: appEnv === 'local' && rawEnv.VITE_LOCAL_BFF_ENABLED === 'true',
   };
 }
 
