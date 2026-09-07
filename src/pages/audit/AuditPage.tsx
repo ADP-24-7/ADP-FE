@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { FileCheck2, KeyRound, LockKeyhole, Search } from 'lucide-react';
+import { FileCheck2, LockKeyhole, Search } from 'lucide-react';
 import { EmptyState, KeyValues, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
 import { useExecutionPack } from '../../shared/prototype';
 
@@ -7,7 +7,9 @@ export function AuditPage() {
   const { selectedPack } = useExecutionPack();
   const [traceId, setTraceId] = useState('');
   const [submittedTraceId, setSubmittedTraceId] = useState('');
-  const timeline = ['Request', 'Workload', 'Data Access', 'Context', 'Detection', 'Decision', 'Transform', 'Egress', 'Provider', 'Response Guard', 'Delivery', 'Audit'];
+  const timeline = selectedPack.key === 'digital-asset'
+    ? ['Intent', 'Policy Binding', 'Disclosure', 'Submit', 'External State', 'Settlement', 'Reconcile', 'Audit']
+    : ['Request', 'Authorization', 'Policy Binding', 'Data Access', 'Transform', 'Provider', 'Response Guard', 'Delivery'];
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -17,9 +19,9 @@ export function AuditPage() {
   return (
     <section className="page-section">
       <PageHeader
-        eyebrow="END-TO-END TRACEABILITY"
-        title="Decision Trace · Audit"
-        description={`${selectedPack.label} 실행에 대해 원문 없이 누가, 왜, 어떤 데이터와 정책 버전으로 무엇을 결정했는지 전체 흐름을 재현합니다.`}
+        eyebrow="REQUEST TO OUTCOME · RAW-FREE EVIDENCE"
+        title="Decision Trace"
+        description="승인부터 외부 실행, 결과 검증과 감사까지 하나의 실행 ID로 재현합니다."
         actions={<button className="button button-secondary" type="button" disabled><FileCheck2 size={15} />Evidence Packet</button>}
       />
 
@@ -35,7 +37,7 @@ export function AuditPage() {
         </form>
       </SectionCard>
 
-      <SectionCard title="Decision Trace" description="Request부터 Audit까지 단계별로 확인합니다.">
+      <SectionCard title={selectedPack.key === 'digital-asset' ? '거래 실행 Trace' : '고객상담 AI 안전 실행'} description={selectedPack.objective} actions={<StatusBadge>NO TRACE</StatusBadge>}>
         {submittedTraceId ? (
           <EmptyState
             icon={Search}
@@ -57,20 +59,29 @@ export function AuditPage() {
       </SectionCard>
 
       <div className="content-grid content-grid-two">
-        <SectionCard title="Decision Evidence" description="Reason Code, Detection, Policy, Approval 근거">
+        <SectionCard title="Decision Context" description="당시 적용된 승인·실행 조건">
           <KeyValues
             items={[
-              ['Final Decision', '—'],
-              ['Reason Codes', '—'],
+              ['Principal', 'API 연결 대기'],
+              ['Workload', 'API 연결 대기'],
+              ['Purpose', 'API 연결 대기'],
+              ['Subject Scope', selectedPack.key === 'digital-asset' ? 'APPROVED_TRANSACTION' : 'CURRENT_CUSTOMER'],
+              ['Approval', 'GET /v1/audit-events'],
               ['Policy Version', '—'],
-              ['Analysis Artifact', '—'],
-              ['Dataset Snapshot', '—'],
-              ['Response Guard', '—'],
             ]}
           />
         </SectionCard>
-        <SectionCard title="Security Findings" description="권한 초과, 원문 유출, 재식별, 감사 누락">
-          <EmptyState compact icon={KeyRound} title="API 연결 대기" description="실제 Audit 이벤트만 표시합니다." endpoint="GET /v1/audit-events" />
+        <SectionCard title="Evidence & Integrity" description="원문 없이 실행을 검증하는 참조값">
+          <KeyValues
+            items={[
+              ['Input Digest', 'API 연결 대기'],
+              ['Destination', 'API 연결 대기'],
+              ['Released Fields', 'GET /v1/runtime/executions/{id}/trace'],
+              ['Raw Sensitive Egress', 'Prometheus egress counter'],
+              ['Response Guard', 'GET /v1/security-findings'],
+              ['Audit Outbox', 'Prometheus audit_outbox metrics'],
+            ]}
+          />
         </SectionCard>
       </div>
 

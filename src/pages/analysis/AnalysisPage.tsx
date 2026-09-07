@@ -1,111 +1,94 @@
-import { BarChart3, Gauge } from 'lucide-react';
+import { AlertTriangle, CircleGauge, RefreshCw, RotateCcw, ShieldX } from 'lucide-react';
 import { EmptyState, KeyValues, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
 import { useExecutionPack } from '../../shared/prototype';
 
-const analysisSections = [
-  ['데이터셋', '검증 데이터셋 버전과 범위', 'GET /v1/analysis/datasets'],
-  ['실험 결과', '탐지율·오탐률·유용성 평가', 'GET /v1/analysis/experiments'],
-  ['근거 및 기준', '판단 기준, 신뢰구간, 적용 범위', 'GET /v1/policy-evaluation-artifacts'],
-];
+const runtimeStages = [
+  ['01', '권한 확인', '미승인 실행 없음', 'GET /v1/runtime/executions/{id}/trace'],
+  ['02', '최소 데이터 조회', 'Field Allowlist 적용', 'GET /v1/data-access/decisions'],
+  ['03', '외부 실행', '결과 불명 여부 확인', 'GET /v1/recovery/incidents'],
+  ['04', '응답 검증', '재식별 위험 차단', 'GET /v1/security-findings'],
+  ['05', '감사 기록', 'Outbox committed', 'Prometheus audit metrics'],
+] as const;
 
 export function AnalysisPage() {
   const { selectedPack } = useExecutionPack();
-  const gates = [
-    ['Privacy Gate', '재식별 위험과 민감정보 누출'],
-    ['Utility Gate', '정확도, 완전성, Task 성능'],
-    ['Operational Gate', '지연, 비용, 실패, Review 부담'],
-  ] as const;
 
   return (
     <section className="page-section">
       <PageHeader
-        eyebrow="ANALYSIS ARTIFACT & EVIDENCE"
-        title="분석 · Evidence"
-        description={`${selectedPack.label} 정책으로 넘기기 전에 재현성, Privacy-Utility, 실패 구간과 Handoff 상태를 검증합니다.`}
-        actions={<StatusBadge>NO ARTIFACT</StatusBadge>}
+        eyebrow="INTERPRETED OPERATIONS · BE-ALIGNED"
+        title="Runtime · Recovery"
+        description="단순 수치가 아니라 발생 원인, 업무 영향과 다음 조치를 함께 설명합니다."
+        actions={<StatusBadge tone="warning">API 연결 대기</StatusBadge>}
       />
 
       <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} objective={selectedPack.objective} />
 
-      <SectionCard title="Artifact Version Context" description="운영 정책으로 인수 가능한 검증 산출물">
-        <KeyValues
-          items={[
-            ['Artifact Version', '—'],
-            ['Schema Version', '—'],
-            ['Execution Pack', selectedPack.label],
-            ['Dataset Snapshot', selectedPack.executionSurfaces.join(' · ')],
-            ['Experiment ID', '—'],
-            ['Digest', '—'],
-            ['Valid Until', '—'],
-          ]}
-        />
-      </SectionCard>
-
       <div className="content-grid content-grid-three">
-        {gates.map(([title, description]) => (
-          <SectionCard key={title} title={title} description={description} actions={<StatusBadge>NOT_EVALUATED</StatusBadge>}>
-            <span className="gate-icon" aria-hidden="true"><Gauge size={18} /></span>
-            <KeyValues
-              items={[
-                ['Observed Value', '—'],
-                ['Threshold', '—'],
-                ['Confidence', '—'],
-              ]}
-            />
-          </SectionCard>
-        ))}
-      </div>
-
-      <div className="content-grid content-grid-three">
-        {selectedPack.evidenceChecks.map(([title, description]) => (
-          <SectionCard key={title} title={title} description={description} actions={<StatusBadge>API 대기</StatusBadge>}>
-            <EmptyState compact title="API 연결 대기" description="검증 결과가 적재되면 실제 Evidence 상태만 표시합니다." endpoint="GET /v1/analysis/evidence" />
-          </SectionCard>
-        ))}
-      </div>
-
-      <div className="content-grid content-grid-three">
-        {analysisSections.map(([title, description, endpoint]) => (
-          <SectionCard key={title} title={title} description={description}>
-            <EmptyState
-              compact
-              title="API 연결 대기"
-              description="API 연결 또는 검증된 아티팩트 적재 후 표시됩니다."
-              endpoint={endpoint}
-            />
-          </SectionCard>
-        ))}
-      </div>
-
-      <div className="content-grid content-grid-wide-left">
-        <SectionCard title="Privacy-Utility Trade-off" description="후보 정책별 보호 수준과 활용성 비교" actions={<StatusBadge>데이터 없음</StatusBadge>}>
-          <EmptyState icon={BarChart3} title="API 연결 대기" description="Artifact의 aggregate_metrics를 연결하면 후보 간 비교를 표시합니다." endpoint="GET /v1/analysis/experiments" />
+        <SectionCard title="완료된 실행" description="Runtime terminal transition" actions={<StatusBadge tone="info">현재 BE</StatusBadge>}>
+          <EmptyState compact title="API 연결 대기" description="완료/실패 terminal counter가 연결되면 표시합니다." endpoint="GET /v1/metrics/summary" />
         </SectionCard>
-
-        <SectionCard title="Claim Scope & Handoff" description="결론이 유효한 범위와 BE 인수 조건">
-          <KeyValues
-            items={[
-              ['Population', '—'],
-              ['Use Case', '—'],
-              ['Provider', '—'],
-              ['Known Limitations', '—'],
-              ['BE Handoff', '—'],
-            ]}
-          />
+        <SectionCard title="정책 차단" description="Decision + reasonCode 집계" actions={<StatusBadge tone="warning">집계 API 필요</StatusBadge>}>
+          <EmptyState compact title="API 연결 대기" description="기간별 차단 사유 집계 API가 필요합니다." endpoint="GET /v1/security-findings/summary" />
+        </SectionCard>
+        <SectionCard title="Recovery 대기" description="Recovery Queue state" actions={<StatusBadge tone="info">현재 BE</StatusBadge>}>
+          <EmptyState compact title="API 연결 대기" description="SENT_UNKNOWN 및 Retry 대기 건수를 표시합니다." endpoint="GET /v1/recovery/summary" />
         </SectionCard>
       </div>
 
-      <SectionCard title="평가 결과" description="실험별 기준 충족 여부와 정책 반영 가능성을 비교합니다.">
-        <div className="empty-table">
-          <div className="table-head table-analysis">
-            <span>실험</span><span>데이터셋</span><span>Privacy</span><span>Utility</span><span>결과</span>
-          </div>
-          <EmptyState
-            title="API 연결 대기"
-            description="DA 결과가 적재되면 서버 응답을 기준으로 행이 생성됩니다."
-          />
+      <SectionCard title="지금 확인할 문제" description="정상적인 BLOCK과 운영 장애를 구분합니다." actions={<StatusBadge>API 대기</StatusBadge>}>
+        <div className="incident-grid">
+          <article>
+            <span><AlertTriangle size={16} />외부 상태 불명</span>
+            <h2>Provider 응답 상태를 확인할 수 없습니다</h2>
+            <p>내부 Authorization과 Policy Engine은 정상일 수 있으나 외부 호출 결과가 확정되지 않은 경우입니다.</p>
+            <KeyValues items={[['업무 영향', 'GET /v1/recovery/incidents'], ['추정 위치', 'External Provider'], ['권장 조치', '재전송 금지 → 상태 조회 → Reconcile']]} />
+            <button className="button button-secondary" type="button" disabled><RefreshCw size={14} />Recovery 확인</button>
+          </article>
+          <article>
+            <span><ShieldX size={16} />보안 통제</span>
+            <h2>승인 Scope를 벗어난 요청을 차단했습니다</h2>
+            <p>시스템 장애가 아니라 FPG가 의도대로 작동한 결과로 구분해야 합니다.</p>
+            <KeyValues items={[['업무 영향', 'GET /v1/security-findings'], ['판정', 'BLOCKED · NOT_SENT'], ['권장 조치', 'Trace 확인 또는 승인 범위로 축소']]} />
+            <button className="button button-secondary" type="button" disabled><RotateCcw size={14} />Trace 보기</button>
+          </article>
         </div>
       </SectionCard>
+
+      <SectionCard title="실행 단계별 상태" description="어디에서 문제가 발생했는지 업무 흐름으로 표시">
+        <div className="runtime-stage-grid">
+          {runtimeStages.map(([number, title, description, endpoint]) => (
+            <article key={number}>
+              <span>{number}</span>
+              <strong>{title}</strong>
+              <small>{description}</small>
+              <code>{endpoint}</code>
+            </article>
+          ))}
+        </div>
+        <p className="helper-text">기준선이 없으면 이상 증가로 단정하지 않고 현재 관측값과 데이터 부족 상태를 분리해 표시합니다.</p>
+      </SectionCard>
+
+      <SectionCard title="구현 가능성 Map" description="현재 개발단계에서 UI 수치가 어떤 데이터로 만들어지는지">
+        <div className="empty-table">
+          <div className="table-head table-readiness">
+            <span>UI 정보</span><span>BE Source</span><span>현재 상태</span><span>추가 작업</span>
+          </div>
+          <EmptyState title="API 연결 대기" description="각 지표는 Read Model 또는 Prometheus 연결 이후 실제값으로 표시합니다." endpoint="GET /v1/metrics/summary · /actuator/prometheus" />
+        </div>
+      </SectionCard>
+
+      <div className="content-grid content-grid-wide-left">
+        <SectionCard title="Prometheus 운영 지표 해석" description="BE 메트릭을 업무 의미와 운영 조치로 변환" actions={<StatusBadge tone="purple">PROMETHEUS READY</StatusBadge>}>
+          <EmptyState icon={CircleGauge} title="API 연결 대기" description="정상 종결률, Recovery 처리시간 p95, Provider timeout은 Prometheus 연결 후 계산합니다." endpoint="/actuator/prometheus" />
+        </SectionCard>
+
+        <SectionCard title={`${selectedPack.label} 관측 지점`} description="도메인별 Runtime Focus">
+          <KeyValues
+            items={selectedPack.runtimeFocus}
+          />
+        </SectionCard>
+      </div>
     </section>
   );
 }

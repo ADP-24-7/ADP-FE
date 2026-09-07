@@ -1,10 +1,8 @@
 import { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   Activity,
-  BarChart3,
   ChevronDown,
-  Database,
   FileCheck2,
   FlaskConical,
   LayoutDashboard,
@@ -12,37 +10,44 @@ import {
   PanelLeftOpen,
   Settings2,
   ShieldCheck,
+  ShieldAlert,
   SlidersHorizontal,
 } from 'lucide-react';
 import { executionPacks, useExecutionPack } from '../shared/prototype';
 
 const navItems = [
-  { to: '/overview', label: '운영 개요', icon: LayoutDashboard },
-  { to: '/data-access', label: 'Workload · Profiles', icon: Database },
+  { to: '/overview', label: '통합 관제', icon: LayoutDashboard },
+  { to: '/policies', label: '정책 · 승인', icon: SlidersHorizontal, count: '4' },
   { to: '/gateway-lab', label: 'Gateway Lab', icon: FlaskConical },
-  { to: '/analysis', label: '분석 · Evidence', icon: BarChart3 },
-  { to: '/policies', label: '정책 · Review', icon: SlidersHorizontal },
-  { to: '/monitoring', label: '모니터링 · Recovery', icon: Activity },
-  { to: '/audit', label: 'Decision Trace · Audit', icon: FileCheck2 },
+  { to: '/monitoring', label: 'Security Monitoring', icon: ShieldAlert },
+  { to: '/analysis', label: 'Runtime · Recovery', icon: Activity },
+  { to: '/audit', label: 'Decision Trace', icon: FileCheck2 },
 ];
 
+const runtimeDomainPacks = executionPacks.filter((pack) => pack.key === 'ai' || pack.key === 'digital-asset');
+
+function getRuntimeDomainLabel(packKey: string, fallback: string) {
+  return packKey === 'ai' ? 'AI · Agent' : fallback;
+}
+
 export function ConsoleLayout() {
+  const location = useLocation();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isPackMenuOpen, setIsPackMenuOpen] = useState(false);
   const [isPolicyMenuOpen, setIsPolicyMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const { selectedPack, selectedPackKey, selectPack } = useExecutionPack();
+  const { selectedPackKey, selectPack } = useExecutionPack();
+  const activeNavItem = navItems.find((item) => location.pathname.startsWith(item.to));
 
   return (
     <div className={isSidebarCollapsed ? 'console-shell console-shell-collapsed' : 'console-shell'}>
       <aside className="console-sidebar" aria-label="ADP Console navigation">
         <div className="console-brand-row">
           <div className="console-brand">
-            <span className="console-brand-logo" aria-hidden="true"><ShieldCheck size={20} /></span>
+              <span className="console-brand-logo" aria-hidden="true"><ShieldCheck size={20} /></span>
             <span className="console-brand-copy">
               <span className="console-brand-mark">FPG</span>
-              <span className="console-brand-title">Privacy Gateway</span>
-              <span className="console-brand-subtitle">Multi-channel Gateway</span>
+              <span className="console-brand-title">Governance Console</span>
+              <span className="console-brand-subtitle">PoC Workspace · v3.2</span>
             </span>
           </div>
           <button
@@ -66,6 +71,7 @@ export function ConsoleLayout() {
             >
               <span className="console-nav-icon" aria-hidden="true"><item.icon size={18} /></span>
               <span className="console-nav-label">{item.label}</span>
+              {'count' in item ? <span className="console-nav-count">{item.count}</span> : null}
             </NavLink>
           ))}
         </nav>
@@ -74,8 +80,8 @@ export function ConsoleLayout() {
           <span className="connection-dot connection-dot-warning" aria-hidden="true" />
           <div>
             <strong>DATA SOURCE</strong>
-            <span>API 미연결</span>
-            <small>Prototype UI · 가상 운영 데이터 없음</small>
+            <span>API 연결 대기</span>
+            <small>No mock operations</small>
           </div>
         </div>
       </aside>
@@ -84,47 +90,27 @@ export function ConsoleLayout() {
         <header className="console-topbar">
           <div className="console-topbar-copy">
             <strong>Financial Privacy Gateway</strong>
-            <span>Request · Data Access · Egress · Response Guard · Audit</span>
+            <span>{activeNavItem?.label ?? 'Policy Decision → Finding → Trace → Recovery'}</span>
           </div>
           <div className="topbar-actions">
-            <div className="dropdown">
-              <button
-                className="pack-trigger"
-                type="button"
-                aria-haspopup="menu"
-                aria-expanded={isPackMenuOpen}
-                onClick={() => {
-                  setIsPackMenuOpen((current) => !current);
-                  setIsPolicyMenuOpen(false);
-                  setIsSettingsOpen(false);
-                }}
-              >
-                <span>Pack</span>
-                <b>{selectedPack.label}</b>
-                <ChevronDown size={14} />
-              </button>
-              {isPackMenuOpen ? (
-                <div className="dropdown-menu dropdown-menu-right pack-menu" role="menu">
-                  {executionPacks.map((pack) => (
-                    <button
-                      key={pack.key}
-                      type="button"
-                      role="menuitemradio"
-                      aria-checked={pack.key === selectedPackKey}
-                      onClick={() => {
-                        selectPack(pack.key);
-                        setIsPackMenuOpen(false);
-                      }}
-                    >
-                      <span>
-                        <b>{pack.label}</b>
-                        <small>{pack.scope}</small>
-                      </span>
-                      <em>{pack.badge}</em>
-                    </button>
-                  ))}
-                </div>
-              ) : null}
+            <div className="runtime-domain-toggle" role="tablist" aria-label="Runtime domain">
+              {runtimeDomainPacks.map((pack) => (
+                <button
+                  key={pack.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={pack.key === selectedPackKey}
+                  className={pack.key === selectedPackKey ? 'active' : ''}
+                  title={pack.scope}
+                  onClick={() => {
+                    selectPack(pack.key);
+                    setIsPolicyMenuOpen(false);
+                    setIsSettingsOpen(false);
+                  }}
+                >
+                  {getRuntimeDomainLabel(pack.key, pack.label)}
+                </button>
+              ))}
             </div>
             <div className="dropdown">
               <button
@@ -134,7 +120,6 @@ export function ConsoleLayout() {
                 aria-expanded={isPolicyMenuOpen}
                 onClick={() => {
                   setIsPolicyMenuOpen((current) => !current);
-                  setIsPackMenuOpen(false);
                   setIsSettingsOpen(false);
                 }}
               >
@@ -162,7 +147,6 @@ export function ConsoleLayout() {
                 aria-expanded={isSettingsOpen}
                 onClick={() => {
                   setIsSettingsOpen((current) => !current);
-                  setIsPackMenuOpen(false);
                   setIsPolicyMenuOpen(false);
                 }}
               >
