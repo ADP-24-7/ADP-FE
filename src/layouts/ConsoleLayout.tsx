@@ -19,8 +19,8 @@ const navItems = [
   { to: '/overview', label: '통합 관제', icon: LayoutDashboard },
   { to: '/policies', label: '정책 · 승인', icon: SlidersHorizontal, count: '4' },
   { to: '/gateway-lab', label: 'Gateway Lab', icon: FlaskConical },
-  { to: '/monitoring', label: 'Security Monitoring', icon: ShieldAlert, count: 'API' },
-  { to: '/analysis', label: 'Runtime · Recovery', icon: Activity, count: 'API' },
+  { to: '/monitoring', label: 'Security Monitoring', icon: ShieldAlert },
+  { to: '/analysis', label: 'Runtime · Recovery', icon: Activity },
   { to: '/audit', label: 'Decision Trace', icon: FileCheck2 },
 ];
 
@@ -33,10 +33,9 @@ function getRuntimeDomainLabel(packKey: string, fallback: string) {
 export function ConsoleLayout() {
   const location = useLocation();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isPackMenuOpen, setIsPackMenuOpen] = useState(false);
   const [isPolicyMenuOpen, setIsPolicyMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const { selectedPack, selectedPackKey, selectPack } = useExecutionPack();
+  const { selectedPackKey, selectPack } = useExecutionPack();
   const activeNavItem = navItems.find((item) => location.pathname.startsWith(item.to));
 
   return (
@@ -94,44 +93,24 @@ export function ConsoleLayout() {
             <span>{activeNavItem?.label ?? 'Policy Decision → Finding → Trace → Recovery'}</span>
           </div>
           <div className="topbar-actions">
-            <div className="dropdown">
-              <button
-                className="pack-trigger"
-                type="button"
-                aria-haspopup="menu"
-                aria-expanded={isPackMenuOpen}
-                onClick={() => {
-                  setIsPackMenuOpen((current) => !current);
-                  setIsPolicyMenuOpen(false);
-                  setIsSettingsOpen(false);
-                }}
-              >
-                <span>Pack</span>
-                <b>{getRuntimeDomainLabel(selectedPack.key, selectedPack.label)}</b>
-                <ChevronDown size={14} />
-              </button>
-              {isPackMenuOpen ? (
-                <div className="dropdown-menu dropdown-menu-right pack-menu" role="menu">
-                  {runtimeDomainPacks.map((pack) => (
-                    <button
-                      key={pack.key}
-                      type="button"
-                      role="menuitemradio"
-                      aria-checked={pack.key === selectedPackKey}
-                      onClick={() => {
-                        selectPack(pack.key);
-                        setIsPackMenuOpen(false);
-                      }}
-                    >
-                      <span>
-                        <b>{getRuntimeDomainLabel(pack.key, pack.label)}</b>
-                        <small>{pack.scope}</small>
-                      </span>
-                      <em>{pack.badge}</em>
-                    </button>
-                  ))}
-                </div>
-              ) : null}
+            <div className="runtime-domain-toggle" role="tablist" aria-label="Runtime domain">
+              {runtimeDomainPacks.map((pack) => (
+                <button
+                  key={pack.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={pack.key === selectedPackKey}
+                  className={pack.key === selectedPackKey ? 'active' : ''}
+                  title={pack.scope}
+                  onClick={() => {
+                    selectPack(pack.key);
+                    setIsPolicyMenuOpen(false);
+                    setIsSettingsOpen(false);
+                  }}
+                >
+                  {getRuntimeDomainLabel(pack.key, pack.label)}
+                </button>
+              ))}
             </div>
             <div className="dropdown">
               <button
@@ -141,7 +120,6 @@ export function ConsoleLayout() {
                 aria-expanded={isPolicyMenuOpen}
                 onClick={() => {
                   setIsPolicyMenuOpen((current) => !current);
-                  setIsPackMenuOpen(false);
                   setIsSettingsOpen(false);
                 }}
               >
@@ -169,7 +147,6 @@ export function ConsoleLayout() {
                 aria-expanded={isSettingsOpen}
                 onClick={() => {
                   setIsSettingsOpen((current) => !current);
-                  setIsPackMenuOpen(false);
                   setIsPolicyMenuOpen(false);
                 }}
               >

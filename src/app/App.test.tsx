@@ -20,11 +20,10 @@ describe('App', () => {
     render(<App />);
 
     await screen.findByRole('heading', { name: 'Security Overview' });
-    await user.click(screen.getByRole('button', { name: /Pack/ }));
-    await user.click(screen.getByRole('menuitemradio', { name: /Digital Asset/ }));
+    await user.click(screen.getByRole('tab', { name: /Digital Asset/ }));
 
     expect(window.location.pathname).toBe('/overview');
-    expect(screen.getByRole('button', { name: /PackDigital Asset/ })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Digital Asset/ })).toHaveClass('active');
     expect(screen.getByText('Value-use · Transaction · Settlement · Reconciliation')).toBeInTheDocument();
 
     await user.click(screen.getByRole('link', { name: /정책 · 승인/ }));
@@ -41,8 +40,7 @@ describe('App', () => {
 
     await user.click(await screen.findByRole('link', { name: '통합 관제' }));
     await screen.findByRole('heading', { name: 'Security Overview' });
-    await user.click(screen.getByRole('button', { name: /Pack/ }));
-    await user.click(screen.getByRole('menuitemradio', { name: /Digital Asset/ }));
+    await user.click(screen.getByRole('tab', { name: /Digital Asset/ }));
     await user.click(screen.getByRole('link', { name: 'Gateway Lab' }));
 
     expect(await screen.findByRole('heading', { name: 'Gateway Lab' })).toBeInTheDocument();
