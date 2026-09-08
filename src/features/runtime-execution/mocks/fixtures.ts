@@ -87,3 +87,26 @@ export const runtimeExecutionTraceFixture: RuntimeExecutionTrace = {
   ],
   evidence: runtimeExecutionEvidenceFixture,
 };
+
+export const digitalAssetRuntimeTraceFixture: RuntimeExecutionTrace = {
+  ...runtimeExecutionTraceFixture,
+  executionId: 'exec_da_snapshot_contract',
+  digitalAssetRuntimeSnapshot: {
+    snapshotId: 'dasnap_contract',
+    snapshotDigest: `sha256:${'1'.repeat(64)}`,
+    artifactId: 'DA-DIGITAL-ASSET-RUNTIME-CANDIDATE-001',
+    artifactVersion: '1.0.0',
+    artifactDigest: '2a0fad69b2db5f8e18081fadbdb71e5c0af2c12ea436e25276f5b8fa693d468f',
+    approvedPolicySnapshotId: 'DA-P0-5-POLICY-EVAL-001:1.0.0',
+    approvedPolicyVersion: 'be-runtime-policy/digital-asset/1.0.0',
+    approvedPolicyDigest: 'policy-digest',
+    destinationProfileId: 'dest_mock_asset_platform_v1',
+    destinationProfileVersion: '1.0.0',
+    destinationProfileDigest: 'destination-digest',
+    runtimeControlVersion: '1.0.0',
+    runtimeControlDigest: `sha256:${'2'.repeat(64)}`,
+    crosswalkVersion: '1.0.0',
+    crosswalkDigest: `sha256:${'3'.repeat(64)}`,
+    selectedAt: '2026-09-08T00:00:00Z',
+  },
+};

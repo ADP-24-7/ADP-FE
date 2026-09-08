@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw';
-import { runtimeExecutionDetailFixture, runtimeExecutionFixture, runtimeExecutionTraceFixture } from './fixtures';
+import { digitalAssetRuntimeTraceFixture, runtimeExecutionDetailFixture, runtimeExecutionFixture, runtimeExecutionTraceFixture } from './fixtures';
 
 export const runtimeExecutionHandlers = [
   http.post('/v1/runtime/executions', () => HttpResponse.json(runtimeExecutionFixture)),
@@ -11,6 +11,9 @@ export const runtimeExecutionHandlers = [
     return HttpResponse.json(runtimeExecutionDetailFixture);
   }),
   http.get('/v1/runtime/executions/:executionId/trace', ({ params }) => {
+    if (params.executionId === digitalAssetRuntimeTraceFixture.executionId) {
+      return HttpResponse.json(digitalAssetRuntimeTraceFixture);
+    }
     if (params.executionId !== runtimeExecutionFixture.executionId) {
       return HttpResponse.json({ errorCode: 'RUNTIME_EXECUTION_NOT_FOUND', message: 'Execution trace not found' }, { status: 404 });
     }

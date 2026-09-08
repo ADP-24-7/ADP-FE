@@ -105,4 +105,4 @@ npm run test
 npm run build
 ```
 
-자세한 내용은 [docs/architecture.md](docs/architecture.md), [docs/api-integration.md](docs/api-integration.md), [docs/unconnected-api-inventory.md](docs/unconnected-api-inventory.md), [docs/local-api-verification.md](docs/local-api-verification.md)를 참고합니다.
+자세한 내용은 [docs/architecture.md](docs/architecture.md), [docs/api-integration.md](docs/api-integration.md), [docs/fe-parallel-workstream.md](docs/fe-parallel-workstream.md), [docs/unconnected-api-inventory.md](docs/unconnected-api-inventory.md), [docs/local-api-verification.md](docs/local-api-verification.md)를 참고합니다.

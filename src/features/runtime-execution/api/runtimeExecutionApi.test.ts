@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createRuntimeExecution, getRuntimeExecution, getRuntimeExecutionTrace } from './runtimeExecutionApi';
 import {
+  digitalAssetRuntimeTraceFixture,
   runtimeExecutionDetailFixture,
   runtimeExecutionFixture,
   runtimeExecutionRequestFixture,
@@ -18,5 +19,16 @@ describe('runtimeExecutionApi', () => {
 
   it('gets a runtime execution trace by execution id', async () => {
     await expect(getRuntimeExecutionTrace(runtimeExecutionFixture.executionId)).resolves.toEqual(runtimeExecutionTraceFixture);
+  });
+
+  it('keeps the P0-6 versioned snapshot returned by a Digital Asset trace', async () => {
+    await expect(getRuntimeExecutionTrace(digitalAssetRuntimeTraceFixture.executionId)).resolves.toMatchObject({
+      digitalAssetRuntimeSnapshot: {
+        snapshotId: 'dasnap_contract',
+        artifactId: 'DA-DIGITAL-ASSET-RUNTIME-CANDIDATE-001',
+        runtimeControlVersion: '1.0.0',
+        crosswalkVersion: '1.0.0',
+      },
+    });
   });
 });

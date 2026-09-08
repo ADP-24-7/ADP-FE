@@ -39,6 +39,8 @@ export type RuntimeExecutionRequest = {
   destinationProfileId: string;
   input: RuntimeExecutionInput;
   idempotencyKey: string;
+  evaluationRunId?: string;
+  evalCaseId?: string;
   processingContexts: string[];
 };
 
@@ -130,7 +132,27 @@ export type RuntimeExecutionTrace = {
   traceId: string;
   status: RuntimeExecutionStatus;
   stages: RuntimeExecutionTraceStage[];
+  digitalAssetRuntimeSnapshot?: DigitalAssetRuntimeSnapshot | null;
   evidence: RuntimeExecutionEvidence;
+};
+
+export type DigitalAssetRuntimeSnapshot = {
+  snapshotId: string;
+  snapshotDigest: string;
+  artifactId: string;
+  artifactVersion: string;
+  artifactDigest: string;
+  approvedPolicySnapshotId: string;
+  approvedPolicyVersion: string;
+  approvedPolicyDigest: string;
+  destinationProfileId: string;
+  destinationProfileVersion: string;
+  destinationProfileDigest: string;
+  runtimeControlVersion: string;
+  runtimeControlDigest: string;
+  crosswalkVersion: string;
+  crosswalkDigest: string;
+  selectedAt: string;
 };
 
 export type RuntimeExecutionDetail = {
@@ -164,5 +186,6 @@ export type RuntimeExecutionDetail = {
   status: RuntimeExecutionStatus;
   createdAt: string;
   updatedAt: string;
+  digitalAssetRuntimeSnapshot?: DigitalAssetRuntimeSnapshot | null;
   evidence: RuntimeExecutionEvidence;
 };

@@ -1,6 +1,8 @@
 import { useMutation } from '@tanstack/react-query';
 import { BriefcaseBusiness, LockKeyhole, Play, RotateCcw, ShieldCheck, TerminalSquare } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
+import { createDigitalAssetRuntimeInput } from '../../features/digital-asset';
+import type { DigitalAssetKind, DigitalAssetOperation } from '../../features/digital-asset';
 import { createRuntimeExecution, getRuntimeExecutionTrace, runtimeExecutionCapabilities } from '../../features/runtime-execution';
 import type { RuntimeExecutionRequest, RuntimeExecutionStatus } from '../../features/runtime-execution';
 import { normalizeApiError } from '../../shared/api/apiError';
@@ -128,11 +130,21 @@ export function GatewayLabPage() {
   const [destinationProfileId, setDestinationProfileId] = useState('');
   const [processingContextsText, setProcessingContextsText] = useState(selectedPack.defaultProcessingContexts.join(', '));
   const [content, setContent] = useState('');
+  const [evaluationRunId, setEvaluationRunId] = useState('');
+  const [evalCaseId, setEvalCaseId] = useState('');
+  const [approvedTransactionReference, setApprovedTransactionReference] = useState('');
   const [customerId, setCustomerId] = useState('');
   const [accountId, setAccountId] = useState('');
-  const [walletAddress, setWalletAddress] = useState('');
-  const [assetId, setAssetId] = useState('');
-  const [amount, setAmount] = useState('');
+  const [chainId, setChainId] = useState('');
+  const [assetKind, setAssetKind] = useState<DigitalAssetKind>('FUNGIBLE_TOKEN');
+  const [assetSymbol, setAssetSymbol] = useState('');
+  const [assetContractAddress, setAssetContractAddress] = useState('');
+  const [operation, setOperation] = useState<DigitalAssetOperation>('TRANSFER');
+  const [tokenId, setTokenId] = useState('');
+  const [requestedAmount, setRequestedAmount] = useState('');
+  const [requestedDestination, setRequestedDestination] = useState('');
+  const [requestedBeneficiaryReference, setRequestedBeneficiaryReference] = useState('');
+  const [contractError, setContractError] = useState('');
   const [idempotencyKey, setIdempotencyKey] = useState(createIdempotencyKey);
   const [selectedCheckpoint, setSelectedCheckpoint] = useState('01');
 
@@ -180,9 +192,36 @@ export function GatewayLabPage() {
       return;
     }
 
-    const input = isDigitalAsset
-      ? { customerId, accountId, walletAddress, assetId, amount: Number(amount) }
-      : { prompt: content };
+    let input: RuntimeExecutionRequest['input'];
+    try {
+      input = isDigitalAsset
+        ? createDigitalAssetRuntimeInput({
+          approvedTransactionReference,
+          customerId,
+          accountId,
+          chainId,
+          assetKind,
+          assetSymbol,
+          assetContractAddress,
+          operation,
+          tokenId,
+          requestedAmount,
+          requestedDestination,
+          requestedBeneficiaryReference,
+        })
+        : { prompt: content };
+      setContractError('');
+    } catch (error) {
+      setContractError(error instanceof Error ? error.message : 'Digital Asset 요청 계약을 확인해 주세요.');
+      return;
+    }
+
+    const normalizedEvaluationRunId = evaluationRunId.trim();
+    const normalizedEvalCaseId = evalCaseId.trim();
+    if (!isDigitalAsset && Boolean(normalizedEvaluationRunId) !== Boolean(normalizedEvalCaseId)) {
+      setContractError('Evaluation Run ID와 Eval Case ID는 함께 입력해야 합니다.');
+      return;
+    }
     const request: RuntimeExecutionRequest = {
       institutionId,
       approvalReference,
@@ -192,6 +231,9 @@ export function GatewayLabPage() {
       destinationProfileId,
       input,
       idempotencyKey,
+      ...(!isDigitalAsset && normalizedEvaluationRunId
+        ? { evaluationRunId: normalizedEvaluationRunId, evalCaseId: normalizedEvalCaseId }
+        : {}),
       processingContexts: processingContextsText.split(',').map((value) => value.trim()).filter(Boolean),
     };
     execution.mutate(request);
@@ -298,17 +340,28 @@ export function GatewayLabPage() {
             </label>
             {isDigitalAsset ? (
               <>
+                <label className="field field-full"><span>Approved Transaction Reference</span><input value={approvedTransactionReference} onChange={(event) => markLogicalRequestChanged(() => setApprovedTransactionReference(event.target.value))} placeholder="approved-tx-local-001" required /></label>
                 <label className="field"><span>Customer ID</span><input value={customerId} onChange={(event) => markLogicalRequestChanged(() => setCustomerId(event.target.value))} required /></label>
                 <label className="field"><span>Account ID</span><input value={accountId} onChange={(event) => markLogicalRequestChanged(() => setAccountId(event.target.value))} required /></label>
-                <label className="field"><span>Wallet Address</span><input value={walletAddress} onChange={(event) => markLogicalRequestChanged(() => setWalletAddress(event.target.value))} required /></label>
-                <label className="field"><span>Asset ID</span><input value={assetId} onChange={(event) => markLogicalRequestChanged(() => setAssetId(event.target.value))} required /></label>
-                <label className="field field-full"><span>Amount</span><input type="number" min="0" step="any" value={amount} onChange={(event) => markLogicalRequestChanged(() => setAmount(event.target.value))} required /></label>
+                <label className="field"><span>Chain ID</span><input value={chainId} onChange={(event) => markLogicalRequestChanged(() => setChainId(event.target.value))} placeholder="eip155:1" required /></label>
+                <label className="field"><span>Asset Kind</span><select value={assetKind} onChange={(event) => markLogicalRequestChanged(() => setAssetKind(event.target.value as DigitalAssetKind))}><option value="NATIVE">NATIVE</option><option value="FUNGIBLE_TOKEN">FUNGIBLE_TOKEN</option><option value="NON_FUNGIBLE_TOKEN">NON_FUNGIBLE_TOKEN</option></select></label>
+                <label className="field"><span>Asset Symbol</span><input value={assetSymbol} onChange={(event) => markLogicalRequestChanged(() => setAssetSymbol(event.target.value))} required /></label>
+                <label className="field"><span>Operation</span><select value={operation} onChange={(event) => markLogicalRequestChanged(() => setOperation(event.target.value as DigitalAssetOperation))}><option value="TRANSFER">TRANSFER</option><option value="CONTRACT_CALL">CONTRACT_CALL</option></select></label>
+                {assetKind !== 'NATIVE' ? <label className="field field-full"><span>Asset Contract Address</span><input value={assetContractAddress} onChange={(event) => markLogicalRequestChanged(() => setAssetContractAddress(event.target.value))} required /></label> : null}
+                {assetKind === 'NON_FUNGIBLE_TOKEN' ? <label className="field field-full"><span>Token ID</span><input value={tokenId} onChange={(event) => markLogicalRequestChanged(() => setTokenId(event.target.value))} required /></label> : null}
+                <label className="field"><span>Requested Amount (Atomic Units)</span><input inputMode="numeric" pattern="[0-9]+" value={requestedAmount} onChange={(event) => markLogicalRequestChanged(() => setRequestedAmount(event.target.value))} required /></label>
+                <label className="field"><span>Requested Destination</span><input value={requestedDestination} onChange={(event) => markLogicalRequestChanged(() => setRequestedDestination(event.target.value))} required /></label>
+                <label className="field field-full"><span>Beneficiary Reference</span><input value={requestedBeneficiaryReference} onChange={(event) => markLogicalRequestChanged(() => setRequestedBeneficiaryReference(event.target.value))} required /></label>
               </>
             ) : (
-              <label className="field field-full">
-                <span>{selectedPack.gatewayRequest.inputLabel}</span>
-                <textarea value={content} onChange={(event) => markLogicalRequestChanged(() => setContent(event.target.value))} placeholder={selectedPack.gatewayRequest.inputPlaceholder} rows={6} required />
-              </label>
+              <>
+                <label className="field field-full">
+                  <span>{selectedPack.gatewayRequest.inputLabel}</span>
+                  <textarea value={content} onChange={(event) => markLogicalRequestChanged(() => setContent(event.target.value))} placeholder={selectedPack.gatewayRequest.inputPlaceholder} rows={6} required />
+                </label>
+                <label className="field"><span>Evaluation Run ID (선택)</span><input value={evaluationRunId} onChange={(event) => markLogicalRequestChanged(() => setEvaluationRunId(event.target.value))} placeholder="ai-eval-baseline-2026-09-07" /></label>
+                <label className="field"><span>Eval Case ID (선택)</span><input value={evalCaseId} onChange={(event) => markLogicalRequestChanged(() => setEvalCaseId(event.target.value))} placeholder="customer-summary-ko-001" /></label>
+              </>
             )}
             <label className="field field-full">
               <span>Processing Contexts</span>
@@ -323,7 +376,7 @@ export function GatewayLabPage() {
               ]}
             />
             <div className="input-meta field-full">
-              <span>{isDigitalAsset ? '5 contract fields' : `${content.length} chars`}</span>
+              <span>{isDigitalAsset ? 'P0-4 Canonical Contract' : `${content.length} chars`}</span>
               <span>Raw Prompt · Token Map 저장 금지</span>
             </div>
             <div className="idempotency-panel field-full">
@@ -454,7 +507,9 @@ export function GatewayLabPage() {
           </div>
 
           <SectionCard title="실행 결과" description="BE의 policyAction, finalAction, digest, audit id만 표시합니다.">
-          {execution.isError ? (
+          {contractError ? (
+            <ErrorState title="요청 계약을 확인해 주세요" description={contractError} onRetry={() => setContractError('')} />
+          ) : execution.isError ? (
             <ErrorState description={normalizeApiError(execution.error).message} onRetry={() => execution.reset()} />
           ) : execution.data ? (
             <div className="result-stack">
@@ -484,6 +539,14 @@ export function GatewayLabPage() {
                   ['Released Fields', String(execution.data.trace.evidence.released.count ?? 0)],
                   ['Delivery Status', execution.data.created.output?.deliveryStatus ?? '—'],
                   ['Response Digest', execution.data.created.output?.responseDigest ?? '—'],
+                  ...(execution.data.trace.digitalAssetRuntimeSnapshot ? [
+                    ['DA Snapshot ID', execution.data.trace.digitalAssetRuntimeSnapshot.snapshotId] as const,
+                    ['DA Snapshot Digest', execution.data.trace.digitalAssetRuntimeSnapshot.snapshotDigest] as const,
+                    ['Pinned Artifact', `${execution.data.trace.digitalAssetRuntimeSnapshot.artifactId} · ${execution.data.trace.digitalAssetRuntimeSnapshot.artifactVersion}`] as const,
+                    ['Pinned Policy', `${execution.data.trace.digitalAssetRuntimeSnapshot.approvedPolicySnapshotId} · ${execution.data.trace.digitalAssetRuntimeSnapshot.approvedPolicyVersion}`] as const,
+                    ['Runtime Control', execution.data.trace.digitalAssetRuntimeSnapshot.runtimeControlVersion] as const,
+                    ['Crosswalk', execution.data.trace.digitalAssetRuntimeSnapshot.crosswalkVersion] as const,
+                  ] : []),
                 ]}
               />
             </div>

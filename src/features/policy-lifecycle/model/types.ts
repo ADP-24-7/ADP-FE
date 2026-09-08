@@ -1,6 +1,6 @@
 export type ExecutionPackType = 'AI' | 'DIGITAL_ASSET';
 export type PolicyLayer = 'REGULATORY' | 'INSTITUTION' | 'WORKLOAD' | 'DESTINATION';
-export type PolicyLifecycleStage = 'DRAFT' | 'VALIDATED' | 'CANDIDATE' | 'REPLAY' | 'SHADOW' | 'APPROVED' | 'ACTIVE' | 'REVIEW' | 'ROLLED_BACK';
+export type PolicyLifecycleStage = 'PROJECT_PROVISIONAL' | 'DRAFT' | 'VALIDATED' | 'CANDIDATE' | 'REPLAY' | 'SHADOW' | 'APPROVED' | 'ACTIVE' | 'SUPERSEDED' | 'REVIEW' | 'ROLLED_BACK';
 
 export type PolicyLifecycleRecord = {
   artifactId: string;

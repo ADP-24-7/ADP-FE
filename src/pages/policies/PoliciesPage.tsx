@@ -1,5 +1,6 @@
 import { ArrowRight, LockKeyhole, RefreshCw, Search } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
+import { DigitalAssetArtifactPanel } from '../../features/digital-asset';
 import { usePolicyLifecycle } from '../../features/policy-lifecycle';
 import { normalizeApiError } from '../../shared/api/apiError';
 import { EmptyState, ErrorState, KeyValues, LoadingPanel, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
@@ -7,8 +8,11 @@ import { useExecutionPack } from '../../shared/prototype';
 
 const lifecycle = [
   ['DRAFT', 'Policy Owner'],
-  ['REVIEW', 'Checker'],
+  ['VALIDATED', 'BE Validation'],
+  ['CANDIDATE', 'Artifact Ready'],
+  ['REPLAY', 'Operator'],
   ['SHADOW', 'Runtime Diff'],
+  ['APPROVED', 'Checker'],
   ['ACTIVE', 'Version Locked'],
 ] as const;
 
@@ -40,6 +44,8 @@ export function PoliciesPage() {
       />
 
       <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} objective={selectedPack.objective} />
+
+      {selectedPack.key === 'digital-asset' ? <DigitalAssetArtifactPanel /> : null}
 
       <SectionCard title="정책 라이프사이클" description={`${selectedPack.label} 정책이 Runtime에 적용되기 전 거치는 승인 단계`}>
         <div className="lifecycle-row lifecycle-flow">
@@ -139,8 +145,8 @@ export function PoliciesPage() {
         <SectionCard title="Shadow 진입 기준" description="False Allow, Decision Diff, Review Burden, Audit Gap" actions={<StatusBadge>NOT_EVALUATED</StatusBadge>}>
           <EmptyState compact title="API 연결 대기" description="Lifecycle SHADOW 전이는 구현됐지만 Shadow 결과 Read Model은 아직 없습니다." endpoint="POST /api/admin/policy-lifecycle/{artifactId}/versions/{version}/transitions" />
         </SectionCard>
-        <SectionCard title="Artifact 무결성" description="Schema, Digest, Evidence Reference, Vocabulary" actions={<StatusBadge>NOT_VERIFIED</StatusBadge>}>
-          <EmptyState compact title="API 연결 대기" description="Lifecycle은 Artifact digest를 보관하지만 Artifact 본문 검증 API는 아직 없습니다." endpoint="Artifact Loader API 미구현" />
+        <SectionCard title="Artifact 무결성" description="Schema, Digest, Evidence Reference, Vocabulary" actions={<StatusBadge tone={selectedPack.key === 'digital-asset' ? 'success' : 'neutral'}>{selectedPack.key === 'digital-asset' ? 'P0-5 AVAILABLE' : 'NOT VERIFIED'}</StatusBadge>}>
+          <EmptyState compact title={selectedPack.key === 'digital-asset' ? '상단 Artifact 도구에서 조회' : 'API 연결 대기'} description={selectedPack.key === 'digital-asset' ? 'BE-owned strict schema와 digest 검증 결과를 실제 Lifecycle Candidate로 확인합니다.' : '해당 Pack의 Artifact Loader API가 아직 없습니다.'} endpoint={selectedPack.key === 'digital-asset' ? 'GET /api/admin/digital-assets/artifacts/{artifactId}/versions/{version}' : 'Artifact Loader API 미구현'} />
         </SectionCard>
       </div>
     </section>

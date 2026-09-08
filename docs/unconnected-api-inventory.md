@@ -1,26 +1,23 @@
 # Unconnected API Inventory
 
-2026-09-07 기준 `ADP-BE origin/main`에 대응 Controller가 없는 FE 요구사항입니다. 화면에서는 실제 값이나 임시 숫자를 만들지 않고 `API 연결 대기`로 표시합니다.
+2026-09-08 `ADP-BE origin/main@31ae5f1` 기준이다. 아래 항목은 FE 요구사항이 있지만 Controller 또는 확정 응답 계약이 아직 `main`에 없다.
 
-| FE area | Needed contract | Source candidate | Blocker / owner phase |
+| FE area | Needed contract | Current gate | FE behavior |
 | --- | --- | --- | --- |
-| 통합 관제 | Security finding summary | Runtime transition + audit read model | BE-11/12 aggregate API 없음 |
-| 통합 관제 | Open incident summary | Recovery queue + mismatch quarantine | Incident read model API 없음 |
-| 통합 관제 | Runtime action summary | Runtime terminal metrics | Prometheus query/BFF aggregation 없음 |
-| Workload · Data Access | Workload registry list | Auth workload scope + retrieval profile | 목록 Controller 없음 |
-| Workload · Data Access | Data access decision history | Runtime trace evidence | 전용 검색 API 없음 |
-| Security Monitoring | Findings search/category summary | Audit/reason code/guard/recovery | Findings read model API 없음 |
-| Runtime · Recovery | Recovery incident list/summary | External interaction recovery tables | Admin recovery read API 없음 |
-| 정책 · 승인 | Policy list/active snapshot | Policy lifecycle table | list/active query API 없음 |
-| 정책 · 승인 | Review queue | Policy transition + runtime REVIEW | 통합 review read model 없음 |
-| 정책 · 승인 | Shadow comparison result | Lifecycle stage alone is available | replay/shadow result API 없음 |
-| 정책 · 승인 | Artifact content/integrity | DA Artifact Loader | P0 Loader 미구현 |
-| Analysis | AI evaluation runs/results | AI-EVAL-1~3 | evaluation API/main merge 전 |
-| Gateway Lab Digital Asset | ApprovedTransaction/OutboundRequest/6 controls | BE-8 Realignment | Canonical contract freeze 전 |
+| Digital Asset Gateway | 6 PRE_EXECUTION Control 결과 | DA-P0-7 예정 | Target Pipeline만 표시 |
+| Runtime · Recovery | External Evidence/Re-binding | DA-P0-8 예정 | 실제 결과 수치 미표시 |
+| Runtime · Recovery | Recovery incident list/summary/manual command | P0-8 + BE-9/11 후속 | 비활성 조작과 API 대기 상태 |
+| AI Analysis | Evaluation Run 목록/검색 | 단건 Readiness/Bundle만 존재 | 정확한 Run ID 입력 방식 유지 |
+| Digital Asset Policy | Artifact 목록/현재 ACTIVE 조회 | 단건 Candidate 조회와 activate만 존재 | 정확한 Artifact ID/Version 사용 |
+| Policy | Policy 목록/ACTIVE Snapshot | 단건 Lifecycle만 존재 | 목록을 만들지 않음 |
+| Policy | Review Queue | Review Read Model 없음 | API 연결 대기 |
+| Policy | Shadow Diff | Replay/Shadow 결과 API 없음 | API 연결 대기 |
+| Overview | Security Finding/Open Incident 집계 | Aggregate Read Model 없음 | 숫자 대신 `—` |
+| Monitoring | Runtime/Artifact/Recovery metric query | Prometheus 노출만 있고 BFF Query 없음 | Query/BFF 연결 대기 |
+| Data Access | Workload Registry 및 Decision History | 목록/검색 Controller 없음 | Context Preview만 연결 |
+| NCP Artifact | NCP ContentStore ingest E2E | NCP-5 BE Adapter 예정 | FE는 Storage credential/endpoint를 받지 않음 |
 
-## Existing API Names To Remove
-
-아래 경로는 현재 BE에 없으므로 신규 코드에서 실제 Endpoint로 취급하지 않습니다.
+## Endpoints That Must Not Be Invented
 
 - `/v1/monitoring/overview`
 - `/v1/metrics/summary`
@@ -33,4 +30,4 @@
 - `/v1/reviews`
 - `/v1/audit-events`
 
-이름이 확정되기 전에는 화면의 Endpoint 안내도 `미구현`으로 표시하고, BE Controller가 추가될 때 이 문서와 feature API를 함께 갱신합니다.
+BE Controller가 추가될 때 DTO, SecurityConfig, Controller test를 함께 확인한 뒤 이 문서와 해당 feature API를 같은 PR에서 갱신한다.
