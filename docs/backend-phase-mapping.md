@@ -1,6 +1,6 @@
 # Backend Phase Mapping
 
-기준은 2026-09-08 `ADP-BE origin/main@31ae5f1`와 Notion `개발단계 추적`이다.
+기준은 2026-09-09 `ADP-BE origin/main@b5897a5`와 Notion `개발단계 추적`이다.
 
 | Backend scope | FE area | Current integration |
 | --- | --- | --- |
@@ -9,14 +9,14 @@
 | DA-P0-1~P0-4 | Gateway Lab | Approved Transaction Reference + Canonical Outbound Request DTO/검증 반영 |
 | DA-P0-5 Artifact Loader | 정책 · 승인 | Artifact ingest와 ID/Version 단건 조회 연결 |
 | DA-P0-6 Runtime Snapshot | Gateway Lab, Trace | Privileged activate와 pinned Snapshot 표시 연결 |
-| DA-P0-7 PRE_EXECUTION Guard | Gateway Lab | 6 Control Target Pipeline만 표시, 실제 결과 API 대기 |
-| DA-P0-8 POST_EXECUTION/Recovery | Runtime · Recovery | 실제 External Evidence/Reconciliation API 대기 |
+| DA-P0-7 PRE_EXECUTION Guard | Gateway Lab | 6 Control 결과, Reason Code, Payload Digest 표시 |
+| DA-P0-8 POST_EXECUTION/Recovery | Gateway Lab, Decision Trace | External Evidence, Receipt/Finality, Re-binding, `SENT_UNKNOWN` 표시 |
 | BE-9A Idempotency | Gateway Lab | 논리 요청 동안 동일 key 유지, 입력 변경/새 실행 시 갱신 |
 | BE-9B/11 Recovery | Runtime · Recovery | Read Model/API 대기 |
 | BE-10 Lifecycle | 정책 · 승인 | Policy 단건 조회, create/transition client 제공 |
 | BE-11 Observability | 통합 관제, Monitoring | Readiness 연결, Aggregate/Prometheus BFF 대기 |
 | BE-11 Audit Read Model | Decision Trace | 목록과 privileged Evidence Pack 연결 |
-| NCP-5 ContentStore | 정책 · 승인 | FE 변경 없음. server-owned storage adapter 경계 유지 |
+| NCP-5 ContentStore | 정책 · 승인 | Manifest Reference ingest만 사용하고 server-owned storage adapter 경계 유지 |
 
 ## Integration Rule
 

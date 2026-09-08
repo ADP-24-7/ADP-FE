@@ -9,9 +9,11 @@ export type RuntimeExecutionStage =
   | 'TRANSFORM'
   | 'POLICY_HARNESS'
   | 'OUTBOUND_GUARD'
+  | 'PRE_EXECUTION_GUARD'
   | 'PROVIDER_REQUEST'
   | 'CONNECTOR'
   | 'RESPONSE_GUARD'
+  | 'POST_EXECUTION_REBINDING'
   | 'CONTROLLED_DELIVERY'
   | 'RUNTIME_EXECUTION';
 
@@ -22,6 +24,7 @@ export type RuntimeExecutionStatus =
   | 'DECIDED'
   | 'TRANSFORMED'
   | 'EGRESSING'
+  | 'EXTERNALLY_RECONCILED'
   | 'REVIEW_REQUIRED'
   | 'COMPLETED'
   | 'DENIED'
@@ -133,7 +136,54 @@ export type RuntimeExecutionTrace = {
   status: RuntimeExecutionStatus;
   stages: RuntimeExecutionTraceStage[];
   digitalAssetRuntimeSnapshot?: DigitalAssetRuntimeSnapshot | null;
+  digitalAssetPreExecutionGuard?: DigitalAssetPreExecutionGuard | null;
+  digitalAssetPostExecutionEvidence?: DigitalAssetPostExecutionEvidence | null;
   evidence: RuntimeExecutionEvidence;
+};
+
+export type DigitalAssetArtifactControl =
+  | 'APPROVED_VS_REQUESTED_MATCH'
+  | 'REQUIRED_OUTBOUND_FIELD_PRESENCE'
+  | 'REQUIRED_EXACT_PRESERVATION'
+  | 'TRANSFORM_FIELD_SEPARATION'
+  | 'DESTINATION_SPECIFIC_PAYLOAD'
+  | 'TRACE_BINDING';
+
+export type DigitalAssetPreExecutionGuard = {
+  snapshotId: string;
+  status: 'PASSED' | 'BLOCKED' | 'REVIEW_REQUIRED' | string;
+  controlResults: Record<DigitalAssetArtifactControl, string>;
+  reasonCodes: string[];
+  outboundPayloadDigest: string;
+  providerPayloadDigest: string;
+  evaluatedAt: string;
+};
+
+export type DigitalAssetPostExecutionStatus =
+  | 'VERIFIED'
+  | 'PENDING'
+  | 'SENT_UNKNOWN'
+  | 'REVIEW_REQUIRED'
+  | 'FAILED';
+
+export type DigitalAssetPostExecutionEvidence = {
+  status: DigitalAssetPostExecutionStatus;
+  evidenceSourceType: 'PROVIDER_RESPONSE' | 'INDEPENDENT_EXTERNAL';
+  externalStatus: string;
+  providerStatus: string;
+  receiptStatus: string;
+  finalityStatus: string;
+  amountSource: string;
+  transactionDetailDigest: string;
+  receiptFinalityDigest: string;
+  transferEvidenceDigest: string;
+  internalTraceEvidenceDigest: string;
+  exactAmountDigest: string;
+  expectedProjectionDigest: string;
+  actualProjectionDigest: string;
+  mismatchedFields: string[];
+  providerResponseDigest?: string | null;
+  observedAt: string;
 };
 
 export type DigitalAssetRuntimeSnapshot = {
@@ -187,5 +237,7 @@ export type RuntimeExecutionDetail = {
   createdAt: string;
   updatedAt: string;
   digitalAssetRuntimeSnapshot?: DigitalAssetRuntimeSnapshot | null;
+  digitalAssetPreExecutionGuard?: DigitalAssetPreExecutionGuard | null;
+  digitalAssetPostExecutionEvidence?: DigitalAssetPostExecutionEvidence | null;
   evidence: RuntimeExecutionEvidence;
 };

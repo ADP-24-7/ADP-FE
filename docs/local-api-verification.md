@@ -2,13 +2,14 @@
 
 ## Verified Baseline
 
-- Date: 2026-09-08
-- Backend: `ADP-BE origin/main@31ae5f1`
-- Database: isolated PostgreSQL database `adp_fe_origin_main_31ae5f1`
-- Flyway: fresh migration through V29
-- Frontend branch: `feat/fe-parallel-api-foundation`
+- Date: 2026-09-09
+- Backend main baseline: `ADP-BE origin/main@b5897a5`
+- Backend parallel preview: local `feature/be-10-lifecycle-shadow-evidence` worktree
+- Database: fresh Docker PostgreSQL volume in Compose project `adp-fe-p08`
+- Flyway: fresh migration through local V33
+- Frontend branch: `feat/fe-p0-8-runtime-search`
 
-로컬 `ADP-BE` 작업 브랜치와 기존 DB는 수정하지 않고, `origin/main` archive와 별도 DB로 검증했다.
+P0-8 Runtime/Audit 계약은 최신 `main` 기준으로 검증했다. BE-10 Shadow 계약은 아직 `main`에 없는 로컬 작업 브랜치이므로 별도의 Preview 결과로 기록한다. FE 검증 과정에서 BE 파일은 수정하지 않았다.
 
 ## Verified Flows
 
@@ -21,8 +22,10 @@
 | `POST /api/admin/digital-assets/artifacts/ingestions` | 201, 5 files, `CANDIDATE` |
 | Policy `CANDIDATE → REPLAY → SHADOW → APPROVED` | Maker/Checker 분리 후 성공 |
 | `POST /api/admin/digital-assets/artifacts/{id}/versions/{version}/activate` | `ACTIVE` Runtime Artifact 반환 |
-| Digital Asset Runtime P0-4 request | 200, `COMPLETED / TRANSFORM` |
-| Digital Asset Runtime trace | 12 stages + immutable P0-6 Snapshot 반환 |
+| Digital Asset Runtime P0-4 request | 200, `COMPLETED` |
+| Digital Asset Runtime trace | 14 stages + P0-6 Snapshot + P0-7 Guard + P0-8 Evidence 반환 |
+| Audit workload/status 검색 | `tokenized_asset_purchase / COMPLETED`, 실행 1건 반환 |
+| Audit Evidence 조회 | schema v1, Runtime `COMPLETED`, Export Digest 반환 |
 
 ## P0-6 Snapshot Evidence
 
@@ -34,6 +37,31 @@
 - Destination Profile ID/Version/Digest
 - Runtime Control Version/Digest
 - Crosswalk Version/Digest
+
+## P0-7/P0-8 Evidence
+
+실제 Digital Asset 실행 `exec_9cb05456-c225-4a48-9f52-3a87c0678fa0`에서 다음을 확인했다.
+
+- Trace 14 stages에 `PRE_EXECUTION_GUARD`, `POST_EXECUTION_REBINDING` 포함
+- PRE_EXECUTION 결과 `PASSED`, 6개 Control과 Reason/Payload Digest 반환
+- POST_EXECUTION 결과 `VERIFIED`, Evidence Source `INDEPENDENT_EXTERNAL`
+- Receipt `SUCCESS`, Finality `FINALIZED`, Re-binding mismatch 없음
+- Audit 검색 결과의 Execution ID와 Evidence Execution ID 일치
+- Evidence Export Digest는 64자리 Hex 문자열
+
+## BE-10 Parallel Preview
+
+로컬 작업 브랜치에서 Candidate `fe-shadow-1788886112176@2.0.0`을 `REPLAY`까지 전이한 뒤 Shadow Evaluation을 검증했다.
+
+- Endpoint: `POST /api/admin/policy-lifecycle/{artifactId}/versions/{artifactVersion}/shadow-evaluations`
+- Evaluation Case: `GOLDEN_ALLOW`
+- Result: `DIFF`
+- Diff fields: `FINAL_ACTION`, `REASON_CODES`, `REQUIRED_CONTROLS`
+- Baseline Artifact: `DA-DIGITAL-ASSET-RUNTIME-LOCAL-ACTIVE-001`
+- Input Digest: 64자리 Hex 문자열
+- 동일 Candidate/Case 재평가는 저장된 Evidence 충돌로 `409`를 반환
+
+이 결과는 BE-10의 병렬 개발 계약 검증이며, `main` 연결 완료 판정이 아니다.
 
 ## Maker-Checker Finding
 
@@ -76,6 +104,10 @@ processingContexts: DIGITAL_ASSET
 
 ## Remaining Verification
 
-- P0-7 PRE_EXECUTION 6 Controls는 아직 `main`에 없으므로 실제 결과 검증 대상이 아니다.
-- P0-8 External Evidence/Reconciliation/Recovery도 API 확정 후 검증한다.
+- Recovery incident 목록/요약/수동 명령은 Controller 확정 후 검증한다.
+- Shadow Evidence 목록/단건 조회와 Active Runtime Selection Read Model은 BE-10 후속 계약이 필요하다.
 - NCP ContentStore E2E는 server-side Adapter 범위이며 FE에 Bucket/Endpoint/Credential 입력을 추가하지 않는다.
+
+## Environment Note
+
+기존 공유 Docker DB에는 V23 Flyway checksum mismatch가 있어 데이터를 변경하거나 repair하지 않았다. 검증은 새 Compose 프로젝트와 새 볼륨으로 수행했다. 이 문제는 기존 DB migration history와 현재 BE migration 파일의 정합성을 별도로 확인해야 한다.

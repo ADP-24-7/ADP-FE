@@ -1,7 +1,7 @@
 import { FileCheck2, Search } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { normalizeApiError } from '../../../shared/api/apiError';
-import { EmptyState, ErrorState, KeyValues, LoadingPanel, SectionCard, StatusBadge } from '../../../shared/components';
+import { EmptyState, ErrorState, KeyValues, LoadingPanel, SearchAssistInput, SectionCard, StatusBadge } from '../../../shared/components';
 import { usePolicyLifecycle } from '../../policy-lifecycle';
 import { useActivateDigitalAssetArtifact, useDigitalAssetArtifact, useIngestDigitalAssetArtifact } from '../hooks/useDigitalAssetArtifact';
 import { isSha256Digest } from '../model/runtimeContract';
@@ -23,6 +23,20 @@ export function DigitalAssetArtifactPanel() {
       : undefined
   );
   const lifecycle = usePolicyLifecycle(record?.artifactId ?? '', record?.artifactVersion ?? '');
+  const artifactSuggestions = [
+    {
+      value: 'DA-DIGITAL-ASSET-RUNTIME-LOCAL-ACTIVE-001',
+      label: 'Local ACTIVE Runtime Artifact',
+      description: 'BE local fixture에서 Runtime이 선택하는 Artifact',
+      source: 'local-example' as const,
+    },
+    {
+      value: 'DA-DIGITAL-ASSET-RUNTIME-CANDIDATE-001',
+      label: 'Local Candidate Artifact',
+      description: 'Artifact ingestion 검증용 ID 예시',
+      source: 'local-example' as const,
+    },
+  ];
 
   function submitLookup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -50,13 +64,14 @@ export function DigitalAssetArtifactPanel() {
 
   return (
     <SectionCard
+      className="search-assist-card"
       title="Digital Asset Artifact"
       description="BE-owned 검증을 통과한 5-role Bundle의 Lifecycle Candidate를 조회하거나 등록합니다."
       actions={record ? <StatusBadge tone="success">{lifecycle.data?.lifecycleStage ?? record.lifecycleStage}</StatusBadge> : <StatusBadge tone="info">P0-5/P0-6</StatusBadge>}
     >
       <div className="content-grid content-grid-two artifact-control-grid">
         <form className="form-grid compact-form-grid" onSubmit={submitLookup}>
-          <label className="field"><span>Artifact ID</span><input value={artifactId} onChange={(event) => setArtifactId(event.target.value)} required /></label>
+          <label className="field"><span>Artifact ID</span><SearchAssistInput value={artifactId} onChange={setArtifactId} suggestions={artifactSuggestions} placeholder="ACTIVE 또는 CANDIDATE 입력" ariaLabel="Digital Asset Artifact ID" required /></label>
           <label className="field"><span>Version</span><input value={artifactVersion} onChange={(event) => setArtifactVersion(event.target.value)} placeholder="1.0.0" required /></label>
           <button className="button button-secondary" type="submit"><Search size={15} />Artifact 조회</button>
         </form>

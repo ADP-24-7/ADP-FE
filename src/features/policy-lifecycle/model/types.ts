@@ -24,3 +24,37 @@ export type TransitionPolicyLifecycleRequest = {
   targetStage: PolicyLifecycleStage;
   reasonCode: string;
 };
+
+export type RunPolicyShadowEvaluationRequest = {
+  evaluationCaseId: string;
+};
+
+export type PolicyShadowDiffField =
+  | 'FINAL_ACTION'
+  | 'REASON_CODES'
+  | 'REQUIRED_CONTROLS'
+  | 'TRANSFORM_STRATEGY'
+  | 'DESTINATION_PROFILE';
+
+export type PolicyShadowEvidence = {
+  shadowEvaluationId: string;
+  institutionId: string;
+  workloadId: string;
+  purposeCode: string;
+  baselineArtifactId: string;
+  baselineArtifactVersion: string;
+  baselineArtifactDigest: string;
+  candidateArtifactId: string;
+  candidateArtifactVersion: string;
+  candidateArtifactDigest: string;
+  candidateRevision: number;
+  evaluationCaseId: string;
+  evaluationCaseVersion: string;
+  inputDigest: string;
+  baselineOutcomeDigest: string;
+  candidateOutcomeDigest: string;
+  diffFields: PolicyShadowDiffField[];
+  result: 'MATCH' | 'DIFF';
+  evaluatedBy: string;
+  evaluatedAt: string;
+};

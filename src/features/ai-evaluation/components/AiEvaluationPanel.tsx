@@ -1,7 +1,7 @@
 import { Search } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { normalizeApiError } from '../../../shared/api/apiError';
-import { EmptyState, ErrorState, KeyValues, LoadingPanel, SectionCard, StatusBadge } from '../../../shared/components';
+import { EmptyState, ErrorState, KeyValues, LoadingPanel, SearchAssistInput, SectionCard, StatusBadge } from '../../../shared/components';
 import { useAiEvaluationBundle, useAiEvaluationReadiness } from '../hooks/useAiEvaluationRun';
 
 function readinessTone(status: string) {
@@ -15,6 +15,14 @@ export function AiEvaluationPanel() {
   const [lookupRunId, setLookupRunId] = useState('');
   const readiness = useAiEvaluationReadiness(lookupRunId);
   const bundle = useAiEvaluationBundle(lookupRunId, readiness.data?.bundleAvailable === true);
+  const runSuggestions = [
+    {
+      value: 'ai-eval-baseline-2026-09-07',
+      label: '3-model baseline',
+      description: 'BE local fixture에 등록된 Evaluation Run 예시',
+      source: 'local-example' as const,
+    },
+  ];
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -23,6 +31,7 @@ export function AiEvaluationPanel() {
 
   return (
     <SectionCard
+      className="search-assist-card"
       title="AI Evaluation Evidence"
       description="Runtime Evidence의 완결성과 DA 전달 Bundle을 Evaluation Run 단위로 확인합니다."
       actions={readiness.data ? <StatusBadge tone={readinessTone(readiness.data.status)}>{readiness.data.status}</StatusBadge> : undefined}
@@ -30,12 +39,7 @@ export function AiEvaluationPanel() {
       <form className="search-row" onSubmit={submit}>
         <label className="field field-grow">
           <span>Evaluation Run ID</span>
-          <input
-            value={runId}
-            onChange={(event) => setRunId(event.target.value)}
-            placeholder="ai-eval-baseline-2026-09-07"
-            required
-          />
+          <SearchAssistInput value={runId} onChange={setRunId} suggestions={runSuggestions} placeholder="ai-eval 또는 baseline 입력" ariaLabel="Evaluation Run ID" required />
         </label>
         <button className="button button-primary" type="submit"><Search size={15} />조회</button>
       </form>

@@ -1,21 +1,19 @@
 # Unconnected API Inventory
 
-2026-09-08 `ADP-BE origin/main@31ae5f1` 기준이다. 아래 항목은 FE 요구사항이 있지만 Controller 또는 확정 응답 계약이 아직 `main`에 없다.
+2026-09-09 `ADP-BE origin/main@b5897a5` 기준이다. 아래 항목은 FE 요구사항이 있지만 Controller 또는 확정 응답 계약이 아직 `main`에 없다.
 
 | FE area | Needed contract | Current gate | FE behavior |
 | --- | --- | --- | --- |
-| Digital Asset Gateway | 6 PRE_EXECUTION Control 결과 | DA-P0-7 예정 | Target Pipeline만 표시 |
-| Runtime · Recovery | External Evidence/Re-binding | DA-P0-8 예정 | 실제 결과 수치 미표시 |
-| Runtime · Recovery | Recovery incident list/summary/manual command | P0-8 + BE-9/11 후속 | 비활성 조작과 API 대기 상태 |
+| Runtime · Recovery | Recovery incident list/summary/manual command | BE-9/11 후속 | Trace/Evidence의 상태만 표시하고 운영 명령은 비활성 |
 | AI Analysis | Evaluation Run 목록/검색 | 단건 Readiness/Bundle만 존재 | 정확한 Run ID 입력 방식 유지 |
 | Digital Asset Policy | Artifact 목록/현재 ACTIVE 조회 | 단건 Candidate 조회와 activate만 존재 | 정확한 Artifact ID/Version 사용 |
 | Policy | Policy 목록/ACTIVE Snapshot | 단건 Lifecycle만 존재 | 목록을 만들지 않음 |
 | Policy | Review Queue | Review Read Model 없음 | API 연결 대기 |
-| Policy | Shadow Diff | Replay/Shadow 결과 API 없음 | API 연결 대기 |
+| Policy | Shadow Evidence 목록/단건 Read Model | BE-10 작업 브랜치에는 단일 평가 POST만 존재 | POST Preview만 제공하고 이력 목록은 만들지 않음 |
 | Overview | Security Finding/Open Incident 집계 | Aggregate Read Model 없음 | 숫자 대신 `—` |
 | Monitoring | Runtime/Artifact/Recovery metric query | Prometheus 노출만 있고 BFF Query 없음 | Query/BFF 연결 대기 |
 | Data Access | Workload Registry 및 Decision History | 목록/검색 Controller 없음 | Context Preview만 연결 |
-| NCP Artifact | NCP ContentStore ingest E2E | NCP-5 BE Adapter 예정 | FE는 Storage credential/endpoint를 받지 않음 |
+| NCP Artifact | Artifact browser/prefix search | ContentStore ingest E2E만 존재 | FE는 Storage credential/endpoint를 받지 않음 |
 
 ## Endpoints That Must Not Be Invented
 

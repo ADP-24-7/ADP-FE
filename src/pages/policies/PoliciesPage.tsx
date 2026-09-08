@@ -1,9 +1,9 @@
 import { ArrowRight, LockKeyhole, RefreshCw, Search } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { DigitalAssetArtifactPanel } from '../../features/digital-asset';
-import { usePolicyLifecycle } from '../../features/policy-lifecycle';
+import { usePolicyLifecycle, useRunPolicyShadowEvaluation } from '../../features/policy-lifecycle';
 import { normalizeApiError } from '../../shared/api/apiError';
-import { EmptyState, ErrorState, KeyValues, LoadingPanel, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
+import { EmptyState, ErrorState, KeyValues, LoadingPanel, PackContextSummary, PageHeader, SearchAssistInput, SectionCard, StatusBadge } from '../../shared/components';
 import { useExecutionPack } from '../../shared/prototype';
 
 const lifecycle = [
@@ -27,11 +27,38 @@ export function PoliciesPage() {
   const [artifactId, setArtifactId] = useState('');
   const [artifactVersion, setArtifactVersion] = useState('');
   const [lookup, setLookup] = useState({ artifactId: '', artifactVersion: '' });
+  const [evaluationCaseId, setEvaluationCaseId] = useState('');
   const policy = usePolicyLifecycle(lookup.artifactId, lookup.artifactVersion);
+  const shadow = useRunPolicyShadowEvaluation();
+  const artifactSuggestions = selectedPack.key === 'digital-asset' ? [
+    {
+      value: 'DA-DIGITAL-ASSET-RUNTIME-LOCAL-ACTIVE-001',
+      label: 'Local ACTIVE Runtime Artifact',
+      description: 'BE local fixture Policy Lifecycle 조회 예시',
+      source: 'local-example' as const,
+    },
+    {
+      value: 'DA-DIGITAL-ASSET-RUNTIME-CANDIDATE-001',
+      label: 'Local Candidate Artifact',
+      description: 'Artifact ingestion 후 Lifecycle 조회 예시',
+      source: 'local-example' as const,
+    },
+  ] : [];
 
   function submitLookup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    shadow.reset();
     setLookup({ artifactId: artifactId.trim(), artifactVersion: artifactVersion.trim() });
+  }
+
+  function submitShadow(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (policy.data?.lifecycleStage !== 'REPLAY') return;
+    shadow.mutate({
+      artifactId: policy.data.artifactId,
+      artifactVersion: policy.data.artifactVersion,
+      evaluationCaseId: evaluationCaseId.trim(),
+    });
   }
 
   return (
@@ -63,11 +90,12 @@ export function PoliciesPage() {
 
       <div className="content-grid content-grid-wide-left">
         <SectionCard
+          className="search-assist-card"
           title="Policy Lifecycle 조회"
           description="Artifact ID와 Version으로 현재 Lifecycle 상태를 확인합니다."
         >
           <form className="search-row policy-search-row" onSubmit={submitLookup}>
-            <label className="field field-grow"><span>Artifact ID</span><input value={artifactId} onChange={(event) => setArtifactId(event.target.value)} required /></label>
+            <label className="field field-grow"><span>Artifact ID</span><SearchAssistInput value={artifactId} onChange={setArtifactId} suggestions={artifactSuggestions} placeholder={selectedPack.key === 'digital-asset' ? 'ACTIVE 또는 CANDIDATE 입력' : 'Artifact ID 직접 입력'} ariaLabel="Policy Artifact ID" required /></label>
             <label className="field"><span>Version</span><input value={artifactVersion} onChange={(event) => setArtifactVersion(event.target.value)} placeholder="1.0.0" required /></label>
             <button className="button button-primary" type="submit"><Search size={15} />조회</button>
           </form>
@@ -142,8 +170,38 @@ export function PoliciesPage() {
       </div>
 
       <div className="content-grid content-grid-two">
-        <SectionCard title="Shadow 진입 기준" description="False Allow, Decision Diff, Review Burden, Audit Gap" actions={<StatusBadge>NOT_EVALUATED</StatusBadge>}>
-          <EmptyState compact title="API 연결 대기" description="Lifecycle SHADOW 전이는 구현됐지만 Shadow 결과 Read Model은 아직 없습니다." endpoint="POST /api/admin/policy-lifecycle/{artifactId}/versions/{version}/transitions" />
+        <SectionCard className="search-assist-card" title="Shadow Evaluation" description="ACTIVE Baseline과 REPLAY Candidate를 동일 입력으로 비교" actions={<StatusBadge tone={shadow.data?.result === 'MATCH' ? 'success' : shadow.data?.result === 'DIFF' ? 'warning' : 'neutral'}>{shadow.data?.result ?? 'BE-10 PREVIEW'}</StatusBadge>}>
+          <form className="search-row policy-search-row" onSubmit={submitShadow}>
+            <label className="field field-grow">
+              <span>Evaluation Case ID</span>
+              <SearchAssistInput
+                value={evaluationCaseId}
+                onChange={setEvaluationCaseId}
+                suggestions={[
+                  { value: 'GOLDEN_ALLOW', label: '허용 기준 Case', description: 'BE local shadow evaluator 예시', source: 'local-example' },
+                  { value: 'FAILURE_BLOCK', label: '차단 기준 Case', description: 'BE local shadow evaluator 예시', source: 'local-example' },
+                ]}
+                placeholder="golden 또는 failure 입력"
+                ariaLabel="Policy Shadow Evaluation Case ID"
+                required
+              />
+            </label>
+            <button className="button button-primary" type="submit" disabled={policy.data?.lifecycleStage !== 'REPLAY' || !evaluationCaseId.trim() || shadow.isPending}>
+              {shadow.isPending ? '비교 중...' : 'Shadow 비교'}
+            </button>
+          </form>
+          {shadow.isError ? <ErrorState description={normalizeApiError(shadow.error).message} onRetry={() => shadow.reset()} /> : shadow.data ? (
+            <KeyValues items={[
+              ['Evaluation', `${shadow.data.shadowEvaluationId} · ${shadow.data.evaluationCaseId}`],
+              ['Result / Diff', `${shadow.data.result} / ${shadow.data.diffFields.join(' · ') || '없음'}`],
+              ['Baseline', `${shadow.data.baselineArtifactId} · ${shadow.data.baselineArtifactVersion}`],
+              ['Candidate', `${shadow.data.candidateArtifactId} · ${shadow.data.candidateArtifactVersion} · rev ${shadow.data.candidateRevision}`],
+              ['Input Digest', shadow.data.inputDigest],
+              ['Outcome Digests', `${shadow.data.baselineOutcomeDigest} / ${shadow.data.candidateOutcomeDigest}`],
+            ]} />
+          ) : (
+            <EmptyState compact title={policy.data?.lifecycleStage === 'REPLAY' ? 'Evaluation Case 입력 대기' : 'REPLAY Candidate 조회 필요'} description="Connector를 호출하지 않고 Raw Payload 없이 Action·Reason·Control·Transform·Destination Diff를 저장합니다." endpoint="POST /api/admin/policy-lifecycle/{artifactId}/versions/{version}/shadow-evaluations" />
+          )}
         </SectionCard>
         <SectionCard title="Artifact 무결성" description="Schema, Digest, Evidence Reference, Vocabulary" actions={<StatusBadge tone={selectedPack.key === 'digital-asset' ? 'success' : 'neutral'}>{selectedPack.key === 'digital-asset' ? 'P0-5 AVAILABLE' : 'NOT VERIFIED'}</StatusBadge>}>
           <EmptyState compact title={selectedPack.key === 'digital-asset' ? '상단 Artifact 도구에서 조회' : 'API 연결 대기'} description={selectedPack.key === 'digital-asset' ? 'BE-owned strict schema와 digest 검증 결과를 실제 Lifecycle Candidate로 확인합니다.' : '해당 Pack의 Artifact Loader API가 아직 없습니다.'} endpoint={selectedPack.key === 'digital-asset' ? 'GET /api/admin/digital-assets/artifacts/{artifactId}/versions/{version}' : 'Artifact Loader API 미구현'} />

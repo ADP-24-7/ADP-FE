@@ -2,7 +2,7 @@ import { Boxes, LockKeyhole, Play, Search } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { useContextPreview } from '../../features/workloads';
 import { normalizeApiError } from '../../shared/api/apiError';
-import { BulletList, EmptyState, ErrorState, KeyValues, LoadingPanel, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
+import { BulletList, EmptyState, ErrorState, KeyValues, LoadingPanel, PackContextSummary, PageHeader, SearchAssistInput, SectionCard, StatusBadge } from '../../shared/components';
 import { useExecutionPack } from '../../shared/prototype';
 
 export function DataAccessPage() {
@@ -11,6 +11,9 @@ export function DataAccessPage() {
   const [purpose, setPurpose] = useState('');
   const [subject, setSubject] = useState('');
   const preview = useContextPreview();
+  const workloadSuggestions = [{ value: 'customer_summary', label: 'AI 고객 요약', description: 'BE local fixture Context Preview', source: 'local-example' as const }];
+  const purposeSuggestions = [{ value: 'CUSTOMER_SUPPORT', label: '고객 지원 목적', description: 'customer_summary에 허용된 Purpose', source: 'local-example' as const }];
+  const subjectSuggestions = [{ value: 'customer:customer-100', label: 'Local synthetic customer', description: '실제 고객정보가 아닌 BE local fixture Subject', source: 'local-example' as const }];
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -29,11 +32,11 @@ export function DataAccessPage() {
       <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} objective={selectedPack.objective} />
 
       <div className="content-grid content-grid-two">
-        <SectionCard title="Runtime Context Preview" description="로컬 검증용 API로 권한·최소조회·탐지 결과를 확인합니다." actions={<Search size={16} />}>
+        <SectionCard className="search-assist-card" title="Runtime Context Preview" description="로컬 검증용 API로 권한·최소조회·탐지 결과를 확인합니다." actions={<Search size={16} />}>
           <form className="form-grid compact-form-grid" onSubmit={submit}>
-            <label className="field"><span>Workload ID</span><input value={workloadId} onChange={(event) => setWorkloadId(event.target.value)} required /></label>
-            <label className="field"><span>Purpose</span><input value={purpose} onChange={(event) => setPurpose(event.target.value)} required /></label>
-            <label className="field field-full"><span>Subject</span><input value={subject} onChange={(event) => setSubject(event.target.value)} placeholder="subjectType:subjectId" required /></label>
+            <label className="field"><span>Workload ID</span><SearchAssistInput value={workloadId} onChange={setWorkloadId} suggestions={workloadSuggestions} placeholder="customer 입력" ariaLabel="Context Preview Workload ID" required /></label>
+            <label className="field"><span>Purpose</span><SearchAssistInput value={purpose} onChange={setPurpose} suggestions={purposeSuggestions} placeholder="support 입력" ariaLabel="Context Preview Purpose" required /></label>
+            <label className="field field-full"><span>Subject</span><SearchAssistInput value={subject} onChange={setSubject} suggestions={subjectSuggestions} placeholder="customer 또는 subjectType:subjectId 입력" ariaLabel="Context Preview Subject" required /></label>
             <button className="button button-primary" type="submit" disabled={preview.isPending}><Play size={15} />{preview.isPending ? '검증 중...' : 'Context 검증'}</button>
           </form>
         </SectionCard>

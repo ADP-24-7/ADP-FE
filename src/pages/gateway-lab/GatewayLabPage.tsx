@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { BriefcaseBusiness, LockKeyhole, Play, RotateCcw, ShieldCheck, TerminalSquare } from 'lucide-react';
+import { BriefcaseBusiness, LockKeyhole, Play, RotateCcw, ShieldCheck, Sparkles, TerminalSquare } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { createDigitalAssetRuntimeInput } from '../../features/digital-asset';
 import type { DigitalAssetKind, DigitalAssetOperation } from '../../features/digital-asset';
@@ -15,6 +15,15 @@ const actionTone = {
   TRANSFORM: 'info',
   REVIEW: 'warning',
   BLOCK: 'danger',
+} as const;
+
+const digitalAssetControlLabels = {
+  APPROVED_VS_REQUESTED_MATCH: '승인 의도와 요청 일치',
+  REQUIRED_OUTBOUND_FIELD_PRESENCE: '필수 Outbound Field',
+  REQUIRED_EXACT_PRESERVATION: '정확값 보존',
+  TRANSFORM_FIELD_SEPARATION: '변환 Field 분리',
+  DESTINATION_SPECIFIC_PAYLOAD: 'Destination별 Payload',
+  TRACE_BINDING: 'Trace Binding',
 } as const;
 
 function createTargetPipeline(pack: ExecutionPack) {
@@ -94,6 +103,7 @@ const statusTone: Record<RuntimeExecutionStatus, 'success' | 'warning' | 'danger
   DECIDED: 'info',
   TRANSFORMED: 'info',
   EGRESSING: 'warning',
+  EXTERNALLY_RECONCILED: 'success',
   REVIEW_REQUIRED: 'warning',
   COMPLETED: 'success',
   DENIED: 'danger',
@@ -158,7 +168,7 @@ export function GatewayLabPage() {
       ['approved', '정상 결제'],
       ['scope-change', '금액 한도 초과'],
       ['destination-risk', 'SENT_UNKNOWN'],
-      ['response-risk', '중복 요청'],
+      ['response-risk', '결과 불일치'],
     ] as const
     : [
       ['approved', '승인 범위 일치'],
@@ -244,6 +254,46 @@ export function GatewayLabPage() {
     setIdempotencyKey(createIdempotencyKey());
   }
 
+  function fillLocalContractExample(nextScenario = scenarioMode) {
+    setInstitutionId('institution_local');
+    setSubjectScope('customer:customer-100');
+    if (isDigitalAsset) {
+      setApprovalReference('approval_digital_asset_purchase_v1');
+      setWorkloadId('tokenized_asset_purchase');
+      setPurposeCode('DIGITAL_ASSET_PURCHASE');
+      setDestinationProfileId('dest_mock_asset_platform_v1');
+      setApprovedTransactionReference('approved-tx-local-001');
+      setCustomerId('customer-100');
+      setAccountId('acct-100-1');
+      setChainId('eip155:1');
+      setAssetKind('FUNGIBLE_TOKEN');
+      setAssetSymbol(nextScenario === 'destination-risk' ? 'asset-sent-unknown' : nextScenario === 'response-risk' ? 'asset-mismatch' : 'asset-krw-token-001');
+      setAssetContractAddress('0x0000000000000000000000000000000000000001');
+      setOperation('TRANSFER');
+      setTokenId('');
+      setRequestedAmount(nextScenario === 'scope-change' ? '10000001' : '10000');
+      setRequestedDestination('wallet-test-001');
+      setRequestedBeneficiaryReference('beneficiary-local-001');
+      setProcessingContextsText('DIGITAL_ASSET');
+    } else {
+      setApprovalReference('approval_ai_customer_support_v1');
+      setWorkloadId('customer_summary');
+      setPurposeCode('CUSTOMER_SUPPORT');
+      setDestinationProfileId('dest_internal_provider_project_provisional');
+      setContent('Summarize approved context');
+      setProcessingContextsText('AI_USE');
+    }
+    setContractError('');
+    setIdempotencyKey(createIdempotencyKey());
+  }
+
+  function selectScenario(nextScenario: typeof scenarioMode) {
+    setScenarioMode(nextScenario);
+    if (isDigitalAsset) {
+      fillLocalContractExample(nextScenario);
+    }
+  }
+
   useEffect(() => {
     setProcessingContextsText(selectedPack.defaultProcessingContexts.join(', '));
     setIdempotencyKey(createIdempotencyKey());
@@ -269,7 +319,7 @@ export function GatewayLabPage() {
           <span className="toolbar-label">시나리오</span>
           <div className="segmented-control" role="tablist" aria-label="Gateway scenario">
             {scenarioOptions.map(([key, label]) => (
-              <button key={key} type="button" role="tab" aria-selected={scenarioMode === key} className={scenarioMode === key ? 'active' : ''} onClick={() => setScenarioMode(key)}>{label}</button>
+                <button key={key} type="button" role="tab" aria-selected={scenarioMode === key} className={scenarioMode === key ? 'active' : ''} onClick={() => selectScenario(key)}>{label}</button>
             ))}
           </div>
         </div>
@@ -307,6 +357,11 @@ export function GatewayLabPage() {
       <div className="gateway-prototype-grid">
         <SectionCard title={isDigitalAsset ? '거래 요청' : '사용자 요청'} description="업무 목적과 실행 범위">
           <form className="form-grid compact-form-grid" onSubmit={submit}>
+            {selectedPack.key === 'ai' || isDigitalAsset ? (
+              <button className="button button-secondary field-full local-example-button" type="button" onClick={() => fillLocalContractExample()}>
+                <Sparkles size={15} />BE Local 계약 예시 채우기
+              </button>
+            ) : null}
             <div className="requester-role-card field-full">
               <span aria-hidden="true"><BriefcaseBusiness size={20} /></span>
               <div>
@@ -438,6 +493,42 @@ export function GatewayLabPage() {
                 </div>
                 <div><span>실행 상태</span><strong>{execution.data.created.status}</strong></div>
               </div>
+              {isDigitalAsset && execution.data.trace.digitalAssetPreExecutionGuard ? (
+                <div className="evidence-section">
+                  <h3>PRE_EXECUTION 6 Control</h3>
+                  <div className="control-result-grid">
+                    {Object.entries(execution.data.trace.digitalAssetPreExecutionGuard.controlResults).map(([control, result]) => (
+                      <div key={control}>
+                        <span>{digitalAssetControlLabels[control as keyof typeof digitalAssetControlLabels] ?? control}</span>
+                        <StatusBadge tone={getStatusTone(result)}>{result}</StatusBadge>
+                      </div>
+                    ))}
+                  </div>
+                  <KeyValues items={[
+                    ['Guard Status', execution.data.trace.digitalAssetPreExecutionGuard.status],
+                    ['Reason Codes', execution.data.trace.digitalAssetPreExecutionGuard.reasonCodes.join(' · ') || '없음'],
+                    ['Outbound Payload Digest', execution.data.trace.digitalAssetPreExecutionGuard.outboundPayloadDigest],
+                    ['Provider Payload Digest', execution.data.trace.digitalAssetPreExecutionGuard.providerPayloadDigest],
+                  ]} />
+                </div>
+              ) : null}
+              {isDigitalAsset && execution.data.trace.digitalAssetPostExecutionEvidence ? (
+                <div className="evidence-section">
+                  <h3>POST_EXECUTION Evidence · Re-binding</h3>
+                  <KeyValues items={[
+                    ['Evidence Status', execution.data.trace.digitalAssetPostExecutionEvidence.status],
+                    ['Evidence Source', execution.data.trace.digitalAssetPostExecutionEvidence.evidenceSourceType],
+                    ['External / Provider', `${execution.data.trace.digitalAssetPostExecutionEvidence.externalStatus} / ${execution.data.trace.digitalAssetPostExecutionEvidence.providerStatus}`],
+                    ['Receipt / Finality', `${execution.data.trace.digitalAssetPostExecutionEvidence.receiptStatus} / ${execution.data.trace.digitalAssetPostExecutionEvidence.finalityStatus}`],
+                    ['Amount Source', execution.data.trace.digitalAssetPostExecutionEvidence.amountSource],
+                    ['Mismatch', execution.data.trace.digitalAssetPostExecutionEvidence.mismatchedFields.join(' · ') || '없음'],
+                    ['Expected Projection Digest', execution.data.trace.digitalAssetPostExecutionEvidence.expectedProjectionDigest],
+                    ['Actual Projection Digest', execution.data.trace.digitalAssetPostExecutionEvidence.actualProjectionDigest],
+                  ]} />
+                </div>
+              ) : isDigitalAsset ? (
+                <EmptyState compact title="Post-Execution Evidence 없음" description="BLOCK 또는 실행 전 상태에서는 외부 Evidence가 생성되지 않을 수 있습니다." endpoint="GET /v1/runtime/executions/{executionId}/trace" />
+              ) : null}
             </div>
           ) : (
             <EmptyState
