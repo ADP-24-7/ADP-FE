@@ -1,6 +1,8 @@
 import { useMutation } from '@tanstack/react-query';
-import { BriefcaseBusiness, LockKeyhole, Play, RotateCcw, ShieldCheck, TerminalSquare } from 'lucide-react';
+import { BriefcaseBusiness, LockKeyhole, Play, RotateCcw, ShieldCheck, Sparkles, TerminalSquare } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
+import { createDigitalAssetRuntimeInput } from '../../features/digital-asset';
+import type { DigitalAssetKind, DigitalAssetOperation } from '../../features/digital-asset';
 import { createRuntimeExecution, getRuntimeExecutionTrace, runtimeExecutionCapabilities } from '../../features/runtime-execution';
 import type { RuntimeExecutionRequest, RuntimeExecutionStatus } from '../../features/runtime-execution';
 import { normalizeApiError } from '../../shared/api/apiError';
@@ -13,6 +15,15 @@ const actionTone = {
   TRANSFORM: 'info',
   REVIEW: 'warning',
   BLOCK: 'danger',
+} as const;
+
+const digitalAssetControlLabels = {
+  APPROVED_VS_REQUESTED_MATCH: '승인 의도와 요청 일치',
+  REQUIRED_OUTBOUND_FIELD_PRESENCE: '필수 Outbound Field',
+  REQUIRED_EXACT_PRESERVATION: '정확값 보존',
+  TRANSFORM_FIELD_SEPARATION: '변환 Field 분리',
+  DESTINATION_SPECIFIC_PAYLOAD: 'Destination별 Payload',
+  TRACE_BINDING: 'Trace Binding',
 } as const;
 
 function createTargetPipeline(pack: ExecutionPack) {
@@ -92,6 +103,7 @@ const statusTone: Record<RuntimeExecutionStatus, 'success' | 'warning' | 'danger
   DECIDED: 'info',
   TRANSFORMED: 'info',
   EGRESSING: 'warning',
+  EXTERNALLY_RECONCILED: 'success',
   REVIEW_REQUIRED: 'warning',
   COMPLETED: 'success',
   DENIED: 'danger',
@@ -128,11 +140,21 @@ export function GatewayLabPage() {
   const [destinationProfileId, setDestinationProfileId] = useState('');
   const [processingContextsText, setProcessingContextsText] = useState(selectedPack.defaultProcessingContexts.join(', '));
   const [content, setContent] = useState('');
+  const [evaluationRunId, setEvaluationRunId] = useState('');
+  const [evalCaseId, setEvalCaseId] = useState('');
+  const [approvedTransactionReference, setApprovedTransactionReference] = useState('');
   const [customerId, setCustomerId] = useState('');
   const [accountId, setAccountId] = useState('');
-  const [walletAddress, setWalletAddress] = useState('');
-  const [assetId, setAssetId] = useState('');
-  const [amount, setAmount] = useState('');
+  const [chainId, setChainId] = useState('');
+  const [assetKind, setAssetKind] = useState<DigitalAssetKind>('FUNGIBLE_TOKEN');
+  const [assetSymbol, setAssetSymbol] = useState('');
+  const [assetContractAddress, setAssetContractAddress] = useState('');
+  const [operation, setOperation] = useState<DigitalAssetOperation>('TRANSFER');
+  const [tokenId, setTokenId] = useState('');
+  const [requestedAmount, setRequestedAmount] = useState('');
+  const [requestedDestination, setRequestedDestination] = useState('');
+  const [requestedBeneficiaryReference, setRequestedBeneficiaryReference] = useState('');
+  const [contractError, setContractError] = useState('');
   const [idempotencyKey, setIdempotencyKey] = useState(createIdempotencyKey);
   const [selectedCheckpoint, setSelectedCheckpoint] = useState('01');
 
@@ -146,7 +168,7 @@ export function GatewayLabPage() {
       ['approved', '정상 결제'],
       ['scope-change', '금액 한도 초과'],
       ['destination-risk', 'SENT_UNKNOWN'],
-      ['response-risk', '중복 요청'],
+      ['response-risk', '결과 불일치'],
     ] as const
     : [
       ['approved', '승인 범위 일치'],
@@ -180,9 +202,36 @@ export function GatewayLabPage() {
       return;
     }
 
-    const input = isDigitalAsset
-      ? { customerId, accountId, walletAddress, assetId, amount: Number(amount) }
-      : { prompt: content };
+    let input: RuntimeExecutionRequest['input'];
+    try {
+      input = isDigitalAsset
+        ? createDigitalAssetRuntimeInput({
+          approvedTransactionReference,
+          customerId,
+          accountId,
+          chainId,
+          assetKind,
+          assetSymbol,
+          assetContractAddress,
+          operation,
+          tokenId,
+          requestedAmount,
+          requestedDestination,
+          requestedBeneficiaryReference,
+        })
+        : { prompt: content };
+      setContractError('');
+    } catch (error) {
+      setContractError(error instanceof Error ? error.message : 'Digital Asset 요청 계약을 확인해 주세요.');
+      return;
+    }
+
+    const normalizedEvaluationRunId = evaluationRunId.trim();
+    const normalizedEvalCaseId = evalCaseId.trim();
+    if (!isDigitalAsset && Boolean(normalizedEvaluationRunId) !== Boolean(normalizedEvalCaseId)) {
+      setContractError('Evaluation Run ID와 Eval Case ID는 함께 입력해야 합니다.');
+      return;
+    }
     const request: RuntimeExecutionRequest = {
       institutionId,
       approvalReference,
@@ -192,6 +241,9 @@ export function GatewayLabPage() {
       destinationProfileId,
       input,
       idempotencyKey,
+      ...(!isDigitalAsset && normalizedEvaluationRunId
+        ? { evaluationRunId: normalizedEvaluationRunId, evalCaseId: normalizedEvalCaseId }
+        : {}),
       processingContexts: processingContextsText.split(',').map((value) => value.trim()).filter(Boolean),
     };
     execution.mutate(request);
@@ -200,6 +252,46 @@ export function GatewayLabPage() {
   function markLogicalRequestChanged(update: () => void) {
     update();
     setIdempotencyKey(createIdempotencyKey());
+  }
+
+  function fillLocalContractExample(nextScenario = scenarioMode) {
+    setInstitutionId('institution_local');
+    setSubjectScope('customer:customer-100');
+    if (isDigitalAsset) {
+      setApprovalReference('approval_digital_asset_purchase_v1');
+      setWorkloadId('tokenized_asset_purchase');
+      setPurposeCode('DIGITAL_ASSET_PURCHASE');
+      setDestinationProfileId('dest_mock_asset_platform_v1');
+      setApprovedTransactionReference('approved-tx-local-001');
+      setCustomerId('customer-100');
+      setAccountId('acct-100-1');
+      setChainId('eip155:1');
+      setAssetKind('FUNGIBLE_TOKEN');
+      setAssetSymbol(nextScenario === 'destination-risk' ? 'asset-sent-unknown' : nextScenario === 'response-risk' ? 'asset-mismatch' : 'asset-krw-token-001');
+      setAssetContractAddress('0x0000000000000000000000000000000000000001');
+      setOperation('TRANSFER');
+      setTokenId('');
+      setRequestedAmount(nextScenario === 'scope-change' ? '10000001' : '10000');
+      setRequestedDestination('wallet-test-001');
+      setRequestedBeneficiaryReference('beneficiary-local-001');
+      setProcessingContextsText('DIGITAL_ASSET');
+    } else {
+      setApprovalReference('approval_ai_customer_support_v1');
+      setWorkloadId('customer_summary');
+      setPurposeCode('CUSTOMER_SUPPORT');
+      setDestinationProfileId('dest_internal_provider_project_provisional');
+      setContent('Summarize approved context');
+      setProcessingContextsText('AI_USE');
+    }
+    setContractError('');
+    setIdempotencyKey(createIdempotencyKey());
+  }
+
+  function selectScenario(nextScenario: typeof scenarioMode) {
+    setScenarioMode(nextScenario);
+    if (isDigitalAsset) {
+      fillLocalContractExample(nextScenario);
+    }
   }
 
   useEffect(() => {
@@ -227,7 +319,7 @@ export function GatewayLabPage() {
           <span className="toolbar-label">시나리오</span>
           <div className="segmented-control" role="tablist" aria-label="Gateway scenario">
             {scenarioOptions.map(([key, label]) => (
-              <button key={key} type="button" role="tab" aria-selected={scenarioMode === key} className={scenarioMode === key ? 'active' : ''} onClick={() => setScenarioMode(key)}>{label}</button>
+                <button key={key} type="button" role="tab" aria-selected={scenarioMode === key} className={scenarioMode === key ? 'active' : ''} onClick={() => selectScenario(key)}>{label}</button>
             ))}
           </div>
         </div>
@@ -265,6 +357,11 @@ export function GatewayLabPage() {
       <div className="gateway-prototype-grid">
         <SectionCard title={isDigitalAsset ? '거래 요청' : '사용자 요청'} description="업무 목적과 실행 범위">
           <form className="form-grid compact-form-grid" onSubmit={submit}>
+            {selectedPack.key === 'ai' || isDigitalAsset ? (
+              <button className="button button-secondary field-full local-example-button" type="button" onClick={() => fillLocalContractExample()}>
+                <Sparkles size={15} />BE Local 계약 예시 채우기
+              </button>
+            ) : null}
             <div className="requester-role-card field-full">
               <span aria-hidden="true"><BriefcaseBusiness size={20} /></span>
               <div>
@@ -298,17 +395,28 @@ export function GatewayLabPage() {
             </label>
             {isDigitalAsset ? (
               <>
+                <label className="field field-full"><span>Approved Transaction Reference</span><input value={approvedTransactionReference} onChange={(event) => markLogicalRequestChanged(() => setApprovedTransactionReference(event.target.value))} placeholder="approved-tx-local-001" required /></label>
                 <label className="field"><span>Customer ID</span><input value={customerId} onChange={(event) => markLogicalRequestChanged(() => setCustomerId(event.target.value))} required /></label>
                 <label className="field"><span>Account ID</span><input value={accountId} onChange={(event) => markLogicalRequestChanged(() => setAccountId(event.target.value))} required /></label>
-                <label className="field"><span>Wallet Address</span><input value={walletAddress} onChange={(event) => markLogicalRequestChanged(() => setWalletAddress(event.target.value))} required /></label>
-                <label className="field"><span>Asset ID</span><input value={assetId} onChange={(event) => markLogicalRequestChanged(() => setAssetId(event.target.value))} required /></label>
-                <label className="field field-full"><span>Amount</span><input type="number" min="0" step="any" value={amount} onChange={(event) => markLogicalRequestChanged(() => setAmount(event.target.value))} required /></label>
+                <label className="field"><span>Chain ID</span><input value={chainId} onChange={(event) => markLogicalRequestChanged(() => setChainId(event.target.value))} placeholder="eip155:1" required /></label>
+                <label className="field"><span>Asset Kind</span><select value={assetKind} onChange={(event) => markLogicalRequestChanged(() => setAssetKind(event.target.value as DigitalAssetKind))}><option value="NATIVE">NATIVE</option><option value="FUNGIBLE_TOKEN">FUNGIBLE_TOKEN</option><option value="NON_FUNGIBLE_TOKEN">NON_FUNGIBLE_TOKEN</option></select></label>
+                <label className="field"><span>Asset Symbol</span><input value={assetSymbol} onChange={(event) => markLogicalRequestChanged(() => setAssetSymbol(event.target.value))} required /></label>
+                <label className="field"><span>Operation</span><select value={operation} onChange={(event) => markLogicalRequestChanged(() => setOperation(event.target.value as DigitalAssetOperation))}><option value="TRANSFER">TRANSFER</option><option value="CONTRACT_CALL">CONTRACT_CALL</option></select></label>
+                {assetKind !== 'NATIVE' ? <label className="field field-full"><span>Asset Contract Address</span><input value={assetContractAddress} onChange={(event) => markLogicalRequestChanged(() => setAssetContractAddress(event.target.value))} required /></label> : null}
+                {assetKind === 'NON_FUNGIBLE_TOKEN' ? <label className="field field-full"><span>Token ID</span><input value={tokenId} onChange={(event) => markLogicalRequestChanged(() => setTokenId(event.target.value))} required /></label> : null}
+                <label className="field"><span>Requested Amount (Atomic Units)</span><input inputMode="numeric" pattern="[0-9]+" value={requestedAmount} onChange={(event) => markLogicalRequestChanged(() => setRequestedAmount(event.target.value))} required /></label>
+                <label className="field"><span>Requested Destination</span><input value={requestedDestination} onChange={(event) => markLogicalRequestChanged(() => setRequestedDestination(event.target.value))} required /></label>
+                <label className="field field-full"><span>Beneficiary Reference</span><input value={requestedBeneficiaryReference} onChange={(event) => markLogicalRequestChanged(() => setRequestedBeneficiaryReference(event.target.value))} required /></label>
               </>
             ) : (
-              <label className="field field-full">
-                <span>{selectedPack.gatewayRequest.inputLabel}</span>
-                <textarea value={content} onChange={(event) => markLogicalRequestChanged(() => setContent(event.target.value))} placeholder={selectedPack.gatewayRequest.inputPlaceholder} rows={6} required />
-              </label>
+              <>
+                <label className="field field-full">
+                  <span>{selectedPack.gatewayRequest.inputLabel}</span>
+                  <textarea value={content} onChange={(event) => markLogicalRequestChanged(() => setContent(event.target.value))} placeholder={selectedPack.gatewayRequest.inputPlaceholder} rows={6} required />
+                </label>
+                <label className="field"><span>Evaluation Run ID (선택)</span><input value={evaluationRunId} onChange={(event) => markLogicalRequestChanged(() => setEvaluationRunId(event.target.value))} placeholder="ai-eval-baseline-2026-09-07" /></label>
+                <label className="field"><span>Eval Case ID (선택)</span><input value={evalCaseId} onChange={(event) => markLogicalRequestChanged(() => setEvalCaseId(event.target.value))} placeholder="customer-summary-ko-001" /></label>
+              </>
             )}
             <label className="field field-full">
               <span>Processing Contexts</span>
@@ -323,7 +431,7 @@ export function GatewayLabPage() {
               ]}
             />
             <div className="input-meta field-full">
-              <span>{isDigitalAsset ? '5 contract fields' : `${content.length} chars`}</span>
+              <span>{isDigitalAsset ? 'P0-4 Canonical Contract' : `${content.length} chars`}</span>
               <span>Raw Prompt · Token Map 저장 금지</span>
             </div>
             <div className="idempotency-panel field-full">
@@ -385,6 +493,42 @@ export function GatewayLabPage() {
                 </div>
                 <div><span>실행 상태</span><strong>{execution.data.created.status}</strong></div>
               </div>
+              {isDigitalAsset && execution.data.trace.digitalAssetPreExecutionGuard ? (
+                <div className="evidence-section">
+                  <h3>PRE_EXECUTION 6 Control</h3>
+                  <div className="control-result-grid">
+                    {Object.entries(execution.data.trace.digitalAssetPreExecutionGuard.controlResults).map(([control, result]) => (
+                      <div key={control}>
+                        <span>{digitalAssetControlLabels[control as keyof typeof digitalAssetControlLabels] ?? control}</span>
+                        <StatusBadge tone={getStatusTone(result)}>{result}</StatusBadge>
+                      </div>
+                    ))}
+                  </div>
+                  <KeyValues items={[
+                    ['Guard Status', execution.data.trace.digitalAssetPreExecutionGuard.status],
+                    ['Reason Codes', execution.data.trace.digitalAssetPreExecutionGuard.reasonCodes.join(' · ') || '없음'],
+                    ['Outbound Payload Digest', execution.data.trace.digitalAssetPreExecutionGuard.outboundPayloadDigest],
+                    ['Provider Payload Digest', execution.data.trace.digitalAssetPreExecutionGuard.providerPayloadDigest],
+                  ]} />
+                </div>
+              ) : null}
+              {isDigitalAsset && execution.data.trace.digitalAssetPostExecutionEvidence ? (
+                <div className="evidence-section">
+                  <h3>POST_EXECUTION Evidence · Re-binding</h3>
+                  <KeyValues items={[
+                    ['Evidence Status', execution.data.trace.digitalAssetPostExecutionEvidence.status],
+                    ['Evidence Source', execution.data.trace.digitalAssetPostExecutionEvidence.evidenceSourceType],
+                    ['External / Provider', `${execution.data.trace.digitalAssetPostExecutionEvidence.externalStatus} / ${execution.data.trace.digitalAssetPostExecutionEvidence.providerStatus}`],
+                    ['Receipt / Finality', `${execution.data.trace.digitalAssetPostExecutionEvidence.receiptStatus} / ${execution.data.trace.digitalAssetPostExecutionEvidence.finalityStatus}`],
+                    ['Amount Source', execution.data.trace.digitalAssetPostExecutionEvidence.amountSource],
+                    ['Mismatch', execution.data.trace.digitalAssetPostExecutionEvidence.mismatchedFields.join(' · ') || '없음'],
+                    ['Expected Projection Digest', execution.data.trace.digitalAssetPostExecutionEvidence.expectedProjectionDigest],
+                    ['Actual Projection Digest', execution.data.trace.digitalAssetPostExecutionEvidence.actualProjectionDigest],
+                  ]} />
+                </div>
+              ) : isDigitalAsset ? (
+                <EmptyState compact title="Post-Execution Evidence 없음" description="BLOCK 또는 실행 전 상태에서는 외부 Evidence가 생성되지 않을 수 있습니다." endpoint="GET /v1/runtime/executions/{executionId}/trace" />
+              ) : null}
             </div>
           ) : (
             <EmptyState
@@ -454,7 +598,9 @@ export function GatewayLabPage() {
           </div>
 
           <SectionCard title="실행 결과" description="BE의 policyAction, finalAction, digest, audit id만 표시합니다.">
-          {execution.isError ? (
+          {contractError ? (
+            <ErrorState title="요청 계약을 확인해 주세요" description={contractError} onRetry={() => setContractError('')} />
+          ) : execution.isError ? (
             <ErrorState description={normalizeApiError(execution.error).message} onRetry={() => execution.reset()} />
           ) : execution.data ? (
             <div className="result-stack">
@@ -484,6 +630,14 @@ export function GatewayLabPage() {
                   ['Released Fields', String(execution.data.trace.evidence.released.count ?? 0)],
                   ['Delivery Status', execution.data.created.output?.deliveryStatus ?? '—'],
                   ['Response Digest', execution.data.created.output?.responseDigest ?? '—'],
+                  ...(execution.data.trace.digitalAssetRuntimeSnapshot ? [
+                    ['DA Snapshot ID', execution.data.trace.digitalAssetRuntimeSnapshot.snapshotId] as const,
+                    ['DA Snapshot Digest', execution.data.trace.digitalAssetRuntimeSnapshot.snapshotDigest] as const,
+                    ['Pinned Artifact', `${execution.data.trace.digitalAssetRuntimeSnapshot.artifactId} · ${execution.data.trace.digitalAssetRuntimeSnapshot.artifactVersion}`] as const,
+                    ['Pinned Policy', `${execution.data.trace.digitalAssetRuntimeSnapshot.approvedPolicySnapshotId} · ${execution.data.trace.digitalAssetRuntimeSnapshot.approvedPolicyVersion}`] as const,
+                    ['Runtime Control', execution.data.trace.digitalAssetRuntimeSnapshot.runtimeControlVersion] as const,
+                    ['Crosswalk', execution.data.trace.digitalAssetRuntimeSnapshot.crosswalkVersion] as const,
+                  ] : []),
                 ]}
               />
             </div>

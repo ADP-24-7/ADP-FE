@@ -1,4 +1,5 @@
 import { AlertTriangle, CircleGauge, RefreshCw, RotateCcw, ShieldX } from 'lucide-react';
+import { AiEvaluationPanel } from '../../features/ai-evaluation';
 import { EmptyState, KeyValues, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
 import { useExecutionPack } from '../../shared/prototype';
 
@@ -23,6 +24,8 @@ export function AnalysisPage() {
       />
 
       <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} objective={selectedPack.objective} />
+
+      {selectedPack.key === 'ai' ? <AiEvaluationPanel /> : null}
 
       <div className="content-grid content-grid-three">
         <SectionCard title="완료된 실행" description="Runtime terminal transition" actions={<StatusBadge tone="info">현재 BE</StatusBadge>}>

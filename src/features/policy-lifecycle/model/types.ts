@@ -1,6 +1,6 @@
 export type ExecutionPackType = 'AI' | 'DIGITAL_ASSET';
 export type PolicyLayer = 'REGULATORY' | 'INSTITUTION' | 'WORKLOAD' | 'DESTINATION';
-export type PolicyLifecycleStage = 'DRAFT' | 'VALIDATED' | 'CANDIDATE' | 'REPLAY' | 'SHADOW' | 'APPROVED' | 'ACTIVE' | 'REVIEW' | 'ROLLED_BACK';
+export type PolicyLifecycleStage = 'PROJECT_PROVISIONAL' | 'DRAFT' | 'VALIDATED' | 'CANDIDATE' | 'REPLAY' | 'SHADOW' | 'APPROVED' | 'ACTIVE' | 'SUPERSEDED' | 'REVIEW' | 'ROLLED_BACK';
 
 export type PolicyLifecycleRecord = {
   artifactId: string;
@@ -23,4 +23,38 @@ export type CreatePolicyLifecycleRequest = Pick<PolicyLifecycleRecord, 'artifact
 export type TransitionPolicyLifecycleRequest = {
   targetStage: PolicyLifecycleStage;
   reasonCode: string;
+};
+
+export type RunPolicyShadowEvaluationRequest = {
+  evaluationCaseId: string;
+};
+
+export type PolicyShadowDiffField =
+  | 'FINAL_ACTION'
+  | 'REASON_CODES'
+  | 'REQUIRED_CONTROLS'
+  | 'TRANSFORM_STRATEGY'
+  | 'DESTINATION_PROFILE';
+
+export type PolicyShadowEvidence = {
+  shadowEvaluationId: string;
+  institutionId: string;
+  workloadId: string;
+  purposeCode: string;
+  baselineArtifactId: string;
+  baselineArtifactVersion: string;
+  baselineArtifactDigest: string;
+  candidateArtifactId: string;
+  candidateArtifactVersion: string;
+  candidateArtifactDigest: string;
+  candidateRevision: number;
+  evaluationCaseId: string;
+  evaluationCaseVersion: string;
+  inputDigest: string;
+  baselineOutcomeDigest: string;
+  candidateOutcomeDigest: string;
+  diffFields: PolicyShadowDiffField[];
+  result: 'MATCH' | 'DIFF';
+  evaluatedBy: string;
+  evaluatedAt: string;
 };

@@ -51,6 +51,8 @@ describe('App', () => {
     expect(screen.getByLabelText('선택된 Execution Pack')).toHaveTextContent('Digital Asset');
     expect(screen.getByLabelText('선택된 Execution Pack')).toHaveTextContent('Digital Asset');
     expect(screen.getByRole('textbox', { name: 'Customer ID' })).toBeInTheDocument();
-    expect(screen.getByRole('spinbutton', { name: 'Amount' })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Approved Transaction Reference' })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Requested Amount (Atomic Units)' })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Asset Kind' })).toHaveValue('FUNGIBLE_TOKEN');
   });
 });
