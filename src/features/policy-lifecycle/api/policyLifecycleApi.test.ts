@@ -5,9 +5,11 @@ import {
   approvePolicyLifecycle,
   createPolicyLifecycle,
   getPolicyCurrentSelection,
+  getPolicyArtifactHistory,
   getPolicyLifecycle,
   rollbackPolicyLifecycle,
   runPolicyShadowEvaluation,
+  searchPolicyArtifacts,
   transitionPolicyLifecycle,
 } from './policyLifecycleApi';
 
@@ -29,6 +31,18 @@ describe('policyLifecycleApi', () => {
       artifactId: 'policy-contract',
       artifactVersion: '1.0.0',
       lifecycleStage: 'ACTIVE',
+    });
+  });
+
+  it('searches scoped policy artifacts and loads their history', async () => {
+    await expect(searchPolicyArtifacts({ executionPack: 'AI', attentionRequired: false, limit: 10, offset: 0 }))
+      .resolves.toMatchObject({
+        total: 1,
+        items: [{ artifactId: 'active-policy-contract', currentSelection: true }],
+      });
+    await expect(getPolicyArtifactHistory('active-policy-contract', '1.0.0')).resolves.toMatchObject({
+      currentSelection: true,
+      transitions: [{ toStage: 'ACTIVE', reasonCode: 'ACTIVATION_APPROVED' }],
     });
   });
 

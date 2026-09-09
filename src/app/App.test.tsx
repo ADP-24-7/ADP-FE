@@ -37,8 +37,8 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: '정책 · 승인' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /정책 · 승인/ })).toHaveClass('active');
     expect(screen.getByLabelText('선택된 Execution Pack')).toHaveTextContent('Digital Asset');
-    expect(screen.getByRole('heading', { name: 'Policy Lifecycle 조회' })).toBeInTheDocument();
-    expect(screen.getByText(/정확한 Artifact ID\/Version 조회/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Policy Operations' })).toBeInTheDocument();
+    expect(screen.getByText(/권한 범위의 Artifact를 검색/)).toBeInTheDocument();
   });
 
   it('uses the global pack selector for Gateway Lab without a duplicate axis picker', async () => {

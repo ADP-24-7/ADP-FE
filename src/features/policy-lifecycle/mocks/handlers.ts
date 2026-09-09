@@ -1,6 +1,60 @@
 import { http, HttpResponse } from 'msw';
 
 export const policyLifecycleHandlers = [
+  http.get('/api/admin/policy-lifecycle', ({ request }) => {
+    const url = new URL(request.url);
+    const executionPack = url.searchParams.get('executionPack') ?? 'AI';
+    return HttpResponse.json({
+      items: [{
+        artifactId: 'active-policy-contract',
+        artifactVersion: '1.0.0',
+        artifactDigest: '1'.repeat(64),
+        policyLayer: 'WORKLOAD',
+        executionPack,
+        workloadId: 'customer_summary',
+        purposeCode: 'CUSTOMER_SUPPORT',
+        lifecycleStage: 'ACTIVE',
+        createdBy: 'maker-local',
+        revision: 7,
+        createdAt: '2026-09-09T00:00:00Z',
+        updatedAt: '2026-09-09T00:00:01Z',
+        currentSelection: true,
+      }],
+      total: 1,
+      limit: Number(url.searchParams.get('limit') ?? 10),
+      offset: Number(url.searchParams.get('offset') ?? 0),
+    });
+  }),
+  http.get('/api/admin/policy-lifecycle/:artifactId/versions/:artifactVersion/history', ({ params }) => HttpResponse.json({
+    artifact: {
+      artifactId: params.artifactId,
+      artifactVersion: params.artifactVersion,
+      artifactDigest: '1'.repeat(64),
+      institutionId: 'institution_local',
+      policyLayer: 'WORKLOAD',
+      executionPack: 'AI',
+      workloadId: 'customer_summary',
+      purposeCode: 'CUSTOMER_SUPPORT',
+      lifecycleStage: 'ACTIVE',
+      createdBy: 'maker-local',
+      revision: 7,
+      createdAt: '2026-09-09T00:00:00Z',
+      updatedAt: '2026-09-09T00:00:01Z',
+    },
+    currentSelection: true,
+    transitions: [{
+      transitionId: 1,
+      fromStage: 'APPROVED',
+      toStage: 'ACTIVE',
+      actorId: 'checker-local',
+      reasonCode: 'ACTIVATION_APPROVED',
+      artifactDigest: '1'.repeat(64),
+      approvalGateVersion: 'NOT_APPLICABLE',
+      shadowEvaluationId: null,
+      occurredAt: '2026-09-09T00:00:01Z',
+    }],
+    shadowEvaluations: [],
+  })),
   http.post('/api/admin/policy-lifecycle', async ({ request }) => {
     const body = await request.json() as Record<string, string>;
     return HttpResponse.json({

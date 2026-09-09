@@ -18,6 +18,39 @@ export type PolicyLifecycleRecord = {
   updatedAt: string;
 };
 
+export type PolicyArtifactSummary = Omit<PolicyLifecycleRecord, 'institutionId'> & {
+  currentSelection: boolean;
+};
+
+export type PolicyArtifactPage = {
+  items: PolicyArtifactSummary[];
+  total: number;
+  limit: number;
+  offset: number;
+};
+
+export type PolicyArtifactSearchParams = {
+  executionPack?: ExecutionPackType;
+  lifecycleStage?: PolicyLifecycleStage;
+  workloadId?: string;
+  query?: string;
+  attentionRequired?: boolean;
+  limit?: number;
+  offset?: number;
+};
+
+export type PolicyLifecycleTransitionEvent = {
+  transitionId: number;
+  fromStage: PolicyLifecycleStage;
+  toStage: PolicyLifecycleStage;
+  actorId: string;
+  reasonCode: string;
+  artifactDigest: string;
+  approvalGateVersion: string;
+  shadowEvaluationId: string | null;
+  occurredAt: string;
+};
+
 export type CreatePolicyLifecycleRequest = Pick<PolicyLifecycleRecord, 'artifactId' | 'artifactVersion' | 'artifactDigest' | 'policyLayer' | 'executionPack' | 'workloadId' | 'purposeCode'>;
 
 export type TransitionPolicyLifecycleRequest = {
@@ -92,4 +125,11 @@ export type PolicyShadowEvidence = {
   result: 'MATCH' | 'DIFF';
   evaluatedBy: string;
   evaluatedAt: string;
+};
+
+export type PolicyArtifactHistory = {
+  artifact: PolicyLifecycleRecord;
+  currentSelection: boolean;
+  transitions: PolicyLifecycleTransitionEvent[];
+  shadowEvaluations: PolicyShadowEvidence[];
 };

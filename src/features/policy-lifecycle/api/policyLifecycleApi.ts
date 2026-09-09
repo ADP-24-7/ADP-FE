@@ -5,12 +5,27 @@ import type {
   CreatePolicyLifecycleRequest,
   PolicyCurrentSelection,
   PolicyCurrentSelectionParams,
+  PolicyArtifactHistory,
+  PolicyArtifactPage,
+  PolicyArtifactSearchParams,
   PolicyLifecycleRecord,
   PolicyShadowEvidence,
   RollbackPolicyRequest,
   RunPolicyShadowEvaluationRequest,
   TransitionPolicyLifecycleRequest,
 } from '../model/types';
+
+export async function searchPolicyArtifacts(params: PolicyArtifactSearchParams) {
+  const response = await httpClient.get<PolicyArtifactPage>('/api/admin/policy-lifecycle', { params });
+  return response.data;
+}
+
+export async function getPolicyArtifactHistory(artifactId: string, artifactVersion: string) {
+  const response = await httpClient.get<PolicyArtifactHistory>(
+    `/api/admin/policy-lifecycle/${encodeURIComponent(artifactId)}/versions/${encodeURIComponent(artifactVersion)}/history`,
+  );
+  return response.data;
+}
 
 export async function getPolicyLifecycle(artifactId: string, artifactVersion: string) {
   const response = await httpClient.get<PolicyLifecycleRecord>(
