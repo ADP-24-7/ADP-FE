@@ -18,6 +18,7 @@ export function MonitoringPage() {
   const events = usePolicyOperationEvents(eventParams);
   const metricState = summary.isLoading ? 'loading' : summary.isError ? 'error' : 'value';
   const totalPages = events.data ? Math.ceil(events.data.total / events.data.size) : 0;
+  const eventsRefreshing = events.isFetching && !events.isLoading;
 
   function searchEvents(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -101,7 +102,12 @@ export function MonitoringPage() {
         ) : null}
       </SectionCard>
 
-      <SectionCard className="search-assist-card" title="Policy Operation History" description="Lifecycle Transition과 Current Selection Event를 단일 append-only 이력으로 검색합니다." actions={<History size={16} />}>
+      <SectionCard
+        className="search-assist-card"
+        title="Policy Operation History"
+        description="Lifecycle Transition과 Current Selection Event를 단일 append-only 이력으로 검색합니다."
+        actions={eventsRefreshing ? <StatusBadge tone="warning">REFRESHING</StatusBadge> : <History size={16} />}
+      >
         <form className="search-filter-grid" onSubmit={searchEvents}>
           <label className="field"><span>Workload ID</span><input value={workloadId} onChange={(event) => setWorkloadId(event.target.value)} placeholder="Workload ID 직접 입력" /></label>
           <label className="field">
@@ -115,12 +121,12 @@ export function MonitoringPage() {
           <label className="field"><span>From</span><input type="datetime-local" value={from} onChange={(event) => setFrom(event.target.value)} /></label>
           <label className="field"><span>To</span><input type="datetime-local" value={to} onChange={(event) => setTo(event.target.value)} /></label>
           <div className="search-filter-actions">
-            <button className="button button-primary" type="submit"><Search size={14} />검색</button>
-            <button className="button button-secondary" type="button" onClick={resetEvents} title="검색 조건 초기화"><RefreshCw size={14} /></button>
+            <button className="button button-primary" type="submit" disabled={eventsRefreshing}><Search size={14} />검색</button>
+            <button className="button button-secondary" type="button" disabled={eventsRefreshing} onClick={resetEvents} title="검색 조건 초기화"><RefreshCw size={14} /></button>
           </div>
         </form>
 
-        <div className="table-shell policy-events-table-shell">
+        <div className={`table-shell policy-events-table-shell${eventsRefreshing ? ' is-refreshing' : ''}`} aria-busy={eventsRefreshing}>
           <div className="table-head table-policy-events">
             <span>OCCURRED</span><span>CATEGORY / TYPE</span><span>ARTIFACT</span><span>WORKLOAD / PURPOSE</span><span>REVISION</span><span>ACTOR / REASON</span>
           </div>
@@ -140,8 +146,8 @@ export function MonitoringPage() {
         <div className="pagination-row">
           <span>{events.data ? `${events.data.total}건 · ${events.data.page + 1}/${Math.max(totalPages, 1)} 페이지` : '조회 대기'}</span>
           <div>
-            <button className="button button-secondary" type="button" disabled={(eventParams.page ?? 0) === 0} onClick={() => setEventParams((value) => ({ ...value, page: Math.max(0, (value.page ?? 0) - 1) }))}>이전</button>
-            <button className="button button-secondary" type="button" disabled={!totalPages || (eventParams.page ?? 0) + 1 >= totalPages} onClick={() => setEventParams((value) => ({ ...value, page: (value.page ?? 0) + 1 }))}>다음</button>
+            <button className="button button-secondary" type="button" disabled={(eventParams.page ?? 0) === 0 || eventsRefreshing} onClick={() => setEventParams((value) => ({ ...value, page: Math.max(0, (value.page ?? 0) - 1) }))}>이전</button>
+            <button className="button button-secondary" type="button" disabled={!totalPages || (eventParams.page ?? 0) + 1 >= totalPages || eventsRefreshing} onClick={() => setEventParams((value) => ({ ...value, page: (value.page ?? 0) + 1 }))}>다음</button>
           </div>
         </div>
       </SectionCard>

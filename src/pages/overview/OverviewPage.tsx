@@ -25,7 +25,7 @@ export function OverviewPage() {
     [operations.data.recovery.backlog, 'Recovery backlog', `${operations.data.recovery.backlog}건 · 가장 오래된 대기 ${operations.data.recovery.oldestBacklogAgeSeconds ?? '—'}초`, '/analysis'],
     [operations.data.recovery.manualReview, 'Manual review', `${operations.data.recovery.manualReview}건 · exhausted ${operations.data.recovery.exhausted}건`, '/analysis'],
     [operations.data.policy.driftedSelections, 'Policy selection drift', `${operations.data.policy.driftedSelections}건 · current ${operations.data.policy.currentSelections}건`, '/monitoring'],
-    [operations.data.security.deniedAttempts, 'Security denied attempts', `${operations.data.security.deniedAttempts}건 · authorization ${operations.data.security.authorizationPolicyDenied}건`, '/monitoring'],
+    [operations.data.security.institutionScopeMismatch, 'Institution scope mismatch', `${operations.data.security.institutionScopeMismatch}건 · 전체 denied ${operations.data.security.deniedAttempts}건`, '/monitoring'],
   ].filter(([value]) => Number(value) > 0) as Array<[number, string, string, string]> : [];
 
   return (

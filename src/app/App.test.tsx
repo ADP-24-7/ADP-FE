@@ -109,5 +109,6 @@ describe('App', () => {
 
     expect(await screen.findByText('현재 확인이 필요한 운영 이슈가 없습니다')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Recovery backlog/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Security denied attempts/ })).not.toBeInTheDocument();
   });
 });

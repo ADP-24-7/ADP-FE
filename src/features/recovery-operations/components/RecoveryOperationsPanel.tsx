@@ -49,6 +49,7 @@ export function RecoveryOperationsPanel() {
   const detail = useRecoveryIncident(selectedRecoveryId);
   const command = useRecoveryCommand();
   const totalPages = incidents.data ? Math.ceil(incidents.data.totalElements / incidents.data.size) : 0;
+  const isRefreshing = incidents.isFetching && !incidents.isLoading;
   const commandAvailability = detail.data ? getRecoveryCommandAvailability(detail.data) : null;
   const availableCommands = commandAvailability
     ? (Object.keys(commandCopy) as RecoveryOperationType[]).filter((type) => commandAvailability[type].enabled)
@@ -72,6 +73,24 @@ export function RecoveryOperationsPanel() {
     setSelectedCommand(operationType);
   }
 
+  function clearIncidentSelection() {
+    setSelectedRecoveryId('');
+    setCommandConfirmed(false);
+    operationIds.current = {};
+    command.reset();
+  }
+
+  function changeStatus(nextStatus: RecoveryStatus | '') {
+    clearIncidentSelection();
+    setStatus(nextStatus);
+    setPage(0);
+  }
+
+  function changePage(nextPage: number) {
+    clearIncidentSelection();
+    setPage(nextPage);
+  }
+
   function executeCommand() {
     if (!selectedRecoveryId || !commandConfirmed || !commandAvailability?.[effectiveCommand].enabled) return;
     const operationId = operationIds.current[effectiveCommand]
@@ -90,12 +109,17 @@ export function RecoveryOperationsPanel() {
       <SectionCard
         title="Recovery Incident"
         description="현재 사용자에게 허용된 Institution·Workload 범위의 외부 실행 불명 상태를 조회합니다."
-        actions={<StatusBadge tone={incidents.isSuccess ? 'success' : 'warning'}>{incidents.isSuccess ? 'RECOVERY API CONNECTED' : 'RECOVERY API'}</StatusBadge>}
+        actions={(
+          <div className="section-action-group">
+            {isRefreshing ? <StatusBadge tone="warning">REFRESHING</StatusBadge> : null}
+            <StatusBadge tone={incidents.isSuccess ? 'success' : 'warning'}>{incidents.isSuccess ? 'RECOVERY API CONNECTED' : 'RECOVERY API'}</StatusBadge>
+          </div>
+        )}
       >
         <div className="recovery-toolbar">
           <label className="field">
             <span>Recovery Status</span>
-            <select value={status} onChange={(event) => { setStatus(event.target.value as RecoveryStatus | ''); setPage(0); }}>
+            <select value={status} onChange={(event) => changeStatus(event.target.value as RecoveryStatus | '')}>
               <option value="">전체 상태</option>
               {recoveryStatuses.map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
@@ -105,7 +129,7 @@ export function RecoveryOperationsPanel() {
           </button>
         </div>
 
-        <div className="table-shell recovery-table-shell">
+        <div className={`table-shell recovery-table-shell${isRefreshing ? ' is-refreshing' : ''}`} aria-busy={isRefreshing}>
           <div className="table-head table-recovery">
             <span>UPDATED</span><span>RECOVERY / EXECUTION</span><span>WORKLOAD</span><span>STATUS</span><span>ATTEMPT</span><span>DISPOSITION</span>
           </div>
@@ -116,6 +140,7 @@ export function RecoveryOperationsPanel() {
               className={`table-row table-recovery${selectedRecoveryId === item.recoveryId ? ' active' : ''}`}
               type="button"
               key={item.recoveryId}
+              disabled={isRefreshing}
               onClick={() => selectIncident(item.recoveryId)}
             >
               <span>{new Date(item.updatedAt).toLocaleString('ko-KR')}</span>
@@ -138,8 +163,8 @@ export function RecoveryOperationsPanel() {
         <div className="pagination-row">
           <span>{incidents.data ? `${incidents.data.totalElements}건 · ${incidents.data.page + 1}/${Math.max(totalPages, 1)} 페이지` : '조회 대기'}</span>
           <div>
-            <button className="button button-secondary" type="button" disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}>이전</button>
-            <button className="button button-secondary" type="button" disabled={!totalPages || page + 1 >= totalPages} onClick={() => setPage((value) => value + 1)}>다음</button>
+            <button className="button button-secondary" type="button" disabled={page === 0 || isRefreshing} onClick={() => changePage(Math.max(0, page - 1))}>이전</button>
+            <button className="button button-secondary" type="button" disabled={!totalPages || page + 1 >= totalPages || isRefreshing} onClick={() => changePage(page + 1)}>다음</button>
           </div>
         </div>
       </SectionCard>

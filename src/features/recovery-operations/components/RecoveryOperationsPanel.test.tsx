@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { http, HttpResponse } from 'msw';
+import { delay, http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { server } from '../../../app/mocks/server';
 import { operationsMonitoringKeys } from '../../operations-monitoring';
@@ -101,5 +101,53 @@ describe('RecoveryOperationsPanel', () => {
     expect(await screen.findByText('실행 가능한 Recovery 명령이 없습니다')).toBeInTheDocument();
     expect(screen.getByText('이미 외부 상태가 확정되어 추가 Recovery 명령이 필요하지 않습니다.')).toBeInTheDocument();
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+  });
+
+  it('clears the selected incident when the status filter changes', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get('/api/admin/recovery/incidents', async ({ request }) => {
+        const status = new URL(request.url).searchParams.get('status');
+        if (status === 'EXHAUSTED') {
+          await delay(120);
+          return HttpResponse.json({ items: [], page: 0, size: 20, totalElements: 0 });
+        }
+        return HttpResponse.json({ items: [detailResponse()], page: 0, size: 20, totalElements: 1 });
+      }),
+    );
+    renderPanel();
+
+    await user.click(await screen.findByRole('button', { name: /recovery-contract/ }));
+    expect(await screen.findByText('Recovery ID')).toBeInTheDocument();
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Recovery Status' }), 'EXHAUSTED');
+
+    expect(screen.getByText('Incident 선택 대기')).toBeInTheDocument();
+    expect(screen.getByText('REFRESHING')).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    expect(await screen.findByText('Recovery Incident가 없습니다')).toBeInTheDocument();
+  });
+
+  it('clears the selected incident when the page changes', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get('/api/admin/recovery/incidents', ({ request }) => {
+        const page = Number(new URL(request.url).searchParams.get('page') ?? 0);
+        return HttpResponse.json({
+          items: [{ ...detailResponse(), recoveryId: page === 0 ? 'recovery-contract' : 'recovery-page-two' }],
+          page,
+          size: 20,
+          totalElements: 21,
+        });
+      }),
+    );
+    renderPanel();
+
+    await user.click(await screen.findByRole('button', { name: /recovery-contract/ }));
+    expect(await screen.findByText('Recovery ID')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '다음' }));
+
+    expect(screen.getByText('Incident 선택 대기')).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /recovery-page-two/ })).toBeInTheDocument();
   });
 });

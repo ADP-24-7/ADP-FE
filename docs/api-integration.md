@@ -140,6 +140,8 @@ Digital Asset 실행의 GET/Trace 응답에는 다음 server-owned 증적이 포
 - Incident 또는 명령 변경과 성공 완료 후에는 새 operation ID를 생성한다.
 - 명령 성공 시 Recovery 목록·상세와 Operations Summary를 함께 무효화해 운영 지표를 즉시 다시 조회한다.
 - FE는 `recoveryStatus`, `retryDisposition`, Attempt 잔여 횟수로 명령 가용성을 안내한다. 최종 권한·전이 검증은 계속 BE가 담당한다.
+- Status 또는 Page 변경 시 기존 Incident 선택, 확인 상태와 pending operation ID를 즉시 초기화한다.
+- `keepPreviousData` 재조회 중에는 `REFRESHING`을 표시하고 이전 목록의 행 선택을 차단한다.
 - Provider correlation key와 요청/응답 원문은 FE DTO에 포함하지 않는다.
 
 ## BE-11 Operations Contract
@@ -147,6 +149,7 @@ Digital Asset 실행의 GET/Trace 응답에는 다음 server-owned 증적이 포
 - Summary는 5~1440분 범위의 `windowMinutes`를 사용하며 Runtime/Recovery/Policy/Security 집계를 반환한다.
 - Policy Event는 `workloadId`, `category`, `from`, `to`, `page`, `size`를 서버 검색 조건으로 전달한다.
 - Summary의 실제 `0`은 `0`으로 표시하고, API 오류나 미연결 상태와 구분한다.
+- 단순 `deniedAttempts`는 정상 차단도 포함할 수 있으므로 Attention으로 분류하지 않는다. 현재는 `institutionScopeMismatch`가 있을 때만 Security Attention을 표시한다.
 - 현재 Summary와 Recovery API에는 Execution Pack 검색 조건이 없다. Pack 선택은 `Viewing Context`이며 데이터 범위는 전체 허용 Workload임을 화면에 표시한다.
 - `/actuator/prometheus`는 `METRICS_SCRAPER` 전용 경계이므로 브라우저에서 직접 조회하지 않는다.
 - 개별 Security Finding은 Summary 집계로 추정하지 않고 별도 Read Model이 생길 때까지 API 대기로 유지한다.
