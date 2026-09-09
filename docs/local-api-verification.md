@@ -3,13 +3,13 @@
 ## Verified Baseline
 
 - Date: 2026-09-09
-- Backend main baseline: `ADP-BE origin/main@b5897a5`
-- Backend parallel preview: local `feature/be-10-lifecycle-shadow-evidence` worktree
-- Database: fresh Docker PostgreSQL volume in Compose project `adp-fe-p08`
-- Flyway: fresh migration through local V33
-- Frontend branch: `feat/fe-p0-8-runtime-search`
+- Backend main baseline: `ADP-BE origin/main@b99752f`
+- Database: fresh Docker PostgreSQL volume in Compose project `adp-fe-gov`
+- Flyway: fresh migration through V35
+- Frontend baseline: `ADP-FE origin/main@3277d10`
+- Frontend branch: `feat/fe-governance-operations-integration`
 
-P0-8 Runtime/Audit 계약은 최신 `main` 기준으로 검증했다. BE-10 Shadow 계약은 아직 `main`에 없는 로컬 작업 브랜치이므로 별도의 Preview 결과로 기록한다. FE 검증 과정에서 BE 파일은 수정하지 않았다.
+BE #34~#36의 Shadow Diff, Evidence Approval, Current Selection, Rollback 계약을 빈 DB에서 검증했다. FE 검증 과정에서 BE 파일은 수정하지 않았다.
 
 ## Verified Flows
 
@@ -26,6 +26,12 @@ P0-8 Runtime/Audit 계약은 최신 `main` 기준으로 검증했다. BE-10 Shad
 | Digital Asset Runtime trace | 14 stages + P0-6 Snapshot + P0-7 Guard + P0-8 Evidence 반환 |
 | Audit workload/status 검색 | `tokenized_asset_purchase / COMPLETED`, 실행 1건 반환 |
 | Audit Evidence 조회 | schema v1, Runtime `COMPLETED`, Export Digest 반환 |
+| AI Policy Artifact 등록 | 201, `DRAFT / revision 0` |
+| Lifecycle 상태 명령 | `DRAFT → VALIDATED → CANDIDATE → REPLAY → SHADOW` 성공 |
+| Shadow Evaluation | `GOLDEN_ALLOW/1.0.0`, `MATCH`, raw-free Digest 반환 |
+| Evidence Approval | 별도 Maker/Checker, `APPROVED / revision 5` |
+| Current Selection Activation | 기존 ACTIVE를 `SUPERSEDED`, 신규 ACTIVE와 selection revision 생성 |
+| Current Selection Rollback | SUPERSEDED target 복원, selection revision 단조 증가 |
 
 ## P0-6 Snapshot Evidence
 
@@ -49,19 +55,26 @@ P0-8 Runtime/Audit 계약은 최신 `main` 기준으로 검증했다. BE-10 Shad
 - Audit 검색 결과의 Execution ID와 Evidence Execution ID 일치
 - Evidence Export Digest는 64자리 Hex 문자열
 
-## BE-10 Parallel Preview
+## BE-10 Governance Verification
 
-로컬 작업 브랜치에서 Candidate `fe-shadow-1788886112176@2.0.0`을 `REPLAY`까지 전이한 뒤 Shadow Evaluation을 검증했다.
+Privacy-safe ACTIVE baseline과 서로 다른 Maker가 생성한 Candidate 2개를 사용해 브라우저에서 전체 흐름을 검증했다.
 
-- Endpoint: `POST /api/admin/policy-lifecycle/{artifactId}/versions/{artifactVersion}/shadow-evaluations`
-- Evaluation Case: `GOLDEN_ALLOW`
-- Result: `DIFF`
-- Diff fields: `FINAL_ACTION`, `REASON_CODES`, `REQUIRED_CONTROLS`
-- Baseline Artifact: `DA-DIGITAL-ASSET-RUNTIME-LOCAL-ACTIVE-001`
-- Input Digest: 64자리 Hex 문자열
-- 동일 Candidate/Case 재평가는 저장된 Evidence 충돌로 `409`를 반환
+```text
+DRAFT → VALIDATED → CANDIDATE → REPLAY
+→ Shadow MATCH Evidence
+→ SHADOW → Evidence-bound APPROVED
+→ ACTIVE selection revision 1
+→ 다음 Candidate ACTIVE selection revision 2
+→ 이전 SUPERSEDED Candidate rollback selection revision 3
+```
 
-이 결과는 BE-10의 병렬 개발 계약 검증이며, `main` 연결 완료 판정이 아니다.
+- Candidate 생성자와 승인/활성화 사용자를 분리했다.
+- Shadow 요청에는 Evaluation Case ID만 전달했다.
+- 승인 요청에는 BE가 발급한 Shadow Evaluation ID만 전달했다.
+- 활성화와 롤백은 화면에 표시된 Artifact/Selection revision을 그대로 fencing 값으로 사용했다.
+- 활성화 후 현재 Artifact와 Selection revision이 `GET /current-selection` 결과로 갱신됐다.
+- 롤백 후 이전 Candidate가 다시 `ACTIVE`가 되고 Selection revision이 3으로 증가했다.
+- 화면 이동과 상태 갱신은 `/policies` 경로에서 새로고침 없이 수행됐다.
 
 ## Maker-Checker Finding
 
@@ -105,7 +118,8 @@ processingContexts: DIGITAL_ASSET
 ## Remaining Verification
 
 - Recovery incident 목록/요약/수동 명령은 Controller 확정 후 검증한다.
-- Shadow Evidence 목록/단건 조회와 Active Runtime Selection Read Model은 BE-10 후속 계약이 필요하다.
+- Shadow Evidence 목록/단건 조회와 Current Selection Event 이력 API가 필요하다.
+- Policy 목록/검색 및 Review Queue Read Model이 필요하다.
 - NCP ContentStore E2E는 server-side Adapter 범위이며 FE에 Bucket/Endpoint/Credential 입력을 추가하지 않는다.
 
 ## Environment Note

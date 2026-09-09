@@ -1,4 +1,4 @@
-export type ExecutionPackType = 'AI' | 'DIGITAL_ASSET';
+export type ExecutionPackType = 'COMMON' | 'AI' | 'DIGITAL_ASSET';
 export type PolicyLayer = 'REGULATORY' | 'INSTITUTION' | 'WORKLOAD' | 'DESTINATION';
 export type PolicyLifecycleStage = 'PROJECT_PROVISIONAL' | 'DRAFT' | 'VALIDATED' | 'CANDIDATE' | 'REPLAY' | 'SHADOW' | 'APPROVED' | 'ACTIVE' | 'SUPERSEDED' | 'REVIEW' | 'ROLLED_BACK';
 
@@ -27,6 +27,41 @@ export type TransitionPolicyLifecycleRequest = {
 
 export type RunPolicyShadowEvaluationRequest = {
   evaluationCaseId: string;
+};
+
+export type ApprovePolicyLifecycleRequest = {
+  shadowEvaluationId: string;
+};
+
+export type ActivatePolicyRequest = {
+  expectedArtifactRevision: number;
+  expectedSelectionRevision: number;
+};
+
+export type RollbackPolicyRequest = {
+  expectedTargetRevision: number;
+  expectedSelectionRevision: number;
+};
+
+export type PolicyCurrentSelectionParams = {
+  executionPack: ExecutionPackType;
+  workloadId: string;
+  purposeCode: string;
+};
+
+export type PolicyCurrentSelection = {
+  institutionId: string;
+  policyLayer: PolicyLayer;
+  executionPack: ExecutionPackType;
+  workloadId: string;
+  purposeCode: string;
+  artifactId: string;
+  artifactVersion: string;
+  artifactDigest: string;
+  artifactRevision: number;
+  selectionRevision: number;
+  selectedBy: string;
+  selectedAt: string;
 };
 
 export type PolicyShadowDiffField =

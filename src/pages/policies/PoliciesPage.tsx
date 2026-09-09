@@ -1,7 +1,7 @@
 import { ArrowRight, LockKeyhole, RefreshCw, Search } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { DigitalAssetArtifactPanel } from '../../features/digital-asset';
-import { usePolicyLifecycle, useRunPolicyShadowEvaluation } from '../../features/policy-lifecycle';
+import { PolicyArtifactCreatePanel, PolicyGovernancePanel, usePolicyLifecycle } from '../../features/policy-lifecycle';
 import { normalizeApiError } from '../../shared/api/apiError';
 import { EmptyState, ErrorState, KeyValues, LoadingPanel, PackContextSummary, PageHeader, SearchAssistInput, SectionCard, StatusBadge } from '../../shared/components';
 import { useExecutionPack } from '../../shared/prototype';
@@ -27,9 +27,7 @@ export function PoliciesPage() {
   const [artifactId, setArtifactId] = useState('');
   const [artifactVersion, setArtifactVersion] = useState('');
   const [lookup, setLookup] = useState({ artifactId: '', artifactVersion: '' });
-  const [evaluationCaseId, setEvaluationCaseId] = useState('');
   const policy = usePolicyLifecycle(lookup.artifactId, lookup.artifactVersion);
-  const shadow = useRunPolicyShadowEvaluation();
   const artifactSuggestions = selectedPack.key === 'digital-asset' ? [
     {
       value: 'DA-DIGITAL-ASSET-RUNTIME-LOCAL-ACTIVE-001',
@@ -47,18 +45,7 @@ export function PoliciesPage() {
 
   function submitLookup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    shadow.reset();
     setLookup({ artifactId: artifactId.trim(), artifactVersion: artifactVersion.trim() });
-  }
-
-  function submitShadow(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (policy.data?.lifecycleStage !== 'REPLAY') return;
-    shadow.mutate({
-      artifactId: policy.data.artifactId,
-      artifactVersion: policy.data.artifactVersion,
-      evaluationCaseId: evaluationCaseId.trim(),
-    });
   }
 
   return (
@@ -73,6 +60,15 @@ export function PoliciesPage() {
       <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} objective={selectedPack.objective} />
 
       {selectedPack.key === 'digital-asset' ? <DigitalAssetArtifactPanel /> : null}
+      {selectedPack.key === 'ai' ? (
+        <PolicyArtifactCreatePanel
+          onCreated={(record) => {
+            setArtifactId(record.artifactId);
+            setArtifactVersion(record.artifactVersion);
+            setLookup({ artifactId: record.artifactId, artifactVersion: record.artifactVersion });
+          }}
+        />
+      ) : null}
 
       <SectionCard title="정책 라이프사이클" description={`${selectedPack.label} 정책이 Runtime에 적용되기 전 거치는 승인 단계`}>
         <div className="lifecycle-row lifecycle-flow">
@@ -85,7 +81,7 @@ export function PoliciesPage() {
             </div>
           ))}
         </div>
-        <p className="helper-text"><LockKeyhole size={14} />Maker와 Checker가 분리되지 않으면 ACTIVE 승격은 비활성화됩니다.</p>
+        <p className="helper-text"><LockKeyhole size={14} />승인·활성화·롤백은 PRIVILEGED_OPERATOR 권한과 Maker-Checker 분리를 BE가 최종 검증합니다.</p>
       </SectionCard>
 
       <div className="content-grid content-grid-wide-left">
@@ -123,6 +119,8 @@ export function PoliciesPage() {
           />
         </SectionCard>
       </div>
+
+      {policy.data ? <PolicyGovernancePanel key={`${policy.data.artifactId}:${policy.data.artifactVersion}`} policy={policy.data} /> : null}
 
       <SectionCard title="승인된 실행 경계" description="Role·Purpose·Data·Destination·Action 조건">
         <div className="policy-boundary-grid">
@@ -170,38 +168,8 @@ export function PoliciesPage() {
       </div>
 
       <div className="content-grid content-grid-two">
-        <SectionCard className="search-assist-card" title="Shadow Evaluation" description="ACTIVE Baseline과 REPLAY Candidate를 동일 입력으로 비교" actions={<StatusBadge tone={shadow.data?.result === 'MATCH' ? 'success' : shadow.data?.result === 'DIFF' ? 'warning' : 'neutral'}>{shadow.data?.result ?? 'BE-10 PREVIEW'}</StatusBadge>}>
-          <form className="search-row policy-search-row" onSubmit={submitShadow}>
-            <label className="field field-grow">
-              <span>Evaluation Case ID</span>
-              <SearchAssistInput
-                value={evaluationCaseId}
-                onChange={setEvaluationCaseId}
-                suggestions={[
-                  { value: 'GOLDEN_ALLOW', label: '허용 기준 Case', description: 'BE local shadow evaluator 예시', source: 'local-example' },
-                  { value: 'FAILURE_BLOCK', label: '차단 기준 Case', description: 'BE local shadow evaluator 예시', source: 'local-example' },
-                ]}
-                placeholder="golden 또는 failure 입력"
-                ariaLabel="Policy Shadow Evaluation Case ID"
-                required
-              />
-            </label>
-            <button className="button button-primary" type="submit" disabled={policy.data?.lifecycleStage !== 'REPLAY' || !evaluationCaseId.trim() || shadow.isPending}>
-              {shadow.isPending ? '비교 중...' : 'Shadow 비교'}
-            </button>
-          </form>
-          {shadow.isError ? <ErrorState description={normalizeApiError(shadow.error).message} onRetry={() => shadow.reset()} /> : shadow.data ? (
-            <KeyValues items={[
-              ['Evaluation', `${shadow.data.shadowEvaluationId} · ${shadow.data.evaluationCaseId}`],
-              ['Result / Diff', `${shadow.data.result} / ${shadow.data.diffFields.join(' · ') || '없음'}`],
-              ['Baseline', `${shadow.data.baselineArtifactId} · ${shadow.data.baselineArtifactVersion}`],
-              ['Candidate', `${shadow.data.candidateArtifactId} · ${shadow.data.candidateArtifactVersion} · rev ${shadow.data.candidateRevision}`],
-              ['Input Digest', shadow.data.inputDigest],
-              ['Outcome Digests', `${shadow.data.baselineOutcomeDigest} / ${shadow.data.candidateOutcomeDigest}`],
-            ]} />
-          ) : (
-            <EmptyState compact title={policy.data?.lifecycleStage === 'REPLAY' ? 'Evaluation Case 입력 대기' : 'REPLAY Candidate 조회 필요'} description="Connector를 호출하지 않고 Raw Payload 없이 Action·Reason·Control·Transform·Destination Diff를 저장합니다." endpoint="POST /api/admin/policy-lifecycle/{artifactId}/versions/{version}/shadow-evaluations" />
-          )}
+        <SectionCard title="Shadow Evidence Read Model" description="평가 이력과 승인 근거를 다시 조회하는 운영 화면" actions={<StatusBadge>API 대기</StatusBadge>}>
+          <EmptyState compact title="API 연결 대기" description="Shadow Evaluation POST 응답은 연결됐지만 Evidence 목록과 단건 조회 Controller는 아직 없습니다." endpoint="Shadow Evidence GET API 미구현" />
         </SectionCard>
         <SectionCard title="Artifact 무결성" description="Schema, Digest, Evidence Reference, Vocabulary" actions={<StatusBadge tone={selectedPack.key === 'digital-asset' ? 'success' : 'neutral'}>{selectedPack.key === 'digital-asset' ? 'P0-5 AVAILABLE' : 'NOT VERIFIED'}</StatusBadge>}>
           <EmptyState compact title={selectedPack.key === 'digital-asset' ? '상단 Artifact 도구에서 조회' : 'API 연결 대기'} description={selectedPack.key === 'digital-asset' ? 'BE-owned strict schema와 digest 검증 결과를 실제 Lifecycle Candidate로 확인합니다.' : '해당 Pack의 Artifact Loader API가 아직 없습니다.'} endpoint={selectedPack.key === 'digital-asset' ? 'GET /api/admin/digital-assets/artifacts/{artifactId}/versions/{version}' : 'Artifact Loader API 미구현'} />
