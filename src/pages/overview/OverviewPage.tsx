@@ -1,4 +1,5 @@
 import { useBackendReadiness } from '../../features/monitoring';
+import { useOperationsSummary } from '../../features/operations-monitoring';
 import { AlertTriangle, ArrowRight, CircleGauge, ListChecks, ShieldAlert, ShieldCheck, ShieldX, Workflow } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { EmptyState, KeyValues, MetricCard, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
@@ -14,10 +15,12 @@ const operatorFlow = [
 
 export function OverviewPage() {
   const readiness = useBackendReadiness();
+  const operations = useOperationsSummary(60);
   const navigate = useNavigate();
   const { selectedPack } = useExecutionPack();
 
   const readinessState = readiness.isLoading ? 'loading' : readiness.isError ? 'error' : 'value';
+  const operationsState = operations.isLoading ? 'loading' : operations.isError ? 'error' : 'value';
 
   return (
     <section className="page-section">
@@ -29,31 +32,35 @@ export function OverviewPage() {
       />
 
       <div className="metric-grid metric-grid-six">
-        <MetricCard label="Security Findings" value={null} description="Aggregate API 미구현" state="unconnected" icon={ShieldAlert} tone="red" />
-        <MetricCard label="Open Incidents" value={null} description="Incident Read Model 미구현" state="unconnected" icon={AlertTriangle} tone="amber" />
-        <MetricCard label="Runtime Block" value={null} description="Prometheus 집계 연동 대기" state="unconnected" icon={ShieldX} tone="red" />
-        <MetricCard label="Unresolved Outcome" value={null} description="Recovery Read API 미구현" state="unconnected" icon={Workflow} tone="purple" />
-        <MetricCard label="Audit Health" value={null} description="Prometheus query 연동 대기" state="unconnected" icon={ShieldCheck} tone="green" />
+        <MetricCard label="Denied Attempts" value={operations.data?.security.deniedAttempts} description="최근 60분 보안 거부" state={operationsState} icon={ShieldAlert} tone="red" />
+        <MetricCard label="Recovery Backlog" value={operations.data?.recovery.backlog} description="외부 상태 확인 대기" state={operationsState} icon={AlertTriangle} tone="amber" />
+        <MetricCard label="Runtime Block" value={operations.data?.runtime.blocked} description="정책 차단 실행" state={operationsState} icon={ShieldX} tone="red" />
+        <MetricCard label="Manual Review" value={operations.data?.recovery.manualReview} description="운영자 검토 대상" state={operationsState} icon={Workflow} tone="purple" />
+        <MetricCard label="Policy Drift" value={operations.data?.policy.driftedSelections} description="Current Selection 불일치" state={operationsState} icon={ShieldCheck} tone="green" />
         <MetricCard label="BE Readiness" value={readiness.data?.status} description="GET /actuator/health/readiness" state={readinessState} icon={CircleGauge} tone="blue" />
       </div>
 
       <div className="content-grid content-grid-wide-left">
         <SectionCard title="Attention Required" description="정상 BLOCK이 아닌 운영 확인 대상" actions={<button className="button button-secondary" type="button" onClick={() => navigate('/monitoring')}>전체 보기 <ArrowRight size={14} /></button>}>
-          <div className="finding-list">
-            {[
-              ['Request digest mismatch', 'Security Findings Read Model 미구현'],
-              ['Maker–Checker violation', 'Policy Review Queue 미구현'],
-              ['Settlement state mismatch', 'Recovery Incident Read Model 미구현'],
-              ['Audit outbox delayed', 'Prometheus audit_outbox_pending'],
-            ].map(([title, endpoint]) => (
-              <button key={title} type="button" className="finding-row" onClick={() => navigate('/monitoring')}>
-                <span>API</span>
-                <strong>{title}</strong>
-                <small>{endpoint}</small>
-                <ArrowRight size={14} />
-              </button>
-            ))}
-          </div>
+          {operations.isError ? (
+            <EmptyState title="Operations API 오류" description="운영 집계를 불러오지 못했습니다. Monitoring 화면에서 연결 상태를 확인하세요." endpoint="GET /api/admin/operations/summary" />
+          ) : operations.data ? (
+            <div className="finding-list">
+              {[
+                ['Recovery backlog', `${operations.data.recovery.backlog}건 · 가장 오래된 대기 ${operations.data.recovery.oldestBacklogAgeSeconds ?? '—'}초`, '/analysis'],
+                ['Manual review', `${operations.data.recovery.manualReview}건 · exhausted ${operations.data.recovery.exhausted}건`, '/analysis'],
+                ['Policy selection drift', `${operations.data.policy.driftedSelections}건 · current ${operations.data.policy.currentSelections}건`, '/monitoring'],
+                ['Security denied attempts', `${operations.data.security.deniedAttempts}건 · authorization ${operations.data.security.authorizationPolicyDenied}건`, '/monitoring'],
+              ].map(([title, detail, path]) => (
+                <button key={title} type="button" className="finding-row" onClick={() => navigate(path)}>
+                  <span>API</span>
+                  <strong>{title}</strong>
+                  <small>{detail}</small>
+                  <ArrowRight size={14} />
+                </button>
+              ))}
+            </div>
+          ) : <EmptyState title="운영 집계 조회 중" description="권한 범위의 Operations Summary를 불러오고 있습니다." />}
         </SectionCard>
 
         <SectionCard title="Enforcement Posture" description="두 실행 도메인의 통제 상태">
@@ -72,8 +79,8 @@ export function OverviewPage() {
           <KeyValues
             items={[
               ['Backend Readiness', readiness.data?.status ?? '연결 확인 중'],
-              ['Event Pipeline', 'Prometheus event pipeline metrics'],
-              ['Recovery Worker', 'Prometheus recovery metrics'],
+              ['Operations Summary', operations.data?.schemaVersion ?? '연결 확인 중'],
+              ['Recovery Worker', operations.data ? `${operations.data.recovery.completedOperations} completed operations` : '연결 확인 중'],
               ['Selected Domain', selectedPack.label],
             ]}
           />
@@ -93,12 +100,12 @@ export function OverviewPage() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Metrics Readiness" description="현재 FE가 기다리는 실제 데이터 소스" actions={<StatusBadge>NO MOCK DATA</StatusBadge>}>
+        <SectionCard title="Operations Read Model" description="현재 FE가 사용하는 실제 운영 데이터 소스" actions={<StatusBadge tone={operations.isSuccess ? 'success' : 'warning'}>{operations.isSuccess ? 'CONNECTED' : 'CHECKING'}</StatusBadge>}>
           <EmptyState
             icon={ListChecks}
-            title="API 연결 대기"
-            description="Prometheus와 Read Model API가 연결되면 숫자, 비율, p95, 추세를 실제 응답으로만 표시합니다."
-            endpoint="Prometheus Query API 또는 BFF Aggregation 미구현"
+            title={operations.data ? `${operations.data.windowMinutes}분 집계 연결됨` : 'Operations Summary 확인 중'}
+            description={operations.data ? `생성 시각 ${new Date(operations.data.generatedAt).toLocaleString('ko-KR')} · 개별 Security Finding은 별도 Read Model이 필요합니다.` : 'BE scoped Operations Summary 응답을 기다리고 있습니다.'}
+            endpoint="GET /api/admin/operations/summary"
           />
         </SectionCard>
       </div>

@@ -2,8 +2,8 @@
 
 ## Baseline
 
-- FE: `origin/main@3277d10`
-- BE: `origin/main@b99752f`
+- FE: `origin/main@99c00f2`
+- BE: `origin/main@d937f64`
 - Notion Source of Truth: `개발단계 추적`, 2026-09-09
 - Principle: 확정된 BE `main` 계약만 실행 경로에 연결하고, 아직 Controller가 없는 운영 기능은 명시적인 대기 상태로 유지한다.
 
@@ -22,7 +22,6 @@
 
 대기 Gate:
 
-- Recovery incident 목록/요약/수동 명령 Controller
 - Shadow Evidence 목록/단건 Read Model
 
 BE-10 연결 완료:
@@ -64,12 +63,18 @@ BE-10 연결 완료:
 
 ## Track D: Operations Read Models
 
-BE와 병렬로 먼저 고정할 계약:
+현재 연결 완료:
+
+- Recovery Incident status 검색, 상세와 operation evidence
+- reconciliation-first, safe retry, manual review 수동 명령
+- Runtime/Recovery/Policy/Security Operations Summary
+- Lifecycle Transition과 Current Selection Event 통합 이력
+
+BE와 병렬로 추가 고정할 계약:
 
 - Finding summary/search filter와 pagination
-- Recovery incident status, attempt lineage, safe command
 - Policy active snapshot/list/review queue
-- Shadow Evidence와 Current Selection Event 이력
+- Shadow Evidence 목록/상세
 - Prometheus metric name, label cardinality, aggregation window
 
 FE는 위 계약이 없을 때 빈 배열이나 0을 성공 응답처럼 만들지 않는다. `unconnected`, `empty`, `loading`, `error`, `restricted`, `value` 상태를 분리한다.
