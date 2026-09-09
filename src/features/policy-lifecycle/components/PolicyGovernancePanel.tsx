@@ -30,7 +30,7 @@ export function PolicyGovernancePanel({ policy }: PolicyGovernancePanelProps) {
   const [approvalConfirmed, setApprovalConfirmed] = useState(false);
   const [activationConfirmed, setActivationConfirmed] = useState(false);
   const [rollbackConfirmed, setRollbackConfirmed] = useState(false);
-  const isGenericSelectionSupported = policy.executionPack === 'AI';
+  const isGenericSelectionSupported = policy.executionPack !== 'DIGITAL_ASSET';
   const selectionParams = isGenericSelectionSupported ? {
     executionPack: policy.executionPack,
     workloadId: policy.workloadId,
@@ -47,6 +47,9 @@ export function PolicyGovernancePanel({ policy }: PolicyGovernancePanelProps) {
   const hasNoCurrentSelection = selectionError?.errorCode === 'POLICY_CURRENT_SELECTION_NOT_FOUND';
   const canUseSelectionRevision = currentSelection.isSuccess || hasNoCurrentSelection;
   const expectedSelectionRevision = currentSelection.data?.selectionRevision ?? 0;
+  const enteredShadowEvaluationId = shadowEvaluationId.trim();
+  const isKnownShadowEvidence = shadow.data?.shadowEvaluationId === enteredShadowEvaluationId;
+  const isKnownDiffEvidence = isKnownShadowEvidence && shadow.data?.result === 'DIFF';
   const isMutating = transition.isPending || approval.isPending || activation.isPending || rollback.isPending;
   const terminalStateCopy: Partial<Record<PolicyLifecycleStage, { title: string; description: string }>> = {
     APPROVED: {
@@ -107,11 +110,11 @@ export function PolicyGovernancePanel({ policy }: PolicyGovernancePanelProps) {
   }
 
   function approve() {
-    if (!approvalConfirmed || !shadowEvaluationId.trim()) return;
+    if (!approvalConfirmed || !enteredShadowEvaluationId || isKnownDiffEvidence) return;
     approval.mutate({
       artifactId: policy.artifactId,
       artifactVersion: policy.artifactVersion,
-      shadowEvaluationId: shadowEvaluationId.trim(),
+      shadowEvaluationId: enteredShadowEvaluationId,
     });
   }
 
@@ -141,6 +144,17 @@ export function PolicyGovernancePanel({ policy }: PolicyGovernancePanelProps) {
 
   const commandError = transition.error ?? approval.error ?? activation.error ?? rollback.error;
   const commandApiError = commandError ? normalizeApiError(commandError) : null;
+  const selectionCommandError = activation.error ?? rollback.error;
+  const selectionCommandApiError = selectionCommandError ? normalizeApiError(selectionCommandError) : null;
+  const hasSelectionConflict = selectionCommandApiError?.status === 409;
+
+  function refreshSelectionAfterConflict() {
+    activation.reset();
+    rollback.reset();
+    setActivationConfirmed(false);
+    setRollbackConfirmed(false);
+    currentSelection.refetch();
+  }
 
   return (
     <SectionCard
@@ -149,6 +163,7 @@ export function PolicyGovernancePanel({ policy }: PolicyGovernancePanelProps) {
       description="Shadow Evidence, Maker-Checker 승인, Current Selection과 Rollback을 BE authoritative revision으로 실행합니다."
       actions={<StatusBadge tone={policy.lifecycleStage === 'ACTIVE' ? 'success' : policy.lifecycleStage === 'REVIEW' ? 'warning' : 'info'}>{policy.lifecycleStage}</StatusBadge>}
     >
+      <p className="helper-text"><ShieldCheck size={14} />현재 관리자 Role 조회 API 미연결 · 승인·활성화·롤백 요구 권한: PRIVILEGED_OPERATOR · BE authoritative 검증</p>
       <div className="governance-grid">
         <div className="governance-column">
           <div className="governance-section-heading">
@@ -197,6 +212,15 @@ export function PolicyGovernancePanel({ policy }: PolicyGovernancePanelProps) {
             </label>
           ) : null}
 
+          {policy.lifecycleStage === 'SHADOW' && isKnownDiffEvidence ? (
+            <EmptyState
+              compact
+              title="이 Evidence는 승인할 수 없습니다"
+              description="현재 세션에서 확인한 Evidence에 변경점이 존재합니다. 현재 Approval Policy는 MATCH Evidence만 승인합니다."
+              endpoint={`Shadow Evaluation ${enteredShadowEvaluationId} · DIFF`}
+            />
+          ) : null}
+
           {terminalState ? (
             <EmptyState compact title={terminalState.title} description={terminalState.description} endpoint={`Lifecycle ${policy.lifecycleStage} · Artifact revision ${policy.revision}`} />
           ) : null}
@@ -221,10 +245,10 @@ export function PolicyGovernancePanel({ policy }: PolicyGovernancePanelProps) {
           {policy.lifecycleStage === 'SHADOW' ? (
             <div className="governance-command">
               <label className="checkbox-row">
-                <input type="checkbox" checked={approvalConfirmed} onChange={(event) => setApprovalConfirmed(event.target.checked)} />
-                <span>최신 MATCH Evidence와 Maker-Checker 조건으로 승인을 요청합니다.</span>
+                <input type="checkbox" checked={approvalConfirmed} onChange={(event) => setApprovalConfirmed(event.target.checked)} disabled={isKnownDiffEvidence} />
+                <span>BE가 MATCH Evidence, 승인 권한과 Maker-Checker 조건을 검증하도록 요청합니다.</span>
               </label>
-              <button className="button button-primary" type="button" disabled={!approvalConfirmed || !shadowEvaluationId.trim() || isMutating} onClick={approve}>
+              <button className="button button-primary" type="button" disabled={!approvalConfirmed || !enteredShadowEvaluationId || isKnownDiffEvidence || isMutating} onClick={approve}>
                 <CheckCircle2 size={15} />Evidence 기반 승인
               </button>
             </div>
@@ -281,7 +305,16 @@ export function PolicyGovernancePanel({ policy }: PolicyGovernancePanelProps) {
         </div>
       </div>
 
-      {commandApiError ? <ErrorState title="Policy 명령이 거부됐습니다" description={`${commandApiError.errorCode}: ${commandApiError.message}`} /> : null}
+      {commandApiError ? (
+        <ErrorState
+          title={hasSelectionConflict ? 'Current Selection이 변경됐습니다' : 'Policy 명령이 거부됐습니다'}
+          description={hasSelectionConflict
+            ? `${commandApiError.errorCode}: 최신 Selection Revision을 다시 조회했습니다. 변경 내용을 확인한 뒤 명령을 다시 판단하세요.`
+            : `${commandApiError.errorCode}: ${commandApiError.message}`}
+          onRetry={hasSelectionConflict ? refreshSelectionAfterConflict : undefined}
+          retryLabel="최신 상태 다시 조회"
+        />
+      ) : null}
       {activation.data || rollback.data ? (
         <div className="governance-result">
           <StatusBadge tone="success">SELECTION UPDATED</StatusBadge>

@@ -106,8 +106,10 @@ Digital Asset 실행의 GET/Trace 응답에는 다음 server-owned 증적이 포
 - 활성화 요청은 `expectedArtifactRevision`, `expectedSelectionRevision`을 전달한다.
 - 롤백 요청은 `expectedTargetRevision`, `expectedSelectionRevision`을 전달한다.
 - Current Selection은 Institution + Execution Pack + Workload + Purpose Scope에서 단일 ACTIVE를 반환한다.
-- Generic activation/rollback은 AI Policy 대상이다. Digital Asset은 Runtime Control/Crosswalk가 결속되는 전용 Artifact activation API를 유지한다.
+- Generic activation/rollback은 `COMMON`, `AI` Policy를 지원한다. Digital Asset은 Runtime Control/Crosswalk가 결속되는 전용 Artifact activation API를 유지한다.
 - Mutation 전 사용자가 명시적으로 명령을 확인하며, 403/404/409/422를 성공 상태로 변환하지 않는다.
+- Current Selection mutation이 409 stale/concurrent 오류를 반환하면 Selection Query를 무효화해 최신 revision을 다시 조회한다.
+- 현재 사용자 Role과 Artifact Maker를 조회하는 확정 API가 없으므로 FE는 권한을 추정하지 않는다. 명령 전 요구 권한을 안내하고 BE의 authoritative 403/422 검증 결과를 표시한다.
 - Shadow Evidence 목록/단건 GET API는 아직 없으므로 POST 응답 이후의 이력 목록을 FE에서 임의 생성하지 않는다.
 
 ## Local BFF Boundary

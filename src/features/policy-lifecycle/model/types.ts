@@ -1,4 +1,4 @@
-export type ExecutionPackType = 'AI' | 'DIGITAL_ASSET';
+export type ExecutionPackType = 'COMMON' | 'AI' | 'DIGITAL_ASSET';
 export type PolicyLayer = 'REGULATORY' | 'INSTITUTION' | 'WORKLOAD' | 'DESTINATION';
 export type PolicyLifecycleStage = 'PROJECT_PROVISIONAL' | 'DRAFT' | 'VALIDATED' | 'CANDIDATE' | 'REPLAY' | 'SHADOW' | 'APPROVED' | 'ACTIVE' | 'SUPERSEDED' | 'REVIEW' | 'ROLLED_BACK';
 

@@ -70,15 +70,16 @@ type ErrorStateProps = {
   title?: string;
   description: string;
   onRetry?: () => void;
+  retryLabel?: string;
 };
 
-export function ErrorState({ title = '데이터를 불러오지 못했습니다', description, onRetry }: ErrorStateProps) {
+export function ErrorState({ title = '데이터를 불러오지 못했습니다', description, onRetry, retryLabel = '다시 시도' }: ErrorStateProps) {
   return (
     <div className="state-panel state-panel-error" role="alert">
       <span className="state-icon" aria-hidden="true">!</span>
       <strong>{title}</strong>
       <p>{description}</p>
-      {onRetry ? <button className="button button-secondary" onClick={onRetry}>다시 시도</button> : null}
+      {onRetry ? <button className="button button-secondary" onClick={onRetry}>{retryLabel}</button> : null}
     </div>
   );
 }

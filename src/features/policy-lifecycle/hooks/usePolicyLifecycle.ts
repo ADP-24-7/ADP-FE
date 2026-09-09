@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { normalizeApiError } from '../../../shared/api/apiError';
 import {
   activatePolicyLifecycle,
   approvePolicyLifecycle,
@@ -11,9 +12,30 @@ import {
 } from '../api/policyLifecycleApi';
 import type { ActivatePolicyRequest, CreatePolicyLifecycleRequest, PolicyCurrentSelectionParams, PolicyLifecycleStage, RollbackPolicyRequest } from '../model/types';
 
+export const policyLifecycleKeys = {
+  all: ['policy-lifecycle'] as const,
+  detail: (artifactId: string, artifactVersion: string) => (
+    [...policyLifecycleKeys.all, artifactId, artifactVersion] as const
+  ),
+};
+
+export const policySelectionKeys = {
+  all: ['policy-current-selection'] as const,
+  detail: (params: PolicyCurrentSelectionParams) => (
+    [...policySelectionKeys.all, params] as const
+  ),
+};
+
+const selectionConflictCodes = new Set([
+  'POLICY_LIFECYCLE_CONCURRENT_MODIFICATION',
+  'POLICY_CURRENT_SELECTION_AMBIGUOUS',
+  'POLICY_CURRENT_SELECTION_STALE',
+  'POLICY_CURRENT_SELECTION_APPROVAL_STALE',
+]);
+
 export function usePolicyLifecycle(artifactId: string, artifactVersion: string) {
   return useQuery({
-    queryKey: ['policy-lifecycle', artifactId, artifactVersion],
+    queryKey: policyLifecycleKeys.detail(artifactId, artifactVersion),
     queryFn: () => getPolicyLifecycle(artifactId, artifactVersion),
     enabled: artifactId.length > 0 && artifactVersion.length > 0,
     retry: false,
@@ -25,7 +47,7 @@ export function useCreatePolicyLifecycle() {
   return useMutation({
     mutationFn: (request: CreatePolicyLifecycleRequest) => createPolicyLifecycle(request),
     onSuccess: (record) => queryClient.setQueryData(
-      ['policy-lifecycle', record.artifactId, record.artifactVersion],
+      policyLifecycleKeys.detail(record.artifactId, record.artifactVersion),
       record,
     ),
   });
@@ -41,7 +63,7 @@ export function useRunPolicyShadowEvaluation() {
 
 export function usePolicyCurrentSelection(params: PolicyCurrentSelectionParams | null) {
   return useQuery({
-    queryKey: ['policy-current-selection', params],
+    queryKey: params ? policySelectionKeys.detail(params) : policySelectionKeys.all,
     queryFn: () => getPolicyCurrentSelection(params!),
     enabled: params != null,
     retry: false,
@@ -58,7 +80,7 @@ export function useTransitionPolicyLifecycle() {
       reasonCode: string;
     }) => transitionPolicyLifecycle(artifactId, artifactVersion, { targetStage, reasonCode }),
     onSuccess: (record) => queryClient.setQueryData(
-      ['policy-lifecycle', record.artifactId, record.artifactVersion],
+      policyLifecycleKeys.detail(record.artifactId, record.artifactVersion),
       record,
     ),
   });
@@ -73,7 +95,7 @@ export function useApprovePolicyLifecycle() {
       shadowEvaluationId: string;
     }) => approvePolicyLifecycle(artifactId, artifactVersion, { shadowEvaluationId }),
     onSuccess: (record) => queryClient.setQueryData(
-      ['policy-lifecycle', record.artifactId, record.artifactVersion],
+      policyLifecycleKeys.detail(record.artifactId, record.artifactVersion),
       record,
     ),
   });
@@ -90,12 +112,16 @@ function useSelectionMutation<TRequest extends ActivatePolicyRequest | RollbackP
       request: TRequest;
     }) => mutationFn(artifactId, artifactVersion, request),
     onSuccess: (selection) => {
-      queryClient.setQueryData(['policy-current-selection', {
+      queryClient.setQueryData(policySelectionKeys.detail({
         executionPack: selection.executionPack,
         workloadId: selection.workloadId,
         purposeCode: selection.purposeCode,
-      }], selection);
-      queryClient.invalidateQueries({ queryKey: ['policy-lifecycle'] });
+      }), selection);
+      queryClient.invalidateQueries({ queryKey: policyLifecycleKeys.all });
+    },
+    onError: (error) => {
+      if (!selectionConflictCodes.has(normalizeApiError(error).errorCode)) return;
+      queryClient.invalidateQueries({ queryKey: policySelectionKeys.all });
     },
   });
 }

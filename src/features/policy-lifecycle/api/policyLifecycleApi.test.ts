@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { normalizeApiError } from '../../../shared/api/apiError';
 import {
   activatePolicyLifecycle,
   approvePolicyLifecycle,
@@ -37,8 +38,8 @@ describe('policyLifecycleApi', () => {
     })).resolves.toMatchObject({
       candidateArtifactId: 'candidate-policy-contract',
       evaluationCaseId: 'GOLDEN_ALLOW',
-      result: 'DIFF',
-      diffFields: ['FINAL_ACTION'],
+      result: 'MATCH',
+      diffFields: [],
     });
   });
 
@@ -70,5 +71,33 @@ describe('policyLifecycleApi', () => {
       expectedTargetRevision: 8,
       expectedSelectionRevision: 4,
     })).resolves.toMatchObject({ artifactId: 'active-policy-contract', selectionRevision: 5 });
+  });
+
+  it('preserves BE governance failure reason codes', async () => {
+    const diffApproval = approvePolicyLifecycle('candidate-policy-contract', '2.0.0', {
+      shadowEvaluationId: 'shadow-diff',
+    });
+    await expect(diffApproval).rejects.toMatchObject({ response: { status: 422 } });
+    await diffApproval.catch((error: unknown) => {
+      expect(normalizeApiError(error)).toMatchObject({
+        status: 422,
+        errorCode: 'POLICY_SHADOW_DIFF_NOT_APPROVABLE',
+      });
+    });
+
+    await expect(transitionPolicyLifecycle('candidate-policy-contract', '2.0.0', {
+      targetStage: 'APPROVED',
+      reasonCode: 'APPROVAL_GRANTED',
+    })).rejects.toMatchObject({ response: { status: 422 } });
+
+    await expect(activatePolicyLifecycle('candidate-policy-contract', '2.0.0', {
+      expectedArtifactRevision: 5,
+      expectedSelectionRevision: 2,
+    })).rejects.toMatchObject({ response: { status: 409 } });
+
+    await expect(rollbackPolicyLifecycle('active-policy-contract', '1.0.0', {
+      expectedTargetRevision: 7,
+      expectedSelectionRevision: 3,
+    })).rejects.toMatchObject({ response: { status: 409 } });
   });
 });

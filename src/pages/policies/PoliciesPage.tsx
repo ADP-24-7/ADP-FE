@@ -81,7 +81,7 @@ export function PoliciesPage() {
             </div>
           ))}
         </div>
-        <p className="helper-text"><LockKeyhole size={14} />Maker와 Checker가 분리되지 않으면 ACTIVE 승격은 비활성화됩니다.</p>
+        <p className="helper-text"><LockKeyhole size={14} />승인·활성화·롤백은 PRIVILEGED_OPERATOR 권한과 Maker-Checker 분리를 BE가 최종 검증합니다.</p>
       </SectionCard>
 
       <div className="content-grid content-grid-wide-left">
