@@ -3,7 +3,7 @@
 ## Contract Baseline
 
 - Backend source: `ADP-BE origin/main`
-- Backend commit: `b99752f6f9752755524046ee855927ee8ca9d434`
+- Backend commit: `d937f647d73a97913672bc55422ce1aaf97e7ca5`
 - Reviewed: 2026-09-09
 - Product source: Notion `개발단계 추적`
 
@@ -32,6 +32,13 @@ Controller, DTO, SecurityConfig, Controller test가 모두 존재하는 계약�
 | Policy | GET | `/api/admin/policy-lifecycle/current-selection` | Admin roles + Workload scope | Pack/Workload/Purpose 단일 ACTIVE 조회 연결 |
 | Policy | POST | `/api/admin/policy-lifecycle/{artifactId}/versions/{version}/activations` | `PRIVILEGED_OPERATOR` | Artifact/Selection revision fencing 활성화 연결 |
 | Policy | POST | `/api/admin/policy-lifecycle/{artifactId}/versions/{version}/rollbacks` | `PRIVILEGED_OPERATOR` | SUPERSEDED target/Selection revision fencing 롤백 연결 |
+| Recovery | GET | `/api/admin/recovery/incidents` | `OPERATOR`, `PRIVILEGED_OPERATOR`, `AUDITOR` | Status 조건 목록과 Pagination 연결 |
+| Recovery | GET | `/api/admin/recovery/incidents/{recoveryId}` | `OPERATOR`, `PRIVILEGED_OPERATOR`, `AUDITOR` | 상태, Attempt, Digest, Operation Evidence 상세 연결 |
+| Recovery | POST | `/api/admin/recovery/incidents/{recoveryId}/reconcile` | `PRIVILEGED_OPERATOR` | 재전송 없는 외부 상태 확인 명령 연결 |
+| Recovery | POST | `/api/admin/recovery/incidents/{recoveryId}/retry` | `PRIVILEGED_OPERATOR` | BE가 `NOT_SENT`를 확인한 경우만 허용하는 안전 재시도 연결 |
+| Recovery | POST | `/api/admin/recovery/incidents/{recoveryId}/review` | `PRIVILEGED_OPERATOR` | 수동 검토 전환 연결 |
+| Operations | GET | `/api/admin/operations/summary` | `OPERATOR`, `PRIVILEGED_OPERATOR`, `AUDITOR` | Runtime/Recovery/Policy/Security 시간창 집계 연결 |
+| Operations | GET | `/api/admin/operations/policy-events` | `OPERATOR`, `PRIVILEGED_OPERATOR`, `AUDITOR` | Lifecycle/Current Selection 통합 이력과 검색 연결 |
 | Overview | GET | `/actuator/health/readiness` | Public | BE readiness 연결 |
 
 ## Runtime Request Contract
@@ -123,3 +130,26 @@ Digital Asset 실행의 GET/Trace 응답에는 다음 server-owned 증적이 포
 - Artifact ingest는 caller가 Bucket/Endpoint를 선택하지 못하고 `manifestReference + expectedContentDigest`만 전달한다.
 - `policyAction`과 `finalAction`은 계속 분리한다.
 - 데이터 없음, 권한 오류, API 오류, 미구현 상태를 서로 다른 UI 상태로 표시한다.
+
+## BE-9 Recovery Operations Contract
+
+- Incident 조회는 인증 Principal의 Institution과 허용 Workload 범위를 BE SQL에서 적용한다.
+- `RECONCILE`은 Provider 상태 조회만 수행하며 외부 결과가 불명확한 요청을 재전송하지 않는다.
+- `RETRY`는 BE Status Query가 `NOT_SENT`를 확인한 경우에만 허용한다.
+- 수동 명령은 FE가 생성한 `operationId`를 논리 명령 동안 유지하며, 오류 후 재시도에도 같은 ID를 사용한다.
+- Incident 또는 명령 변경과 성공 완료 후에는 새 operation ID를 생성한다.
+- 명령 성공 시 Recovery 목록·상세와 Operations Summary를 함께 무효화해 운영 지표를 즉시 다시 조회한다.
+- FE는 `recoveryStatus`, `retryDisposition`, Attempt 잔여 횟수로 명령 가용성을 안내한다. 최종 권한·전이 검증은 계속 BE가 담당한다.
+- Status 또는 Page 변경 시 기존 Incident 선택, 확인 상태와 pending operation ID를 즉시 초기화한다.
+- `keepPreviousData` 재조회 중에는 `REFRESHING`을 표시하고 이전 목록의 행 선택을 차단한다.
+- Provider correlation key와 요청/응답 원문은 FE DTO에 포함하지 않는다.
+
+## BE-11 Operations Contract
+
+- Summary는 5~1440분 범위의 `windowMinutes`를 사용하며 Runtime/Recovery/Policy/Security 집계를 반환한다.
+- Policy Event는 `workloadId`, `category`, `from`, `to`, `page`, `size`를 서버 검색 조건으로 전달한다.
+- Summary의 실제 `0`은 `0`으로 표시하고, API 오류나 미연결 상태와 구분한다.
+- 단순 `deniedAttempts`는 정상 차단도 포함할 수 있으므로 Attention으로 분류하지 않는다. 현재는 `institutionScopeMismatch`가 있을 때만 Security Attention을 표시한다.
+- 현재 Summary와 Recovery API에는 Execution Pack 검색 조건이 없다. Pack 선택은 `Viewing Context`이며 데이터 범위는 전체 허용 Workload임을 화면에 표시한다.
+- `/actuator/prometheus`는 `METRICS_SCRAPER` 전용 경계이므로 브라우저에서 직접 조회하지 않는다.
+- 개별 Security Finding은 Summary 집계로 추정하지 않고 별도 Read Model이 생길 때까지 API 대기로 유지한다.

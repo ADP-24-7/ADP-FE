@@ -3,13 +3,28 @@
 ## Verified Baseline
 
 - Date: 2026-09-09
-- Backend main baseline: `ADP-BE origin/main@b99752f`
-- Database: fresh Docker PostgreSQL volume in Compose project `adp-fe-gov`
-- Flyway: fresh migration through V35
-- Frontend baseline: `ADP-FE origin/main@3277d10`
-- Frontend branch: `feat/fe-governance-operations-integration`
+- Backend main baseline: `ADP-BE origin/main@d937f64`
+- Database: fresh Docker PostgreSQL volume in Compose project `adp-fe-ops`
+- Flyway: fresh migration through V39
+- Frontend baseline: `ADP-FE origin/main@99c00f2`
+- Frontend branch: `feat/fe-operations-final-integration`
 
-BE #34~#36의 Shadow Diff, Evidence Approval, Current Selection, Rollback 계약을 빈 DB에서 검증했다. FE 검증 과정에서 BE 파일은 수정하지 않았다.
+BE #34~#40의 Governance, Observability, Recovery Operations 계약을 실제 최신 BE와 빈 DB에서 검증했다. FE 검증 과정에서 BE 파일은 수정하지 않았다.
+
+## Latest Operations Verification
+
+| Flow | Result |
+| --- | --- |
+| `GET /actuator/health/readiness` | 200, `UP` |
+| `GET /api/admin/operations/summary?windowMinutes=60` | 200, `adp-operations-summary/v1`, 전체 집계값 `0` |
+| `GET /api/admin/operations/summary?windowMinutes=1440` | 200, 브라우저 집계 범위 변경 후 즉시 재조회 |
+| `GET /api/admin/operations/policy-events?page=0&size=20` | 200, 빈 DB에서 `items: []`, `total: 0` |
+| `GET /api/admin/recovery/incidents?page=0&size=20` | 200, 빈 DB에서 `items: []`, `totalElements: 0` |
+| FE `/overview → /monitoring → /analysis` 이동 | 새로고침 없는 React Router 전환 |
+| AI · Agent → Digital Asset 전환 | 경로 유지, 선택 Pack 문맥만 즉시 변경 |
+| 모바일 390×844 | 내비게이션과 운영 카드가 겹치지 않고 단일 열 배치 |
+
+Operations API는 Local BFF가 서버 측 운영자 인증 헤더를 부착해 호출했다. 브라우저 번들에는 API Key나 서비스 Credential을 추가하지 않았다. Recovery 명령은 Incident가 없는 현재 DB에서 비활성 상태를 유지한다.
 
 ## Verified Flows
 
@@ -117,9 +132,12 @@ processingContexts: DIGITAL_ASSET
 
 ## Remaining Verification
 
-- Recovery incident 목록/요약/수동 명령은 Controller 확정 후 검증한다.
-- Shadow Evidence 목록/단건 조회와 Current Selection Event 이력 API가 필요하다.
+- Recovery 목록과 상세 계약은 연결했으며, 실제 Incident 데이터가 준비되면 Reconcile → Safe Retry → Manual Review 명령을 통합 검증한다.
+- Policy Operation Event 이력은 연결했으며, 실제 Lifecycle/Selection Event 데이터로 필터와 페이지 이동을 추가 검증한다.
+- Shadow Evidence 목록/단건 조회 API가 필요하다.
 - Policy 목록/검색 및 Review Queue Read Model이 필요하다.
+- 개별 Security Finding 목록/상세 및 Trace 연결 Read Model이 필요하다.
+- Prometheus 원시 지표는 브라우저가 직접 조회하지 않는다. 시계열 화면이 필요하면 scoped Monitoring BFF가 먼저 필요하다.
 - NCP ContentStore E2E는 server-side Adapter 범위이며 FE에 Bucket/Endpoint/Credential 입력을 추가하지 않는다.
 
 ## Environment Note
