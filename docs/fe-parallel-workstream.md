@@ -2,10 +2,10 @@
 
 ## Baseline
 
-- FE: `origin/main@7a67852`
-- BE: `origin/main@b5897a5`
+- FE: `origin/main@3277d10`
+- BE: `origin/main@b99752f`
 - Notion Source of Truth: `개발단계 추적`, 2026-09-09
-- Principle: 확정된 BE `main` 계약만 일반 실행 경로에 연결하고, 작업 브랜치 계약은 명시적인 Preview로만 검증한다.
+- Principle: 확정된 BE `main` 계약만 실행 경로에 연결하고, 아직 Controller가 없는 운영 기능은 명시적인 대기 상태로 유지한다.
 
 ## Track A: Runtime Contract
 
@@ -23,13 +23,16 @@
 대기 Gate:
 
 - Recovery incident 목록/요약/수동 명령 Controller
-- BE-10 Shadow Evidence 목록/단건 Read Model과 Active Runtime Selection Read Model
+- Shadow Evidence 목록/단건 Read Model
 
-BE-10 병렬 Preview:
+BE-10 연결 완료:
 
-- 로컬 BE 작업 브랜치의 Shadow Evaluation POST 계약을 Policy 화면에 Preview로 연결
-- `REPLAY` Candidate에 한해 Evaluation Case를 전송하고 Baseline/Candidate Diff와 Digest를 표시
-- BE-10 `main` 병합 전까지 일반 연결 완료로 분류하지 않음
+- Generic AI Policy Artifact 등록과 Lifecycle 전이
+- REPLAY Candidate와 ACTIVE Baseline Shadow Diff
+- MATCH Evidence 기반 Maker-Checker 승인
+- Current Selection 조회와 revision fencing activation
+- SUPERSEDED target rollback과 selection revision 갱신
+- Digital Asset은 별도 Artifact activation 경계 유지
 
 ## Track B: AI Evaluation
 
@@ -66,6 +69,7 @@ BE와 병렬로 먼저 고정할 계약:
 - Finding summary/search filter와 pagination
 - Recovery incident status, attempt lineage, safe command
 - Policy active snapshot/list/review queue
+- Shadow Evidence와 Current Selection Event 이력
 - Prometheus metric name, label cardinality, aggregation window
 
 FE는 위 계약이 없을 때 빈 배열이나 0을 성공 응답처럼 만들지 않는다. `unconnected`, `empty`, `loading`, `error`, `restricted`, `value` 상태를 분리한다.

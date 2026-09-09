@@ -1,5 +1,16 @@
 import { httpClient } from '../../../shared/api/httpClient';
-import type { CreatePolicyLifecycleRequest, PolicyLifecycleRecord, PolicyShadowEvidence, RunPolicyShadowEvaluationRequest, TransitionPolicyLifecycleRequest } from '../model/types';
+import type {
+  ActivatePolicyRequest,
+  ApprovePolicyLifecycleRequest,
+  CreatePolicyLifecycleRequest,
+  PolicyCurrentSelection,
+  PolicyCurrentSelectionParams,
+  PolicyLifecycleRecord,
+  PolicyShadowEvidence,
+  RollbackPolicyRequest,
+  RunPolicyShadowEvaluationRequest,
+  TransitionPolicyLifecycleRequest,
+} from '../model/types';
 
 export async function getPolicyLifecycle(artifactId: string, artifactVersion: string) {
   const response = await httpClient.get<PolicyLifecycleRecord>(
@@ -24,6 +35,35 @@ export async function transitionPolicyLifecycle(artifactId: string, artifactVers
 export async function runPolicyShadowEvaluation(artifactId: string, artifactVersion: string, request: RunPolicyShadowEvaluationRequest) {
   const response = await httpClient.post<PolicyShadowEvidence>(
     `/api/admin/policy-lifecycle/${encodeURIComponent(artifactId)}/versions/${encodeURIComponent(artifactVersion)}/shadow-evaluations`,
+    request,
+  );
+  return response.data;
+}
+
+export async function approvePolicyLifecycle(artifactId: string, artifactVersion: string, request: ApprovePolicyLifecycleRequest) {
+  const response = await httpClient.post<PolicyLifecycleRecord>(
+    `/api/admin/policy-lifecycle/${encodeURIComponent(artifactId)}/versions/${encodeURIComponent(artifactVersion)}/approvals`,
+    request,
+  );
+  return response.data;
+}
+
+export async function getPolicyCurrentSelection(params: PolicyCurrentSelectionParams) {
+  const response = await httpClient.get<PolicyCurrentSelection>('/api/admin/policy-lifecycle/current-selection', { params });
+  return response.data;
+}
+
+export async function activatePolicyLifecycle(artifactId: string, artifactVersion: string, request: ActivatePolicyRequest) {
+  const response = await httpClient.post<PolicyCurrentSelection>(
+    `/api/admin/policy-lifecycle/${encodeURIComponent(artifactId)}/versions/${encodeURIComponent(artifactVersion)}/activations`,
+    request,
+  );
+  return response.data;
+}
+
+export async function rollbackPolicyLifecycle(artifactId: string, artifactVersion: string, request: RollbackPolicyRequest) {
+  const response = await httpClient.post<PolicyCurrentSelection>(
+    `/api/admin/policy-lifecycle/${encodeURIComponent(artifactId)}/versions/${encodeURIComponent(artifactVersion)}/rollbacks`,
     request,
   );
   return response.data;

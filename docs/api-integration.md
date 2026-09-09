@@ -3,7 +3,7 @@
 ## Contract Baseline
 
 - Backend source: `ADP-BE origin/main`
-- Backend commit: `b5897a5d24c7346328b58d9437f537e8e31531ab`
+- Backend commit: `b99752f6f9752755524046ee855927ee8ca9d434`
 - Reviewed: 2026-09-09
 - Product source: Notion `개발단계 추적`
 
@@ -25,8 +25,13 @@ Controller, DTO, SecurityConfig, Controller test가 모두 존재하는 계약�
 | Decision Trace | GET | `/api/admin/audit/executions` | `OPERATOR` | `workloadId/status/from/to/page/size` 서버 검색 연결 |
 | Decision Trace | GET | `/api/admin/audit/executions/{executionId}/evidence` | `PRIVILEGED_OPERATOR` | Digest Evidence 연결 |
 | Policy | GET | `/api/admin/policy-lifecycle/{artifactId}/versions/{version}` | Admin roles | 단건 조회 연결 |
-| Policy | POST | `/api/admin/policy-lifecycle` | Admin roles + service rule | API client 제공, UI 명령 미노출 |
-| Policy | POST | `/api/admin/policy-lifecycle/{artifactId}/versions/{version}/transitions` | Maker/Checker rule | API client 제공, UI 명령 미노출 |
+| Policy | POST | `/api/admin/policy-lifecycle` | `OPERATOR` service rule | AI WORKLOAD Artifact 등록 UI 연결 |
+| Policy | POST | `/api/admin/policy-lifecycle/{artifactId}/versions/{version}/transitions` | Lifecycle service rule | DRAFT→VALIDATED→CANDIDATE→REPLAY→SHADOW 상태 기반 명령 연결 |
+| Policy | POST | `/api/admin/policy-lifecycle/{artifactId}/versions/{version}/shadow-evaluations` | Admin roles | REPLAY Candidate와 ACTIVE Baseline Diff 연결 |
+| Policy | POST | `/api/admin/policy-lifecycle/{artifactId}/versions/{version}/approvals` | `PRIVILEGED_OPERATOR` + Maker-Checker | Shadow Evidence ID 기반 승인 연결 |
+| Policy | GET | `/api/admin/policy-lifecycle/current-selection` | Admin roles + Workload scope | Pack/Workload/Purpose 단일 ACTIVE 조회 연결 |
+| Policy | POST | `/api/admin/policy-lifecycle/{artifactId}/versions/{version}/activations` | `PRIVILEGED_OPERATOR` | Artifact/Selection revision fencing 활성화 연결 |
+| Policy | POST | `/api/admin/policy-lifecycle/{artifactId}/versions/{version}/rollbacks` | `PRIVILEGED_OPERATOR` | SUPERSEDED target/Selection revision fencing 롤백 연결 |
 | Overview | GET | `/actuator/health/readiness` | Public | BE readiness 연결 |
 
 ## Runtime Request Contract
@@ -94,18 +99,16 @@ Digital Asset 실행의 GET/Trace 응답에는 다음 server-owned 증적이 포
 - 정확한 ID 입력란의 자동완성은 실제 운영 목록처럼 가장하지 않고 `LOCAL 예시`로 출처를 표시한다.
 - 검색 입력은 부분 문자열로 후보를 좁힐 수 있지만, 최종 결과 판정은 항상 BE 응답을 사용한다.
 
-## Parallel BE-10 Preview Contract
+## BE-10 Governance Contract
 
-아래 계약은 `origin/main@b5897a5`에는 없고 로컬 BE-10 작업 브랜치에서만 확인됐다. 따라서 FE는 향후 병합될 계약을 검증하기 위한 Preview UI로 표시하며, 배포 가능한 연결 계약으로 간주하지 않는다.
-
-| FE area | Method | Endpoint | Request | Response |
-| --- | --- | --- | --- | --- |
-| Policy Shadow | POST | `/api/admin/policy-lifecycle/{artifactId}/versions/{artifactVersion}/shadow-evaluations` | `{ evaluationCaseId }` | Baseline/Candidate, `MATCH \| DIFF`, Diff fields, privacy-safe digests |
-
-- Lifecycle이 `REPLAY`인 Candidate만 실행한다.
-- 현재 로컬 Evaluator Case는 `GOLDEN_ALLOW`, `FAILURE_BLOCK`이며 UI에서 `LOCAL 예시`로 구분한다.
-- 동일 Artifact Version과 Case의 증적을 다시 생성하면 Conflict가 발생할 수 있으며, 이를 새 평가 성공으로 표현하지 않는다.
-- BE-10이 `main`에 병합되면 Controller, DTO, SecurityConfig, 테스트를 다시 확인하고 Connected Endpoints로 승격한다.
+- Shadow Evaluation은 `REPLAY` Candidate와 동일 Scope의 ACTIVE Baseline을 server-owned Case로 비교한다.
+- 승인 요청은 `shadowEvaluationId`만 전달하며 최신 `GOLDEN_ALLOW/1.0.0`의 `MATCH` Evidence와 Maker-Checker 조건을 BE가 검증한다.
+- 활성화 요청은 `expectedArtifactRevision`, `expectedSelectionRevision`을 전달한다.
+- 롤백 요청은 `expectedTargetRevision`, `expectedSelectionRevision`을 전달한다.
+- Current Selection은 Institution + Execution Pack + Workload + Purpose Scope에서 단일 ACTIVE를 반환한다.
+- Generic activation/rollback은 AI Policy 대상이다. Digital Asset은 Runtime Control/Crosswalk가 결속되는 전용 Artifact activation API를 유지한다.
+- Mutation 전 사용자가 명시적으로 명령을 확인하며, 403/404/409/422를 성공 상태로 변환하지 않는다.
+- Shadow Evidence 목록/단건 GET API는 아직 없으므로 POST 응답 이후의 이력 목록을 FE에서 임의 생성하지 않는다.
 
 ## Local BFF Boundary
 

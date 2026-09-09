@@ -1,6 +1,35 @@
 import { http, HttpResponse } from 'msw';
 
 export const policyLifecycleHandlers = [
+  http.post('/api/admin/policy-lifecycle', async ({ request }) => {
+    const body = await request.json() as Record<string, string>;
+    return HttpResponse.json({
+      ...body,
+      institutionId: 'institution_local',
+      lifecycleStage: 'DRAFT',
+      createdBy: 'maker-local',
+      revision: 0,
+      createdAt: '2026-09-09T00:00:00Z',
+      updatedAt: '2026-09-09T00:00:00Z',
+    }, { status: 201 });
+  }),
+  http.get('/api/admin/policy-lifecycle/current-selection', ({ request }) => {
+    const url = new URL(request.url);
+    return HttpResponse.json({
+      institutionId: 'institution_local',
+      policyLayer: 'WORKLOAD',
+      executionPack: url.searchParams.get('executionPack'),
+      workloadId: url.searchParams.get('workloadId'),
+      purposeCode: url.searchParams.get('purposeCode'),
+      artifactId: 'active-policy-contract',
+      artifactVersion: '1.0.0',
+      artifactDigest: '1'.repeat(64),
+      artifactRevision: 7,
+      selectionRevision: 3,
+      selectedBy: 'checker-local',
+      selectedAt: '2026-09-09T00:00:00Z',
+    });
+  }),
   http.get('/api/admin/policy-lifecycle/:artifactId/versions/:artifactVersion', ({ params }) => HttpResponse.json({
     artifactId: params.artifactId,
     artifactVersion: params.artifactVersion,
@@ -41,4 +70,65 @@ export const policyLifecycleHandlers = [
       evaluatedAt: '2026-09-09T00:00:00Z',
     }, { status: 201 });
   }),
+  http.post('/api/admin/policy-lifecycle/:artifactId/versions/:artifactVersion/transitions', async ({ params, request }) => {
+    const body = await request.json() as { targetStage: string };
+    return HttpResponse.json({
+      artifactId: params.artifactId,
+      artifactVersion: params.artifactVersion,
+      artifactDigest: 'f'.repeat(64),
+      institutionId: 'institution_local',
+      policyLayer: 'WORKLOAD',
+      executionPack: 'AI',
+      workloadId: 'customer_summary',
+      purposeCode: 'CUSTOMER_SUPPORT',
+      lifecycleStage: body.targetStage,
+      createdBy: 'maker-local',
+      revision: 5,
+      createdAt: '2026-09-09T00:00:00Z',
+      updatedAt: '2026-09-09T00:00:01Z',
+    });
+  }),
+  http.post('/api/admin/policy-lifecycle/:artifactId/versions/:artifactVersion/approvals', ({ params }) => HttpResponse.json({
+    artifactId: params.artifactId,
+    artifactVersion: params.artifactVersion,
+    artifactDigest: 'f'.repeat(64),
+    institutionId: 'institution_local',
+    policyLayer: 'WORKLOAD',
+    executionPack: 'AI',
+    workloadId: 'customer_summary',
+    purposeCode: 'CUSTOMER_SUPPORT',
+    lifecycleStage: 'APPROVED',
+    createdBy: 'maker-local',
+    revision: 6,
+    createdAt: '2026-09-09T00:00:00Z',
+    updatedAt: '2026-09-09T00:00:02Z',
+  })),
+  http.post('/api/admin/policy-lifecycle/:artifactId/versions/:artifactVersion/activations', ({ params }) => HttpResponse.json({
+    institutionId: 'institution_local',
+    policyLayer: 'WORKLOAD',
+    executionPack: 'AI',
+    workloadId: 'customer_summary',
+    purposeCode: 'CUSTOMER_SUPPORT',
+    artifactId: params.artifactId,
+    artifactVersion: params.artifactVersion,
+    artifactDigest: 'f'.repeat(64),
+    artifactRevision: 7,
+    selectionRevision: 4,
+    selectedBy: 'checker-local',
+    selectedAt: '2026-09-09T00:00:03Z',
+  })),
+  http.post('/api/admin/policy-lifecycle/:artifactId/versions/:artifactVersion/rollbacks', ({ params }) => HttpResponse.json({
+    institutionId: 'institution_local',
+    policyLayer: 'WORKLOAD',
+    executionPack: 'AI',
+    workloadId: 'customer_summary',
+    purposeCode: 'CUSTOMER_SUPPORT',
+    artifactId: params.artifactId,
+    artifactVersion: params.artifactVersion,
+    artifactDigest: '1'.repeat(64),
+    artifactRevision: 9,
+    selectionRevision: 5,
+    selectedBy: 'checker-local',
+    selectedAt: '2026-09-09T00:00:04Z',
+  })),
 ];
