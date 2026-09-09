@@ -26,7 +26,13 @@ export function AnalysisPage() {
         actions={<StatusBadge tone={summary.isSuccess ? 'success' : 'warning'}>{summary.isSuccess ? 'OPERATIONS API CONNECTED' : 'OPERATIONS API'}</StatusBadge>}
       />
 
-      <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} objective={selectedPack.objective} />
+      <PackContextSummary
+        label={selectedPack.label}
+        scope={selectedPack.scope}
+        descriptor={selectedPack.descriptor}
+        objective={selectedPack.objective}
+        dataScope="전체 권한 허용 Workload · Pack 필터 미지원"
+      />
 
       {selectedPack.key === 'ai' ? <AiEvaluationPanel /> : null}
 

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { normalizeApiError } from '../../../shared/api/apiError';
 import { EmptyState, ErrorState, KeyValues, LoadingPanel, SectionCard, StatusBadge } from '../../../shared/components';
 import { useRecoveryCommand, useRecoveryIncident, useRecoveryIncidents } from '../hooks/useRecoveryOperations';
+import { getRecoveryCommandAvailability } from '../model/recoveryCommandPolicy';
 import type { RecoveryOperationType, RecoveryStatus } from '../model/types';
 
 const recoveryStatuses: RecoveryStatus[] = [
@@ -48,6 +49,13 @@ export function RecoveryOperationsPanel() {
   const detail = useRecoveryIncident(selectedRecoveryId);
   const command = useRecoveryCommand();
   const totalPages = incidents.data ? Math.ceil(incidents.data.totalElements / incidents.data.size) : 0;
+  const commandAvailability = detail.data ? getRecoveryCommandAvailability(detail.data) : null;
+  const availableCommands = commandAvailability
+    ? (Object.keys(commandCopy) as RecoveryOperationType[]).filter((type) => commandAvailability[type].enabled)
+    : [];
+  const effectiveCommand = commandAvailability?.[selectedCommand].enabled
+    ? selectedCommand
+    : availableCommands[0] ?? selectedCommand;
 
   useEffect(() => {
     setCommandConfirmed(false);
@@ -65,13 +73,13 @@ export function RecoveryOperationsPanel() {
   }
 
   function executeCommand() {
-    if (!selectedRecoveryId || !commandConfirmed) return;
-    const operationId = operationIds.current[selectedCommand]
-      ?? `fe_${selectedCommand.toLowerCase()}_${crypto.randomUUID()}`;
-    operationIds.current[selectedCommand] = operationId;
-    command.mutate({ recoveryId: selectedRecoveryId, operationType: selectedCommand, operationId }, {
+    if (!selectedRecoveryId || !commandConfirmed || !commandAvailability?.[effectiveCommand].enabled) return;
+    const operationId = operationIds.current[effectiveCommand]
+      ?? `fe_${effectiveCommand.toLowerCase()}_${crypto.randomUUID()}`;
+    operationIds.current[effectiveCommand] = operationId;
+    command.mutate({ recoveryId: selectedRecoveryId, operationType: effectiveCommand, operationId }, {
       onSuccess: () => {
-        delete operationIds.current[selectedCommand];
+        delete operationIds.current[effectiveCommand];
         setCommandConfirmed(false);
       },
     });
@@ -174,26 +182,46 @@ export function RecoveryOperationsPanel() {
         <SectionCard title="Recovery Command" description="모든 명령은 PRIVILEGED_OPERATOR와 operationId 멱등성을 BE가 검증합니다.">
           {!detail.data ? (
             <EmptyState icon={ShieldAlert} title="Incident 선택 필요" description="명령을 실행할 Recovery Incident를 먼저 선택하세요." />
+          ) : !availableCommands.length ? (
+            <EmptyState
+              icon={CheckCircle2}
+              title="실행 가능한 Recovery 명령이 없습니다"
+              description={commandAvailability?.[effectiveCommand].reason ?? '현재 Incident 상태에서는 추가 운영 명령을 실행할 수 없습니다.'}
+            />
           ) : (
             <div className="recovery-command-panel">
+              <div className="command-state-guidance">
+                <StatusBadge tone={statusTone(detail.data.recoveryStatus)}>{detail.data.recoveryStatus}</StatusBadge>
+                <span>현재 상태와 Retry Disposition에 따라 실행 가능한 명령만 활성화됩니다.</span>
+              </div>
               <div className="command-selector" role="tablist" aria-label="Recovery command 선택">
                 {(Object.keys(commandCopy) as RecoveryOperationType[]).map((type) => (
-                  <button key={type} type="button" role="tab" aria-selected={selectedCommand === type} className={selectedCommand === type ? 'active' : ''} onClick={() => selectCommandType(type)}>
+                  <button
+                    key={type}
+                    type="button"
+                    role="tab"
+                    aria-selected={effectiveCommand === type}
+                    className={effectiveCommand === type ? 'active' : ''}
+                    disabled={!commandAvailability?.[type].enabled}
+                    title={commandAvailability?.[type].reason}
+                    onClick={() => selectCommandType(type)}
+                  >
                     {type === 'RECONCILE' ? <RefreshCw size={14} /> : type === 'RETRY' ? <RotateCcw size={14} /> : <AlertTriangle size={14} />}
                     {commandCopy[type].label}
                   </button>
                 ))}
               </div>
               <div className="command-explanation">
-                <strong>{commandCopy[selectedCommand].label}</strong>
-                <p>{commandCopy[selectedCommand].description}</p>
+                <strong>{commandCopy[effectiveCommand].label}</strong>
+                <p>{commandCopy[effectiveCommand].description}</p>
+                <small>{commandAvailability?.[effectiveCommand].reason}</small>
               </div>
               <label className="checkbox-row">
                 <input type="checkbox" checked={commandConfirmed} onChange={(event) => setCommandConfirmed(event.target.checked)} />
-                <span>{detail.data.recoveryId}에 {selectedCommand} 명령을 실행합니다.</span>
+                <span>{detail.data.recoveryId}에 {effectiveCommand} 명령을 실행합니다.</span>
               </label>
-              <button className={selectedCommand === 'RETRY' ? 'button button-danger' : 'button button-primary'} type="button" disabled={!commandConfirmed || command.isPending} onClick={executeCommand}>
-                {command.isPending ? '명령 처리 중...' : commandCopy[selectedCommand].label}
+              <button className={effectiveCommand === 'RETRY' ? 'button button-danger' : 'button button-primary'} type="button" disabled={!commandConfirmed || command.isPending} onClick={executeCommand}>
+                {command.isPending ? '명령 처리 중...' : commandCopy[effectiveCommand].label}
               </button>
               {command.isError ? (
                 <ErrorState

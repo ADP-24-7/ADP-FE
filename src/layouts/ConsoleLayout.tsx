@@ -93,7 +93,8 @@ export function ConsoleLayout() {
             <span>{activeNavItem?.label ?? 'Policy Decision → Finding → Trace → Recovery'}</span>
           </div>
           <div className="topbar-actions">
-            <div className="runtime-domain-toggle" role="tablist" aria-label="Runtime domain">
+            <div className="runtime-domain-toggle" role="tablist" aria-label="화면 Viewing Context">
+              <span className="runtime-domain-context-label">CONTEXT</span>
               {runtimeDomainPacks.map((pack) => (
                 <button
                   key={pack.key}

@@ -64,6 +64,7 @@ button, a { transition: background-color .16s ease, border-color .16s ease, colo
 .live-mode-badge { border: 1px solid #b7dfcf; border-radius: 999px; background: var(--color-success-soft); color: var(--color-success) !important; font-weight: 800; letter-spacing: .08em; padding: 5px 8px; }
 .topbar-actions { display: flex; align-items: center; gap: 10px; }
 .runtime-domain-toggle { display: inline-flex; align-items: center; min-height: 34px; overflow: hidden; border: 1px solid var(--color-border); border-radius: 10px; background: #eef2f8; padding: 3px; }
+.runtime-domain-context-label { padding: 0 7px; color: var(--color-soft); font-size: 9px; font-weight: 900; letter-spacing: .06em; }
 .runtime-domain-toggle button { min-height: 28px; border: 0; border-radius: 8px; background: transparent; color: var(--color-muted); padding: 0 13px; font-size: 12px; font-weight: 850; white-space: nowrap; }
 .runtime-domain-toggle button:hover { color: var(--color-ink); }
 .runtime-domain-toggle button.active { background: #fff; color: var(--color-ink); box-shadow: 0 3px 10px rgba(22, 32, 51, .08); }
@@ -185,6 +186,9 @@ button, a { transition: background-color .16s ease, border-color .16s ease, colo
 .pack-context-summary span { color: var(--color-primary); font-size: 10px; font-weight: 900; letter-spacing: .08em; }
 .pack-context-summary strong { overflow: hidden; color: var(--color-ink); font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
 .pack-context-summary p { margin: 0; color: var(--color-muted); font-size: 12px; line-height: 1.45; }
+.pack-context-meta { display: grid; justify-items: end; gap: 6px; min-width: 220px; }
+.pack-context-meta small { display: flex; align-items: center; gap: 6px; color: var(--color-muted); font-size: 10px; line-height: 1.35; text-align: right; }
+.pack-context-meta small b { color: var(--color-soft); font-size: 9px; letter-spacing: .06em; }
 .domain-switch { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .domain-switch button { display: grid; min-height: 104px; gap: 7px; border: 1px solid var(--color-border); border-radius: 8px; background: #fff; color: var(--color-text); padding: 14px; text-align: left; }
 .domain-switch button:hover { border-color: #b9c5d7; box-shadow: 0 10px 24px rgba(22, 32, 51, .08); transform: translateY(-1px); }
@@ -476,6 +480,10 @@ button, a { transition: background-color .16s ease, border-color .16s ease, colo
 .command-selector button { display: inline-flex; min-height: 40px; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--color-border); border-radius: 8px; background: #fff; color: var(--color-muted); padding: 7px; font-size: 10px; font-weight: 800; }
 .command-selector button:hover,
 .command-selector button.active { border-color: var(--color-primary); background: var(--color-primary-soft); color: var(--color-primary); }
+.command-selector button:disabled { border-color: var(--color-border); background: #f7f8fa; color: #a3adbd; cursor: not-allowed; opacity: 1; }
+.command-state-guidance { display: flex; align-items: center; gap: 8px; border: 1px solid var(--color-border); border-radius: 8px; background: #f8fafc; padding: 9px 10px; }
+.command-state-guidance > span:last-child { color: var(--color-muted); font-size: 11px; line-height: 1.4; }
+.command-explanation small { display: block; margin-top: 5px; color: var(--color-soft); font-size: 10px; line-height: 1.45; }
 .command-explanation { border-left: 3px solid var(--color-primary); background: #f8faff; padding: 10px 12px; }
 .command-explanation strong { color: var(--color-ink); font-size: 12px; }
 .command-explanation p { margin: 5px 0 0; color: var(--color-muted); font-size: 11px; line-height: 1.5; }

@@ -1,4 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { operationsMonitoringKeys } from '../../operations-monitoring';
 import { getRecoveryIncident, getRecoveryIncidents, runRecoveryCommand } from '../api/recoveryOperationsApi';
 import type { RecoveryOperationType, RecoverySearchParams } from '../model/types';
 
@@ -39,6 +40,7 @@ export function useRecoveryCommand() {
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: recoveryOperationsKeys.lists() });
       queryClient.invalidateQueries({ queryKey: recoveryOperationsKeys.detail(result.recoveryId) });
+      queryClient.invalidateQueries({ queryKey: operationsMonitoringKeys.all });
     },
   });
 }

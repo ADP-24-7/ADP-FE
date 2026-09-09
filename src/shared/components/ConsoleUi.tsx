@@ -145,17 +145,21 @@ type PackContextSummaryProps = {
   scope: string;
   descriptor: string;
   objective?: string;
+  dataScope?: string;
 };
 
-export function PackContextSummary({ label, scope, descriptor, objective }: PackContextSummaryProps) {
+export function PackContextSummary({ label, scope, descriptor, objective, dataScope }: PackContextSummaryProps) {
   return (
-    <div className="pack-context-summary" aria-label="선택된 Execution Pack">
+    <div className="pack-context-summary" aria-label={dataScope ? '선택된 Viewing Context' : '선택된 Execution Pack'}>
       <div>
-        <span>SELECTED EXECUTION PACK</span>
+        <span>{dataScope ? 'VIEWING CONTEXT' : 'SELECTED EXECUTION PACK'}</span>
         <strong>{label}</strong>
         <p>{objective ?? scope}</p>
       </div>
-      <StatusBadge tone="purple">{descriptor}</StatusBadge>
+      <div className="pack-context-meta">
+        <StatusBadge tone="purple">{descriptor}</StatusBadge>
+        {dataScope ? <small><b>OPERATIONS DATA</b>{dataScope}</small> : null}
+      </div>
     </div>
   );
 }

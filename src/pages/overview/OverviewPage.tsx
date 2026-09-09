@@ -21,6 +21,12 @@ export function OverviewPage() {
 
   const readinessState = readiness.isLoading ? 'loading' : readiness.isError ? 'error' : 'value';
   const operationsState = operations.isLoading ? 'loading' : operations.isError ? 'error' : 'value';
+  const attentionItems = operations.data ? [
+    [operations.data.recovery.backlog, 'Recovery backlog', `${operations.data.recovery.backlog}건 · 가장 오래된 대기 ${operations.data.recovery.oldestBacklogAgeSeconds ?? '—'}초`, '/analysis'],
+    [operations.data.recovery.manualReview, 'Manual review', `${operations.data.recovery.manualReview}건 · exhausted ${operations.data.recovery.exhausted}건`, '/analysis'],
+    [operations.data.policy.driftedSelections, 'Policy selection drift', `${operations.data.policy.driftedSelections}건 · current ${operations.data.policy.currentSelections}건`, '/monitoring'],
+    [operations.data.security.deniedAttempts, 'Security denied attempts', `${operations.data.security.deniedAttempts}건 · authorization ${operations.data.security.authorizationPolicyDenied}건`, '/monitoring'],
+  ].filter(([value]) => Number(value) > 0) as Array<[number, string, string, string]> : [];
 
   return (
     <section className="page-section">
@@ -44,14 +50,9 @@ export function OverviewPage() {
         <SectionCard title="Attention Required" description="정상 BLOCK이 아닌 운영 확인 대상" actions={<button className="button button-secondary" type="button" onClick={() => navigate('/monitoring')}>전체 보기 <ArrowRight size={14} /></button>}>
           {operations.isError ? (
             <EmptyState title="Operations API 오류" description="운영 집계를 불러오지 못했습니다. Monitoring 화면에서 연결 상태를 확인하세요." endpoint="GET /api/admin/operations/summary" />
-          ) : operations.data ? (
+          ) : attentionItems.length ? (
             <div className="finding-list">
-              {[
-                ['Recovery backlog', `${operations.data.recovery.backlog}건 · 가장 오래된 대기 ${operations.data.recovery.oldestBacklogAgeSeconds ?? '—'}초`, '/analysis'],
-                ['Manual review', `${operations.data.recovery.manualReview}건 · exhausted ${operations.data.recovery.exhausted}건`, '/analysis'],
-                ['Policy selection drift', `${operations.data.policy.driftedSelections}건 · current ${operations.data.policy.currentSelections}건`, '/monitoring'],
-                ['Security denied attempts', `${operations.data.security.deniedAttempts}건 · authorization ${operations.data.security.authorizationPolicyDenied}건`, '/monitoring'],
-              ].map(([title, detail, path]) => (
+              {attentionItems.map(([, title, detail, path]) => (
                 <button key={title} type="button" className="finding-row" onClick={() => navigate(path)}>
                   <span>API</span>
                   <strong>{title}</strong>
@@ -60,6 +61,8 @@ export function OverviewPage() {
                 </button>
               ))}
             </div>
+          ) : operations.data ? (
+            <EmptyState icon={ShieldCheck} title="현재 확인이 필요한 운영 이슈가 없습니다" description="최근 60분 Recovery, Policy Drift와 Security 거부 집계가 모두 0입니다." />
           ) : <EmptyState title="운영 집계 조회 중" description="권한 범위의 Operations Summary를 불러오고 있습니다." />}
         </SectionCard>
 
@@ -82,6 +85,7 @@ export function OverviewPage() {
               ['Operations Summary', operations.data?.schemaVersion ?? '연결 확인 중'],
               ['Recovery Worker', operations.data ? `${operations.data.recovery.completedOperations} completed operations` : '연결 확인 중'],
               ['Selected Domain', selectedPack.label],
+              ['Operations Data Scope', 'All authorized workloads'],
             ]}
           />
         </SectionCard>

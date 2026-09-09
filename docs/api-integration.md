@@ -138,6 +138,8 @@ Digital Asset 실행의 GET/Trace 응답에는 다음 server-owned 증적이 포
 - `RETRY`는 BE Status Query가 `NOT_SENT`를 확인한 경우에만 허용한다.
 - 수동 명령은 FE가 생성한 `operationId`를 논리 명령 동안 유지하며, 오류 후 재시도에도 같은 ID를 사용한다.
 - Incident 또는 명령 변경과 성공 완료 후에는 새 operation ID를 생성한다.
+- 명령 성공 시 Recovery 목록·상세와 Operations Summary를 함께 무효화해 운영 지표를 즉시 다시 조회한다.
+- FE는 `recoveryStatus`, `retryDisposition`, Attempt 잔여 횟수로 명령 가용성을 안내한다. 최종 권한·전이 검증은 계속 BE가 담당한다.
 - Provider correlation key와 요청/응답 원문은 FE DTO에 포함하지 않는다.
 
 ## BE-11 Operations Contract
@@ -145,5 +147,6 @@ Digital Asset 실행의 GET/Trace 응답에는 다음 server-owned 증적이 포
 - Summary는 5~1440분 범위의 `windowMinutes`를 사용하며 Runtime/Recovery/Policy/Security 집계를 반환한다.
 - Policy Event는 `workloadId`, `category`, `from`, `to`, `page`, `size`를 서버 검색 조건으로 전달한다.
 - Summary의 실제 `0`은 `0`으로 표시하고, API 오류나 미연결 상태와 구분한다.
+- 현재 Summary와 Recovery API에는 Execution Pack 검색 조건이 없다. Pack 선택은 `Viewing Context`이며 데이터 범위는 전체 허용 Workload임을 화면에 표시한다.
 - `/actuator/prometheus`는 `METRICS_SCRAPER` 전용 경계이므로 브라우저에서 직접 조회하지 않는다.
 - 개별 Security Finding은 Summary 집계로 추정하지 않고 별도 Read Model이 생길 때까지 API 대기로 유지한다.

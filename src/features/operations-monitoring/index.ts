@@ -1,5 +1,5 @@
 export { getOperationsSummary, getPolicyOperationEvents } from './api/operationsMonitoringApi';
-export { useOperationsSummary, usePolicyOperationEvents } from './hooks/useOperationsMonitoring';
+export { operationsMonitoringKeys, useOperationsSummary, usePolicyOperationEvents } from './hooks/useOperationsMonitoring';
 export type {
   OperationsSummary,
   PolicyEventCategory,
