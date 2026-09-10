@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useSearchParams as useRouterSearchParams } from 'react-router-dom';
 import { FileCheck2, LockKeyhole, RotateCcw, Search } from 'lucide-react';
 import { useAuditExecutions, useExecutionEvidence } from '../../features/audit-trace';
+import { AuditExportPanel } from '../../features/audit-export';
 import type { AuditSearchParams } from '../../features/audit-trace';
 import { normalizeApiError } from '../../shared/api/apiError';
 import { EmptyState, ErrorState, KeyValues, LoadingPanel, PackContextSummary, PageHeader, SearchAssistInput, SectionCard, StatusBadge } from '../../shared/components';
@@ -242,6 +243,7 @@ export function AuditPage() {
                   ['Status Query Evidence', String(evidence.data.recovery.statusQueryEvidenceDigest ?? '—')],
                 ]} />
               </div>
+              <AuditExportPanel key={evidence.data.executionId} executionId={evidence.data.executionId} />
             </div>
           ) : (
             <EmptyState icon={Search} title="실행 선택 대기" description="왼쪽 감사 실행 목록에서 확인할 실행을 선택하세요." />

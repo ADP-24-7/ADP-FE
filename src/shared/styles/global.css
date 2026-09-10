@@ -152,6 +152,15 @@ button, a { transition: background-color .16s ease, border-color .16s ease, colo
 .anchored-section:target > .section-card:first-child { border-color: #9bb0ff; box-shadow: 0 0 0 3px rgba(49,94,251,.08); }
 .evidence-focus-section { outline: none; }
 .evidence-focus-section-active > .section-card:first-child { border-color: #7592ff; box-shadow: 0 0 0 3px rgba(49,94,251,.12); }
+.audit-export-panel { border-top: 1px solid var(--color-border); padding-top: 18px; display: grid; gap: 14px; }
+.audit-export-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.audit-export-heading h3 { margin: 0 0 4px; font-size: 15px; }
+.audit-export-heading p { margin: 0; color: var(--color-muted); font-size: 13px; line-height: 1.5; }
+.audit-export-request { display: grid; grid-template-columns: auto minmax(220px, 1fr) auto; align-items: end; gap: 10px; }
+.audit-export-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.segmented-control { display: inline-flex; min-height: 40px; padding: 3px; border: 1px solid var(--color-border); background: var(--color-page); border-radius: 7px; }
+.segmented-control button { min-width: 58px; border: 0; border-radius: 5px; background: transparent; color: var(--color-muted); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.segmented-control button.active { background: var(--color-surface); color: var(--color-text); box-shadow: 0 1px 3px rgba(15, 23, 42, .12); }
 .reference-evidence-stack { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(320px, .85fr); gap: 14px; align-items: start; }
 .reference-evidence-filter { grid-template-columns: .9fr 1fr 1.35fr auto; }
 .reference-evidence-filter .search-filter-actions { grid-column: auto; }
@@ -697,6 +706,8 @@ button, a { transition: background-color .16s ease, border-color .16s ease, colo
 
 @media (max-width: 780px) {
   :root { --space-page: 20px; }
+  .audit-export-request { grid-template-columns: 1fr; }
+  .audit-export-actions { justify-content: flex-start; flex-wrap: wrap; }
   .console-shell,
   .console-shell-collapsed { grid-template-columns: 1fr; }
   .console-sidebar,

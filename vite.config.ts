@@ -39,6 +39,11 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           headers: adminHeaders,
         },
+        '/api/v1': {
+          target: apiBaseUrl,
+          changeOrigin: true,
+          headers: adminHeaders,
+        },
         '/api/runtime': {
           target: apiBaseUrl,
           changeOrigin: true,
