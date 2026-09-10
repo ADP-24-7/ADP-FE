@@ -1,5 +1,6 @@
 import { History, RefreshCw, Search } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   ActionableIssueList,
   InterpretedMetricCard,
@@ -12,11 +13,13 @@ import {
 } from '../../features/operations-monitoring';
 import type { PolicyEventCategory, PolicyOperationEventParams } from '../../features/operations-monitoring';
 import { useRecoveryIncidents } from '../../features/recovery-operations';
+import { SecurityFindingPanel } from '../../features/security-findings';
 import { normalizeApiError } from '../../shared/api/apiError';
 import { EmptyState, ErrorState, LoadingPanel, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
 import { useExecutionPack } from '../../shared/prototype';
 
 export function MonitoringPage() {
+  const navigate = useNavigate();
   const { selectedPack } = useExecutionPack();
   const [windowMinutes, setWindowMinutes] = useState(60);
   const [workloadId, setWorkloadId] = useState('');
@@ -69,7 +72,13 @@ export function MonitoringPage() {
         scope={selectedPack.scope}
         descriptor={selectedPack.descriptor}
         objective={selectedPack.objective}
-        dataScope="전체 권한 허용 Workload · Pack 필터 미지원"
+        dataScope="전체 권한 허용 Workload · Pack 필터 미지원 지표 / Security Finding은 Pack 기준 조회"
+      />
+
+      <SecurityFindingPanel
+        key={selectedPack.key}
+        executionPack={selectedPack.key === 'digital-asset' ? 'DIGITAL_ASSET' : selectedPack.key === 'saas' ? 'SAAS' : selectedPack.key === 'common' ? 'COMMON' : 'AI'}
+        onOpenTrace={(executionId) => navigate(`/audit?executionId=${encodeURIComponent(executionId)}`)}
       />
 
       <div className="monitoring-control-row">

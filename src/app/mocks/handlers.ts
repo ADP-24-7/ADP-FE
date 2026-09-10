@@ -6,6 +6,7 @@ import { operationsMonitoringHandlers } from '../../features/operations-monitori
 import { policyLifecycleHandlers } from '../../features/policy-lifecycle/mocks/handlers';
 import { recoveryOperationsHandlers } from '../../features/recovery-operations/mocks/handlers';
 import { reviewQueueHandlers } from '../../features/review-queue/mocks/handlers';
+import { securityFindingHandlers } from '../../features/security-findings/mocks/handlers';
 import { runtimeExecutionHandlers } from '../../features/runtime-execution/mocks/handlers';
 import { workloadHandlers } from '../../features/workloads/mocks/handlers';
 
@@ -18,6 +19,7 @@ export const handlers = [
   ...policyLifecycleHandlers,
   ...recoveryOperationsHandlers,
   ...reviewQueueHandlers,
+  ...securityFindingHandlers,
   ...runtimeExecutionHandlers,
   ...workloadHandlers,
 ];
