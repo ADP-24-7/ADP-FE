@@ -49,8 +49,7 @@ export function MonitoringPage() {
       <PageHeader
         eyebrow="SECURITY FINDING · POLICY HISTORY"
         title="Security Monitoring"
-        description="Security Finding과 Policy Lifecycle·Current Selection Evidence를 권한 범위에서 조사합니다."
-        actions={<StatusBadge tone={events.isSuccess ? 'success' : 'warning'}>{events.isSuccess ? 'READ MODELS CONNECTED' : 'READ MODEL API'}</StatusBadge>}
+        description="보안 탐지 결과와 정책 변경 이력을 권한 범위에서 조회합니다."
       />
 
       <PackContextSummary
@@ -58,7 +57,7 @@ export function MonitoringPage() {
         scope={selectedPack.scope}
         descriptor={selectedPack.descriptor}
         objective={selectedPack.objective}
-        dataScope={`${selectedPack.apiValue} Pack · Security Finding / Policy History 기준 조회`}
+        dataScope="보안 탐지 · 정책 이력"
       />
 
       <div id="security-findings" className="anchored-section"><SecurityFindingPanel

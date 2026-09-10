@@ -86,7 +86,6 @@ export function DigitalAssetArtifactPanel({ onOpenTrace }: DigitalAssetArtifactP
         description="현재 권한 범위의 Artifact와 Runtime에 선택된 Active 상태를 탐색합니다."
         actions={(
           <div className="section-action-group">
-            <StatusBadge tone={artifacts.isSuccess ? 'success' : 'warning'}>{artifacts.isSuccess ? 'CURRENT STATE CONNECTED' : 'CURRENT STATE API'}</StatusBadge>
             <button className="button button-secondary" type="button" onClick={() => artifacts.refetch()} disabled={artifacts.isFetching} title="Current State 새로고침"><RefreshCw size={14} />새로고침</button>
           </div>
         )}

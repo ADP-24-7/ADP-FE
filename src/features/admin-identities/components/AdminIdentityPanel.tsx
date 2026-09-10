@@ -52,7 +52,6 @@ export function AdminIdentityPanel() {
       <SectionCard
         title="Identity Registry"
         description="현재 권한 범위에서 조회 가능한 사용자와 서비스 Principal을 확인합니다."
-        actions={<StatusBadge tone={identities.isSuccess ? 'success' : 'warning'}>{identities.isSuccess ? 'IDENTITY API CONNECTED' : 'IDENTITY API'}</StatusBadge>}
       >
         <form className="identity-filter-grid" onSubmit={submit}>
           <label className="field"><span>Identity</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="이름 또는 Principal ID" /></label>

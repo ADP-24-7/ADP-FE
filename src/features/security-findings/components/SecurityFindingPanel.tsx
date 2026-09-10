@@ -37,7 +37,6 @@ export function SecurityFindingPanel({ executionPack, onOpenTrace }: SecurityFin
         description="Provider 응답에서 차단된 민감정보 Finding을 원문 없이 탐색합니다."
         actions={(
           <div className="section-action-group">
-            <StatusBadge tone={findings.isSuccess ? 'success' : 'warning'}>{findings.isSuccess ? 'FINDING API CONNECTED' : 'FINDING API'}</StatusBadge>
             <button className="button button-secondary" type="button" onClick={() => findings.refetch()} disabled={findings.isFetching} title="Security Finding 새로고침">
               <RefreshCw size={14} />새로고침
             </button>
@@ -66,7 +65,7 @@ export function SecurityFindingPanel({ executionPack, onOpenTrace }: SecurityFin
               <span>{item.detectorVersion}</span>
             </button>
           )) : (
-            <EmptyState icon={Search} title="탐지된 민감정보가 없습니다" description={`${executionPack} 범위와 현재 권한에 해당하는 Response Finding이 없습니다.`} endpoint="GET /api/admin/security-findings" />
+            <EmptyState icon={Search} title="탐지된 민감정보가 없습니다" description={`현재 선택한 ${executionPack === 'DIGITAL_ASSET' ? 'Digital Asset' : 'AI · Agent'} 영역에서 확인할 보안 탐지 항목이 없습니다.`} endpoint="GET /api/admin/security-findings" />
           )}
         </div>
         <div className="pagination-row">

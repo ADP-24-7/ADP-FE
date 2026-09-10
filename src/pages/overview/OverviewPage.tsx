@@ -104,11 +104,11 @@ export function OverviewPage() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Operations Read Model" description="현재 FE가 사용하는 실제 운영 데이터 소스" actions={<StatusBadge tone={operations.isSuccess ? 'success' : 'warning'}>{operations.isSuccess ? 'CONNECTED' : 'CHECKING'}</StatusBadge>}>
+        <SectionCard title="운영 집계" description="현재 권한 범위의 최근 운영 상태">
           <EmptyState
             icon={ListChecks}
-            title={operations.data ? `${operations.data.windowMinutes}분 집계 연결됨` : 'Operations Summary 확인 중'}
-            description={operations.data ? `생성 시각 ${new Date(operations.data.generatedAt).toLocaleString('ko-KR')} · 개별 Security Finding은 별도 Read Model이 필요합니다.` : 'BE scoped Operations Summary 응답을 기다리고 있습니다.'}
+            title={operations.data ? `최근 ${operations.data.windowMinutes}분 집계` : '운영 상태 확인 중'}
+            description={operations.data ? `기준 시각 ${new Date(operations.data.generatedAt).toLocaleString('ko-KR')} · 상세 보안 탐지는 Security Monitoring에서 확인합니다.` : '현재 권한 범위의 운영 상태를 불러오고 있습니다.'}
             endpoint="GET /api/admin/operations/summary"
           />
         </SectionCard>

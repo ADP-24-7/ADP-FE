@@ -24,7 +24,7 @@ export function AnalysisPage() {
         scope={selectedPack.scope}
         descriptor={selectedPack.descriptor}
         objective={selectedPack.objective}
-        dataScope={`${selectedPack.apiValue} Pack · Runtime / Recovery / Review Queue 기준 조회`}
+        dataScope="검토 대기 · 복구 인시던트"
       />
 
       {selectedPack.key === 'ai' ? <AiEvaluationPanel /> : null}

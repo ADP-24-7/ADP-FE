@@ -23,7 +23,9 @@ describe('App', () => {
     expect(screen.getByRole('link', { name: /Runtime · Recovery/ })).toHaveAttribute('href', '/analysis');
     expect(screen.queryByText('MOCK DATA')).not.toBeInTheDocument();
     expect(screen.queryByText('PROJECT_PROVISIONAL')).not.toBeInTheDocument();
-    expect(screen.getAllByText('NO MOCK DATA').length).toBeGreaterThan(0);
+    expect(screen.queryByText('NO MOCK DATA')).not.toBeInTheDocument();
+    expect(screen.queryByText('PoC Workspace · v3.2')).not.toBeInTheDocument();
+    expect(screen.queryByText('DATA SOURCE')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Policy.*No Data/i })).not.toBeInTheDocument();
     expect(screen.queryByText('Policy 없음')).not.toBeInTheDocument();
   });
@@ -37,10 +39,28 @@ describe('App', () => {
     expect(screen.getByRole('tab', { name: /AI · Agent/ })).toHaveClass('active');
   });
 
+  it('shows product role labels and opens identity details from the operator menu', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const operator = await screen.findByRole('button', { name: '현재 운영자 권한' });
+    expect(operator).toHaveTextContent('운영자 · 승인 권한');
+    expect(operator).not.toHaveTextContent('PRIVILEGED_OPERATOR');
+    await user.click(operator);
+
+    expect(screen.getByText(/계정 ID/)).toHaveTextContent('operator-local');
+    expect(screen.getByText(/기관/)).toHaveTextContent('institution_local');
+    expect(screen.getByText(/기술 Role/)).toHaveTextContent('OPERATOR · PRIVILEGED_OPERATOR');
+    await user.click(screen.getByRole('menuitem', { name: /권한 상세 보기/ }));
+
+    expect(await screen.findByRole('heading', { name: 'Identity · 권한' })).toBeInTheDocument();
+  });
+
   it('updates runtime domain from the global selector without page reload', async () => {
     const user = userEvent.setup();
     render(<App />);
 
+    await user.click(screen.getByRole('link', { name: '통합 관제' }));
     await screen.findByRole('heading', { name: 'Security Overview' });
     await user.click(screen.getByRole('tab', { name: /Digital Asset/ }));
 
@@ -52,7 +72,7 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { name: '정책 · 승인' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /정책 · 승인/ })).toHaveClass('active');
-    expect(screen.getByLabelText('선택된 Execution Pack')).toHaveTextContent('Digital Asset');
+    expect(screen.getByLabelText('선택된 운영 영역')).toHaveTextContent('Digital Asset');
     expect(screen.getByRole('heading', { name: 'Policy Operations' })).toBeInTheDocument();
     expect(screen.getByText(/권한 범위의 Artifact를 검색/)).toBeInTheDocument();
   });
@@ -70,8 +90,7 @@ describe('App', () => {
     expect(window.location.pathname).toBe('/gateway-lab');
     expect(screen.queryByRole('tablist', { name: 'Gateway 실행 축 선택' })).not.toBeInTheDocument();
     expect(screen.queryByText('Gateway 실행 축')).not.toBeInTheDocument();
-    expect(screen.getByLabelText('선택된 Execution Pack')).toHaveTextContent('Digital Asset');
-    expect(screen.getByLabelText('선택된 Execution Pack')).toHaveTextContent('Digital Asset');
+    expect(screen.getByLabelText('선택된 운영 영역')).toHaveTextContent('Digital Asset');
     expect(screen.getByRole('textbox', { name: 'Customer ID' })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Approved Transaction Reference' })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Requested Amount (Atomic Units)' })).toBeInTheDocument();
@@ -87,8 +106,8 @@ describe('App', () => {
     await user.click(screen.getByRole('tab', { name: /Digital Asset/ }));
 
     expect(window.location.pathname).toBe('/monitoring');
-    expect(screen.getByLabelText('선택된 Viewing Context')).toHaveTextContent('Digital Asset');
-    expect(screen.getByLabelText('선택된 Viewing Context')).toHaveTextContent('DIGITAL_ASSET Pack · Security Finding / Policy History 기준 조회');
+    expect(screen.getByLabelText('선택된 운영 영역')).toHaveTextContent('Digital Asset');
+    expect(screen.getByLabelText('선택된 운영 영역')).toHaveTextContent('조회 범위보안 탐지 · 정책 이력');
   });
 
   it('opens the exact recovery incident selected from the review queue', async () => {

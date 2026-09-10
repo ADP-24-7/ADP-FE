@@ -98,7 +98,6 @@ export function AuditPage() {
         eyebrow="REQUEST TO OUTCOME · RAW-FREE EVIDENCE"
         title="Decision Trace"
         description="승인부터 외부 실행, 결과 검증과 감사까지 하나의 실행 ID로 재현합니다."
-        actions={<StatusBadge tone={audit.isSuccess ? 'success' : 'warning'}>{audit.isSuccess ? 'AUDIT API CONNECTED' : 'AUDIT API'}</StatusBadge>}
       />
 
       <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} objective={selectedPack.objective} />

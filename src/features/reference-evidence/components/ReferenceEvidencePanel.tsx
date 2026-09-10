@@ -31,7 +31,7 @@ export function ReferenceEvidencePanel() {
 
   return (
     <div className="reference-evidence-stack">
-      <SectionCard className="search-assist-card" title="Reference Evidence" description="Runtime Policy와 분리된 관리자 보조 근거를 Institution·Workload Scope 안에서 탐색합니다." actions={<StatusBadge tone={evidence.isSuccess ? 'success' : 'warning'}>{evidence.isSuccess ? 'READ API CONNECTED' : 'READ API'}</StatusBadge>}>
+      <SectionCard className="search-assist-card" title="Reference Evidence" description="Runtime Policy와 분리된 관리자 보조 근거를 Institution·Workload Scope 안에서 탐색합니다.">
         <form className="search-filter-grid reference-evidence-filter" onSubmit={search}>
           <label className="field"><span>Evidence Type</span><select value={type} onChange={(event) => setType(event.target.value as ReferenceEvidenceType | '')}><option value="">전체 Type</option>{evidenceTypes.map((item) => <option key={item}>{item}</option>)}</select></label>
           <label className="field"><span>Workload ID</span><input value={workloadId} onChange={(event) => setWorkloadId(event.target.value)} placeholder="Workload scope" /></label>
@@ -56,4 +56,3 @@ export function ReferenceEvidencePanel() {
     </div>
   );
 }
-

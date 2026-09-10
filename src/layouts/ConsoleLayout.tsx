@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   Activity,
+  ChevronDown,
   DatabaseZap,
   CircleUserRound,
   FileCheck2,
@@ -9,15 +10,14 @@ import {
   LayoutDashboard,
   PanelLeftClose,
   PanelLeftOpen,
-  Settings2,
   ShieldCheck,
   ShieldAlert,
   SlidersHorizontal,
   UsersRound,
 } from 'lucide-react';
 import { executionPacks, useExecutionPack } from '../shared/prototype';
-import { env } from '../shared/config/env';
 import { useAuthContext } from '../features/auth';
+import type { AuthRole } from '../features/auth';
 
 const navItems = [
   { to: '/overview', label: '통합 관제', icon: LayoutDashboard },
@@ -36,10 +36,29 @@ function getRuntimeDomainLabel(packKey: string, fallback: string) {
   return packKey === 'ai' ? 'AI · Agent' : fallback;
 }
 
+const roleLabels: Record<AuthRole, string> = {
+  BUSINESS_OWNER: '업무 책임자',
+  ANALYST: '분석가',
+  COMPLIANCE_REVIEWER: '준법 검토',
+  PRIVACY_REVIEWER: '개인정보 검토',
+  SECURITY_REVIEWER: '보안 검토',
+  DEVELOPER: '개발자',
+  OPERATOR: '운영자',
+  PRIVILEGED_OPERATOR: '승인 권한',
+  AUDITOR: '감사 조회',
+  METRICS_SCRAPER: '지표 수집',
+  RUNTIME_EXECUTOR: '실행 권한',
+};
+
+function formatRoles(roles: AuthRole[] | undefined) {
+  return roles?.map((role) => roleLabels[role]).join(' · ') || '권한 확인 중';
+}
+
 export function ConsoleLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isOperatorMenuOpen, setIsOperatorMenuOpen] = useState(false);
   const { selectedPackKey, selectPack } = useExecutionPack();
   const auth = useAuthContext();
   const activeNavItem = navItems.find((item) => location.pathname.startsWith(item.to));
@@ -68,7 +87,7 @@ export function ConsoleLayout() {
             <span className="console-brand-copy">
               <span className="console-brand-mark">FPG</span>
               <span className="console-brand-title">Governance Console</span>
-              <span className="console-brand-subtitle">PoC Workspace · v3.2</span>
+              <span className="console-brand-subtitle">AI · Digital Asset Control</span>
             </span>
           </div>
           <button
@@ -96,14 +115,6 @@ export function ConsoleLayout() {
           ))}
         </nav>
 
-        <div className="sidebar-status">
-          <span className={env.localBffEnabled ? 'connection-dot' : 'connection-dot connection-dot-warning'} aria-hidden="true" />
-          <div>
-            <strong>DATA SOURCE</strong>
-            <span>{env.localBffEnabled ? 'Local BFF' : 'BFF unavailable'}</span>
-            <small>No mock operations</small>
-          </div>
-        </div>
       </aside>
 
       <div className="console-content">
@@ -114,7 +125,6 @@ export function ConsoleLayout() {
           </div>
           <div className="topbar-actions">
             <div className="runtime-domain-toggle" role="tablist" aria-label="화면 Viewing Context">
-              <span className="runtime-domain-context-label">CONTEXT</span>
               {runtimeDomainPacks.map((pack) => (
                 <button
                   key={pack.key}
@@ -125,41 +135,40 @@ export function ConsoleLayout() {
                   title={pack.scope}
                   onClick={() => {
                     selectPack(pack.key);
-                    setIsSettingsOpen(false);
+                    setIsOperatorMenuOpen(false);
                   }}
                 >
                   {getRuntimeDomainLabel(pack.key, pack.label)}
                 </button>
               ))}
             </div>
-            <span className="live-mode-badge">NO MOCK DATA</span>
-            <div className="operator-context" aria-label="현재 운영자 권한">
-              <CircleUserRound size={17} aria-hidden="true" />
-              <span>
-                <strong>{auth.data?.displayName ?? (auth.isError ? '인증 확인 필요' : '권한 확인 중')}</strong>
-                <small>{auth.data?.roles.join(' · ') || 'Action 권한을 확인합니다'}</small>
-              </span>
-            </div>
             <div className="dropdown">
               <button
-                className="icon-button"
+                className="operator-context"
                 type="button"
-                aria-label="설정"
+                aria-label="현재 운영자 권한"
                 aria-haspopup="menu"
-                aria-expanded={isSettingsOpen}
-                onClick={() => {
-                  setIsSettingsOpen((current) => !current);
-                }}
+                aria-expanded={isOperatorMenuOpen}
+                onClick={() => setIsOperatorMenuOpen((current) => !current)}
               >
-                <Settings2 size={17} />
+                <CircleUserRound size={17} aria-hidden="true" />
+                <span>
+                  <strong>{auth.data?.displayName ?? (auth.isError ? '인증 확인 필요' : '운영자 확인 중')}</strong>
+                  <small>{formatRoles(auth.data?.roles)}</small>
+                </span>
+                <ChevronDown size={14} aria-hidden="true" />
               </button>
-              {isSettingsOpen ? (
+              {isOperatorMenuOpen ? (
                 <div className="dropdown-menu dropdown-menu-right" role="menu">
                   <div className="operator-menu-summary">
-                    <strong>{auth.data?.principalType ?? 'AUTH'} · {auth.data?.principalId ?? 'Unavailable'}</strong>
-                    <span>{auth.data ? `${auth.data.institutionId} · ${auth.data.workloadIds.length} workload scope` : '인증 컨텍스트를 불러오지 못했습니다.'}</span>
+                    <strong>{auth.data?.displayName ?? '운영자 정보 없음'}</strong>
+                    <span>계정 ID <code>{auth.data?.principalId ?? '—'}</code></span>
+                    <span>기관 <code>{auth.data?.institutionId ?? '—'}</code></span>
+                    <span>권한 {formatRoles(auth.data?.roles)}</span>
+                    <span>Workload {auth.data ? `${auth.data.workloadIds.length}개` : '—'}</span>
+                    {auth.data?.roles.length ? <small>기술 Role · {auth.data.roles.join(' · ')}</small> : null}
                   </div>
-                  <button type="button" role="menuitem" onClick={() => auth.refetch()} disabled={auth.isFetching}>권한 다시 확인</button>
+                  <button type="button" role="menuitem" onClick={() => { setIsOperatorMenuOpen(false); navigate('/identities'); }}>권한 상세 보기 <span aria-hidden="true">→</span></button>
                 </div>
               ) : null}
             </div>

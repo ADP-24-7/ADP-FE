@@ -135,7 +135,9 @@ export function RecoveryOperationsPanel({ executionPack, initialRecoveryId = '',
         actions={(
           <div className="section-action-group">
             {isRefreshing ? <StatusBadge tone="warning">REFRESHING</StatusBadge> : null}
-            <StatusBadge tone={incidents.isSuccess ? 'success' : 'warning'}>{incidents.isSuccess ? 'RECOVERY API CONNECTED' : 'RECOVERY API'}</StatusBadge>
+            <button className="button button-secondary" type="button" onClick={() => incidents.refetch()} disabled={incidents.isFetching}>
+              <RefreshCw size={14} />새로고침
+            </button>
           </div>
         )}
       >
@@ -147,9 +149,6 @@ export function RecoveryOperationsPanel({ executionPack, initialRecoveryId = '',
               {recoveryStatuses.map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
           </label>
-          <button className="button button-secondary" type="button" onClick={() => incidents.refetch()} disabled={incidents.isFetching}>
-            <RefreshCw size={14} />새로고침
-          </button>
         </div>
 
         <div className={`table-shell recovery-table-shell${isRefreshing ? ' is-refreshing' : ''}`} aria-busy={isRefreshing}>

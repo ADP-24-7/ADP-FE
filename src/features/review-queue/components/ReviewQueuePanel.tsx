@@ -48,7 +48,6 @@ export function ReviewQueuePanel({ executionPack, onOpenTrace, onOpenRecovery }:
         description="정책·Recovery·외부 실행 검증에서 운영자 판단이 필요한 실행만 표시합니다."
         actions={(
           <div className="section-action-group">
-            <StatusBadge tone={queue.isSuccess ? 'success' : 'warning'}>{queue.isSuccess ? 'REVIEW API CONNECTED' : 'REVIEW API'}</StatusBadge>
             <button className="button button-secondary" type="button" onClick={() => queue.refetch()} disabled={queue.isFetching} title="Review Queue 새로고침">
               <RefreshCw size={14} />새로고침
             </button>

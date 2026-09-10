@@ -115,7 +115,7 @@ export function PoliciesPage() {
       </div>
 
       <div className="content-grid content-grid-two">
-        <SectionCard title="Shadow Evidence Read Model" description="평가 이력과 승인 근거를 다시 조회하는 운영 화면" actions={<StatusBadge tone="success">CONNECTED</StatusBadge>}>
+        <SectionCard title="Shadow Evidence" description="평가 이력과 승인 근거를 다시 조회합니다.">
           <EmptyState compact title="Policy Operations에서 조회" description="선택한 Artifact의 Transition과 Shadow Evidence가 상단 Read Model에 표시됩니다." endpoint="GET /api/admin/policy-lifecycle/{artifactId}/versions/{version}/history" />
         </SectionCard>
         {selectedPack.key === 'digital-asset' ? <SectionCard title="Artifact 무결성" description="Schema, Digest, Evidence Reference, Vocabulary" actions={<StatusBadge tone="success">P0-5 AVAILABLE</StatusBadge>}>

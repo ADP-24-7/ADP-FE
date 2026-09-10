@@ -304,13 +304,13 @@ export function GatewayLabPage() {
         eyebrow={isDigitalAsset ? 'TRANSACTION INTENT → VERIFIED SETTLEMENT' : 'EMPLOYEE REQUEST → SAFE AI RESPONSE'}
         title="Gateway Lab"
         description={isDigitalAsset ? '거래 의도부터 정책 검증, 외부 상태 확인과 정산 복구까지 한 번에 검증합니다.' : '은행원의 요청부터 데이터 최소화, AI 응답 재검사와 최종 전달까지 한 번에 비교합니다.'}
-        actions={<StatusBadge tone={canExecute ? 'success' : 'warning'}>{canExecute ? 'LOCAL BFF READY' : 'AUTH REQUIRED'}</StatusBadge>}
+        actions={<StatusBadge tone={canExecute ? 'success' : 'warning'}>{canExecute ? '실행 가능' : '권한 필요'}</StatusBadge>}
       />
 
       <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} objective={selectedPack.objective} />
 
       <div className="notice notice-security">
-        브라우저에는 `X-ADP-API-Key`를 주입하지 않습니다. {canExecute ? '로컬 Vite BFF가 서버 측 credential을 붙여 BE Runtime을 호출합니다.' : 'Admin 인증 또는 Local BFF가 붙기 전까지 실제 Execute는 비활성화합니다.'}
+        <strong>보호된 실행 경로</strong> 모든 실행은 서버 측 인증·권한·정책 검증 후 처리되며, 서비스 자격 증명은 브라우저에 노출되지 않습니다.
       </div>
 
       <div className="lab-toolbar" aria-label="Gateway Lab controls">
@@ -326,7 +326,6 @@ export function GatewayLabPage() {
           <button type="button" role="tab" aria-selected={requesterRole === 'staff'} className={requesterRole === 'staff' ? 'active' : ''} onClick={() => setRequesterRole('staff')}>{isDigitalAsset ? '결제운영자' : '상담직원'}</button>
           <button type="button" role="tab" aria-selected={requesterRole === 'reviewer'} className={requesterRole === 'reviewer' ? 'active' : ''} onClick={() => setRequesterRole('reviewer')}>{isDigitalAsset ? '정산 담당자' : '여신심사 담당자'}</button>
         </div>
-        <StatusBadge tone="purple">NO MOCK RESULT</StatusBadge>
       </div>
 
       <section className={isApprovedScenario ? 'policy-application-card policy-application-card-approved' : 'policy-application-card'}>
@@ -442,7 +441,7 @@ export function GatewayLabPage() {
                 새 실행 키
               </button>
             </div>
-            <button className="button button-primary" type="submit" disabled={!canExecute || execution.isPending} title="Auth Integration 또는 Local BFF 연결 후 활성화">
+            <button className="button button-primary" type="submit" disabled={!canExecute || execution.isPending} title={canExecute ? '정책 검증 후 실행' : '실행 권한 필요'}>
               <Play size={16} fill="currentColor" />
               {execution.isPending ? '실행 중...' : canExecute ? '정책 검증 및 실행' : 'Auth 연결 후 실행'}
             </button>
@@ -570,7 +569,7 @@ export function GatewayLabPage() {
                 ))}
               </ol>
             ) : (
-              <EmptyState compact title={canExecute ? '실행 대기' : 'Auth Integration 필요'} description={canExecute ? '요청을 실행하면 BE가 반환한 실제 Stage와 Evidence를 표시합니다.' : '현재 브라우저 FE는 Runtime Executor credential을 보유하지 않습니다.'} endpoint="GET /v1/runtime/executions/{executionId}/trace" />
+              <EmptyState compact title={canExecute ? '실행 대기' : '실행 권한 필요'} description={canExecute ? '요청을 실행하면 정책 단계와 증적을 표시합니다.' : '현재 운영자에게 Gateway 실행 권한이 없습니다.'} endpoint="GET /v1/runtime/executions/{executionId}/trace" />
             )}
           </SectionCard>
 
@@ -640,8 +639,8 @@ export function GatewayLabPage() {
           ) : (
             <EmptyState
               icon={TerminalSquare}
-              title={canExecute ? '실행 결과 대기' : 'Auth Integration 전 실행 비활성'}
-              description={canExecute ? '입력한 요청을 실행하면 정책·Trace·Digest 결과를 표시합니다.' : 'API Key를 브라우저 환경변수로 노출하지 않습니다. Admin 인증 또는 Local BFF에서 서버 측 credential을 붙인 뒤 실행을 활성화합니다.'}
+              title={canExecute ? '실행 결과 대기' : '실행 권한 필요'}
+              description={canExecute ? '입력한 요청을 실행하면 정책·Trace·Digest 결과를 표시합니다.' : '현재 운영자에게 Gateway 실행 권한이 없습니다.'}
               endpoint="POST /v1/runtime/executions"
             />
           )}
