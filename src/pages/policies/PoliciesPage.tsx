@@ -1,5 +1,6 @@
 import { ArrowRight, LockKeyhole, RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DigitalAssetArtifactPanel } from '../../features/digital-asset';
 import { PolicyArtifactCreatePanel, PolicyGovernancePanel, PolicyOperationsBrowser, usePolicyLifecycle } from '../../features/policy-lifecycle';
 import { EmptyState, KeyValues, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
@@ -22,6 +23,7 @@ const policyOutcomes = [
 ] as const;
 
 export function PoliciesPage() {
+  const navigate = useNavigate();
   const { selectedPack } = useExecutionPack();
   const [lookup, setLookup] = useState({ artifactId: '', artifactVersion: '' });
   const policy = usePolicyLifecycle(lookup.artifactId, lookup.artifactVersion);
@@ -42,7 +44,11 @@ export function PoliciesPage() {
 
       <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} objective={selectedPack.objective} />
 
-      {selectedPack.key === 'digital-asset' ? <DigitalAssetArtifactPanel /> : null}
+      {selectedPack.key === 'digital-asset' ? (
+        <DigitalAssetArtifactPanel
+          onOpenTrace={(executionId) => navigate(`/audit?executionId=${encodeURIComponent(executionId)}`)}
+        />
+      ) : null}
       {selectedPack.key === 'ai' ? (
         <PolicyArtifactCreatePanel
           onCreated={(record) => {
