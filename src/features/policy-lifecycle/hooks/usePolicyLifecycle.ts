@@ -5,19 +5,45 @@ import {
   approvePolicyLifecycle,
   createPolicyLifecycle,
   getPolicyCurrentSelection,
+  getPolicyArtifactHistory,
   getPolicyLifecycle,
   rollbackPolicyLifecycle,
   runPolicyShadowEvaluation,
+  searchPolicyArtifacts,
   transitionPolicyLifecycle,
 } from '../api/policyLifecycleApi';
-import type { ActivatePolicyRequest, CreatePolicyLifecycleRequest, PolicyCurrentSelectionParams, PolicyLifecycleStage, RollbackPolicyRequest } from '../model/types';
+import type { ActivatePolicyRequest, CreatePolicyLifecycleRequest, PolicyArtifactSearchParams, PolicyCurrentSelectionParams, PolicyLifecycleStage, RollbackPolicyRequest } from '../model/types';
 
 export const policyLifecycleKeys = {
   all: ['policy-lifecycle'] as const,
+  lists: ['policy-lifecycle', 'list'] as const,
+  histories: ['policy-lifecycle', 'history'] as const,
   detail: (artifactId: string, artifactVersion: string) => (
     [...policyLifecycleKeys.all, artifactId, artifactVersion] as const
   ),
+  list: (params: PolicyArtifactSearchParams) => ([...policyLifecycleKeys.lists, params] as const),
+  history: (artifactId: string, artifactVersion: string) => (
+    [...policyLifecycleKeys.histories, artifactId, artifactVersion] as const
+  ),
 };
+
+export function usePolicyArtifacts(params: PolicyArtifactSearchParams) {
+  return useQuery({
+    queryKey: policyLifecycleKeys.list(params),
+    queryFn: () => searchPolicyArtifacts(params),
+    placeholderData: (previous) => previous,
+    retry: false,
+  });
+}
+
+export function usePolicyArtifactHistory(artifactId: string, artifactVersion: string) {
+  return useQuery({
+    queryKey: policyLifecycleKeys.history(artifactId, artifactVersion),
+    queryFn: () => getPolicyArtifactHistory(artifactId, artifactVersion),
+    enabled: artifactId.length > 0 && artifactVersion.length > 0,
+    retry: false,
+  });
+}
 
 export const policySelectionKeys = {
   all: ['policy-current-selection'] as const,
@@ -46,18 +72,22 @@ export function useCreatePolicyLifecycle() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (request: CreatePolicyLifecycleRequest) => createPolicyLifecycle(request),
-    onSuccess: (record) => queryClient.setQueryData(
-      policyLifecycleKeys.detail(record.artifactId, record.artifactVersion),
-      record,
-    ),
+    onSuccess: (record) => {
+      queryClient.setQueryData(policyLifecycleKeys.detail(record.artifactId, record.artifactVersion), record);
+      queryClient.invalidateQueries({ queryKey: policyLifecycleKeys.lists });
+    },
   });
 }
 
 export function useRunPolicyShadowEvaluation() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ artifactId, artifactVersion, evaluationCaseId }: { artifactId: string; artifactVersion: string; evaluationCaseId: string }) => (
       runPolicyShadowEvaluation(artifactId, artifactVersion, { evaluationCaseId })
     ),
+    onSuccess: (evidence) => queryClient.invalidateQueries({
+      queryKey: policyLifecycleKeys.history(evidence.candidateArtifactId, evidence.candidateArtifactVersion),
+    }),
   });
 }
 
@@ -79,10 +109,11 @@ export function useTransitionPolicyLifecycle() {
       targetStage: PolicyLifecycleStage;
       reasonCode: string;
     }) => transitionPolicyLifecycle(artifactId, artifactVersion, { targetStage, reasonCode }),
-    onSuccess: (record) => queryClient.setQueryData(
-      policyLifecycleKeys.detail(record.artifactId, record.artifactVersion),
-      record,
-    ),
+    onSuccess: (record) => {
+      queryClient.setQueryData(policyLifecycleKeys.detail(record.artifactId, record.artifactVersion), record);
+      queryClient.invalidateQueries({ queryKey: policyLifecycleKeys.lists });
+      queryClient.invalidateQueries({ queryKey: policyLifecycleKeys.history(record.artifactId, record.artifactVersion) });
+    },
   });
 }
 
@@ -94,10 +125,11 @@ export function useApprovePolicyLifecycle() {
       artifactVersion: string;
       shadowEvaluationId: string;
     }) => approvePolicyLifecycle(artifactId, artifactVersion, { shadowEvaluationId }),
-    onSuccess: (record) => queryClient.setQueryData(
-      policyLifecycleKeys.detail(record.artifactId, record.artifactVersion),
-      record,
-    ),
+    onSuccess: (record) => {
+      queryClient.setQueryData(policyLifecycleKeys.detail(record.artifactId, record.artifactVersion), record);
+      queryClient.invalidateQueries({ queryKey: policyLifecycleKeys.lists });
+      queryClient.invalidateQueries({ queryKey: policyLifecycleKeys.history(record.artifactId, record.artifactVersion) });
+    },
   });
 }
 

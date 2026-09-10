@@ -1,6 +1,7 @@
 export type ExecutionPackType = 'COMMON' | 'AI' | 'DIGITAL_ASSET';
 export type PolicyLayer = 'REGULATORY' | 'INSTITUTION' | 'WORKLOAD' | 'DESTINATION';
 export type PolicyLifecycleStage = 'PROJECT_PROVISIONAL' | 'DRAFT' | 'VALIDATED' | 'CANDIDATE' | 'REPLAY' | 'SHADOW' | 'APPROVED' | 'ACTIVE' | 'SUPERSEDED' | 'REVIEW' | 'ROLLED_BACK';
+export type PolicyLifecycleNextAction = 'VALIDATE' | 'PROMOTE_CANDIDATE' | 'START_REPLAY' | 'RUN_SHADOW' | 'APPROVE' | 'ACTIVATE' | 'ROLLBACK';
 
 export type PolicyLifecycleRecord = {
   artifactId: string;
@@ -16,6 +17,41 @@ export type PolicyLifecycleRecord = {
   revision: number;
   createdAt: string;
   updatedAt: string;
+};
+
+export type PolicyArtifactSummary = Omit<PolicyLifecycleRecord, 'institutionId'> & {
+  currentSelection: boolean;
+  actionable: boolean;
+  nextAction: PolicyLifecycleNextAction | null;
+};
+
+export type PolicyArtifactPage = {
+  items: PolicyArtifactSummary[];
+  total: number;
+  limit: number;
+  offset: number;
+};
+
+export type PolicyArtifactSearchParams = {
+  executionPack?: ExecutionPackType;
+  lifecycleStage?: PolicyLifecycleStage;
+  workloadId?: string;
+  query?: string;
+  actionableOnly?: boolean;
+  limit?: number;
+  offset?: number;
+};
+
+export type PolicyLifecycleTransitionEvent = {
+  transitionId: number;
+  fromStage: PolicyLifecycleStage;
+  toStage: PolicyLifecycleStage;
+  actorId: string;
+  reasonCode: string;
+  artifactDigest: string;
+  approvalGateVersion: string;
+  shadowEvaluationId: string | null;
+  occurredAt: string;
 };
 
 export type CreatePolicyLifecycleRequest = Pick<PolicyLifecycleRecord, 'artifactId' | 'artifactVersion' | 'artifactDigest' | 'policyLayer' | 'executionPack' | 'workloadId' | 'purposeCode'>;
@@ -92,4 +128,15 @@ export type PolicyShadowEvidence = {
   result: 'MATCH' | 'DIFF';
   evaluatedBy: string;
   evaluatedAt: string;
+};
+
+export type PolicyArtifactHistory = {
+  artifact: PolicyLifecycleRecord;
+  currentSelection: boolean;
+  transitions: PolicyLifecycleTransitionEvent[];
+  transitionTotal: number;
+  transitionHasMore: boolean;
+  shadowEvaluations: PolicyShadowEvidence[];
+  shadowTotal: number;
+  shadowHasMore: boolean;
 };

@@ -3,9 +3,11 @@ export {
   approvePolicyLifecycle,
   createPolicyLifecycle,
   getPolicyCurrentSelection,
+  getPolicyArtifactHistory,
   getPolicyLifecycle,
   rollbackPolicyLifecycle,
   runPolicyShadowEvaluation,
+  searchPolicyArtifacts,
   transitionPolicyLifecycle,
 } from './api/policyLifecycleApi';
 export {
@@ -13,6 +15,8 @@ export {
   useApprovePolicyLifecycle,
   useCreatePolicyLifecycle,
   usePolicyCurrentSelection,
+  usePolicyArtifactHistory,
+  usePolicyArtifacts,
   usePolicyLifecycle,
   useRollbackPolicyLifecycle,
   useRunPolicyShadowEvaluation,
@@ -20,6 +24,7 @@ export {
 } from './hooks/usePolicyLifecycle';
 export { PolicyGovernancePanel } from './components/PolicyGovernancePanel';
 export { PolicyArtifactCreatePanel } from './components/PolicyArtifactCreatePanel';
+export { PolicyOperationsBrowser } from './components/PolicyOperationsBrowser';
 export type {
   ActivatePolicyRequest,
   ApprovePolicyLifecycleRequest,
@@ -27,6 +32,10 @@ export type {
   ExecutionPackType,
   PolicyCurrentSelection,
   PolicyCurrentSelectionParams,
+  PolicyArtifactHistory,
+  PolicyArtifactPage,
+  PolicyArtifactSearchParams,
+  PolicyArtifactSummary,
   PolicyLayer,
   PolicyLifecycleRecord,
   PolicyLifecycleStage,
