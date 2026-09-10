@@ -1,4 +1,5 @@
 import { Activity, AlertTriangle, Clock3, ListRestart, ShieldX, Workflow } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { AiEvaluationPanel } from '../../features/ai-evaluation';
 import { useOperationsSummary } from '../../features/operations-monitoring';
 import { RecoveryOperationsPanel } from '../../features/recovery-operations';
@@ -13,6 +14,7 @@ function secondsLabel(value: number | null | undefined) {
 }
 
 export function AnalysisPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { selectedPack } = useExecutionPack();
   const summary = useOperationsSummary(60);
   const metricState = summary.isLoading ? 'loading' : summary.isError ? 'error' : 'value';
@@ -49,7 +51,13 @@ export function AnalysisPage() {
         <ErrorState title="운영 Summary를 불러오지 못했습니다" description={normalizeApiError(summary.error).message} onRetry={() => summary.refetch()} />
       ) : null}
 
-      <RecoveryOperationsPanel />
+      <RecoveryOperationsPanel
+        initialRecoveryId={searchParams.get('recoveryId') ?? ''}
+        onSelectionChange={(recoveryId) => {
+          if (recoveryId) setSearchParams({ recoveryId }, { replace: true });
+          else setSearchParams({}, { replace: true });
+        }}
+      />
 
       <SectionCard title="Recovery 안전 경계" description="BE-9 worker와 수동 명령이 공유하는 fail-closed 처리 순서">
         <div className="runtime-stage-grid">

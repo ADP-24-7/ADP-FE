@@ -75,6 +75,20 @@ describe('App', () => {
     expect(screen.getByLabelText('선택된 Viewing Context')).toHaveTextContent('전체 권한 허용 Workload · Pack 필터 미지원');
   });
 
+  it('opens the selected recovery incident through an SPA deep link', async () => {
+    const user = userEvent.setup();
+    window.history.pushState({}, '', '/monitoring');
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: 'Operations Monitoring' })).toBeInTheDocument();
+    await user.click(await screen.findByRole('button', { name: 'Recovery 열기' }));
+
+    expect(window.location.pathname).toBe('/analysis');
+    expect(window.location.search).toBe('?recoveryId=recovery-contract');
+    expect(await screen.findByText('Recovery ID')).toBeInTheDocument();
+    expect(screen.getAllByText('recovery-contract').length).toBeGreaterThan(0);
+  });
+
   it('shows a clear state when there are no attention items', async () => {
     server.use(
       http.get('/api/admin/operations/summary', () => HttpResponse.json({
