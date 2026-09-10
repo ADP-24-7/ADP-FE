@@ -353,10 +353,15 @@ button, a { transition: background-color .16s ease, border-color .16s ease, colo
 .table-findings { grid-template-columns: .8fr 1.4fr 1.2fr .8fr .9fr; }
 .table-readiness { grid-template-columns: 1fr 1.4fr .9fr 1.2fr; }
 .table-recovery { grid-template-columns: .9fr 1.35fr 1.15fr .85fr .55fr 1fr; }
+.table-security-findings { grid-template-columns: .9fr 1.35fr 1.1fr .8fr 1.3fr 1fr; }
+.security-findings-table-shell { overflow-x: auto; }
+.security-findings-table-shell > .table-security-findings { min-width: 900px; }
 .table-policy-events { grid-template-columns: .9fr 1.1fr 1.2fr 1.2fr .8fr 1.1fr; }
 .table-recovery > span,
+.table-security-findings > span,
 .table-policy-events > span { display: flex; min-width: 0; flex-direction: column; gap: 4px; overflow-wrap: anywhere; }
 .table-recovery small,
+.table-security-findings small,
 .table-policy-events small { color: var(--color-text-muted); font-size: 10px; line-height: 1.35; }
 .table-row.active { background: var(--color-primary-soft); box-shadow: inset 3px 0 0 var(--color-primary); }
 .table-policy-artifacts { grid-template-columns: minmax(190px, 1.5fr) minmax(150px, 1fr) minmax(90px, .6fr) minmax(150px, 1fr); }
@@ -482,6 +487,7 @@ button, a { transition: background-color .16s ease, border-color .16s ease, colo
 .recovery-detail-grid { align-items: start; }
 .recovery-detail-stack,
 .recovery-command-panel { display: grid; gap: 14px; }
+.security-finding-stack { display: grid; gap: 14px; }
 .operation-history { display: grid; gap: 8px; }
 .operation-history h3 { margin: 0; color: var(--color-ink); font-size: 12px; letter-spacing: 0; }
 .operation-history > div:not(.state-panel) { display: grid; grid-template-columns: minmax(0, 1.4fr) .75fr auto minmax(0, 1fr); align-items: center; gap: 9px; border: 1px solid var(--color-border); border-radius: 8px; padding: 9px 10px; font-size: 10px; }
