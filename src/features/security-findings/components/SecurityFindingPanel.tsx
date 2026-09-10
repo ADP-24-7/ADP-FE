@@ -2,6 +2,7 @@ import { Eye, RefreshCw, Search, ShieldAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { normalizeApiError } from '../../../shared/api/apiError';
 import { EmptyState, ErrorState, KeyValues, LoadingPanel, SectionCard, StatusBadge } from '../../../shared/components';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../../../shared/config/pagination';
 import { useSecurityFindingDetail, useSecurityFindings } from '../hooks/useSecurityFindings';
 import type { SecurityFindingExecutionPack } from '../model/types';
 
@@ -21,7 +22,7 @@ type SecurityFindingPanelProps = {
 export function SecurityFindingPanel({ executionPack, onOpenTrace }: SecurityFindingPanelProps) {
   const [page, setPage] = useState(0);
   const [selectedFindingId, setSelectedFindingId] = useState<number | null>(null);
-  const findings = useSecurityFindings({ executionPack, page, size: 20 });
+  const findings = useSecurityFindings({ executionPack, page, size: DEFAULT_TABLE_PAGE_SIZE });
   const detail = useSecurityFindingDetail(selectedFindingId);
   const totalPages = findings.data ? Math.ceil(findings.data.totalElements / findings.data.size) : 0;
 
@@ -43,7 +44,7 @@ export function SecurityFindingPanel({ executionPack, onOpenTrace }: SecurityFin
           </div>
         )}
       >
-        <div className="table-shell security-findings-table-shell" aria-busy={findings.isFetching}>
+        <div className={`table-shell security-findings-table-shell${findings.isFetching && !findings.isLoading ? ' is-refreshing' : ''}`} aria-busy={findings.isFetching}>
           <div className="table-head table-security-findings">
             <span>DETECTED</span><span>EXECUTION</span><span>WORKLOAD</span><span>TYPE</span><span>LOCATION</span><span>DETECTOR</span>
           </div>
@@ -71,8 +72,8 @@ export function SecurityFindingPanel({ executionPack, onOpenTrace }: SecurityFin
         <div className="pagination-row">
           <span>{findings.data ? `${findings.data.totalElements}건 · ${findings.data.page + 1}/${Math.max(totalPages, 1)} 페이지` : '조회 대기'}</span>
           <div>
-            <button className="button button-secondary" type="button" disabled={page === 0 || findings.isFetching} onClick={() => { setPage(Math.max(0, page - 1)); setSelectedFindingId(null); }}>이전</button>
-            <button className="button button-secondary" type="button" disabled={!totalPages || page + 1 >= totalPages || findings.isFetching} onClick={() => { setPage(page + 1); setSelectedFindingId(null); }}>다음</button>
+            <button className="button button-secondary" type="button" disabled={page === 0 || findings.isFetching} onClick={() => setPage(Math.max(0, page - 1))}>이전</button>
+            <button className="button button-secondary" type="button" disabled={!totalPages || page + 1 >= totalPages || findings.isFetching} onClick={() => setPage(page + 1)}>다음</button>
           </div>
         </div>
       </SectionCard>

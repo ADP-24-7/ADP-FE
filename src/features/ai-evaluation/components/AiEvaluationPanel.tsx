@@ -15,6 +15,13 @@ export function AiEvaluationPanel() {
   const [lookupRunId, setLookupRunId] = useState('');
   const readiness = useAiEvaluationReadiness(lookupRunId);
   const bundle = useAiEvaluationBundle(lookupRunId, readiness.data?.bundleAvailable === true);
+  const bundleStatus = bundle.isError
+    ? '조회 실패'
+    : bundle.isFetching
+      ? '확인 중'
+      : readiness.data?.bundleAvailable
+        ? '사용 가능'
+        : '생성 전';
   const runSuggestions = [
     {
       value: 'ai-eval-baseline-2026-09-07',
@@ -54,7 +61,7 @@ export function AiEvaluationPanel() {
             ['Expected / Observed', `${readiness.data.expectedExecutionCount} / ${readiness.data.observedExecutionCount}`],
             ['Complete Evidence', String(readiness.data.completeEvidenceCount)],
             ['Missing / Unexpected', `${readiness.data.missingExecutionCount} / ${readiness.data.unexpectedExecutionCount}`],
-            ['Bundle', readiness.data.bundleAvailable ? 'AVAILABLE' : 'NOT AVAILABLE'],
+            ['Bundle', bundleStatus],
           ]} />
           <div className="contract-table" role="table" aria-label="AI evaluation case model evidence">
             <div className="table-head table-readiness" role="row">
@@ -75,7 +82,7 @@ export function AiEvaluationPanel() {
       )}
 
       {bundle.isLoading ? <LoadingPanel label="DA 전달 Bundle을 검증하는 중입니다" /> : bundle.isError ? (
-        <ErrorState title="Evaluation Bundle을 불러오지 못했습니다" description={normalizeApiError(bundle.error).message} onRetry={() => bundle.refetch()} />
+        <ErrorState title="평가 번들을 불러올 수 없습니다" description="현재 실행 범위와 평가 실행 조건을 확인해 주세요." onRetry={() => bundle.refetch()} compact />
       ) : bundle.data ? (
         <KeyValues items={[
           ['Bundle', `${bundle.data.manifest.bundleId} · ${bundle.data.manifest.bundleVersion}`],

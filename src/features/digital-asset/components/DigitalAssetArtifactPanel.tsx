@@ -96,7 +96,7 @@ export function DigitalAssetArtifactPanel({ onOpenTrace }: DigitalAssetArtifactP
           <button className="button button-secondary" type="submit"><Search size={15} />검색</button>
         </form>
 
-        <div className="table-shell digital-asset-current-state-table-shell" aria-busy={artifacts.isFetching}>
+        <div className={`table-shell digital-asset-current-state-table-shell${artifacts.isFetching && !artifacts.isLoading ? ' is-refreshing' : ''}`} aria-busy={artifacts.isFetching}>
           <div className="table-head table-digital-asset-current-state"><span>ARTIFACT</span><span>SCOPE</span><span>CURRENT STATE</span><span>RUNTIME EVIDENCE</span></div>
           {artifacts.isLoading ? <LoadingPanel label="Digital Asset Artifact 상태를 불러오는 중입니다" /> : artifacts.isError ? (
             <ErrorState description={normalizeApiError(artifacts.error).message} onRetry={() => artifacts.refetch()} />
@@ -120,8 +120,8 @@ export function DigitalAssetArtifactPanel({ onOpenTrace }: DigitalAssetArtifactP
         <div className="pagination-row">
           <span>{artifacts.data ? `${artifacts.data.totalElements}건 · ${artifacts.data.page + 1}/${Math.max(totalPages, 1)} 페이지` : '조회 대기'}</span>
           <div>
-            <button className="button button-secondary button-icon" type="button" aria-label="이전 Digital Asset Artifact" disabled={page === 0 || artifacts.isFetching} onClick={() => { setPage(Math.max(0, page - 1)); setSelected({ artifactId: '', artifactVersion: '' }); }}><ChevronLeft size={15} /></button>
-            <button className="button button-secondary button-icon" type="button" aria-label="다음 Digital Asset Artifact" disabled={!totalPages || page + 1 >= totalPages || artifacts.isFetching} onClick={() => { setPage(page + 1); setSelected({ artifactId: '', artifactVersion: '' }); }}><ChevronRight size={15} /></button>
+            <button className="button button-secondary button-icon" type="button" aria-label="이전 Digital Asset Artifact" disabled={page === 0 || artifacts.isFetching} onClick={() => setPage(Math.max(0, page - 1))}><ChevronLeft size={15} /></button>
+            <button className="button button-secondary button-icon" type="button" aria-label="다음 Digital Asset Artifact" disabled={!totalPages || page + 1 >= totalPages || artifacts.isFetching} onClick={() => setPage(page + 1)}><ChevronRight size={15} /></button>
           </div>
         </div>
 

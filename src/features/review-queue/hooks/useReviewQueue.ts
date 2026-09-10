@@ -12,6 +12,7 @@ export function useReviewQueue(params: ReviewQueueSearchParams) {
   return useQuery({
     queryKey: reviewQueueKeys.list(params),
     queryFn: () => getReviewQueue(params),
+    placeholderData: (previous) => previous,
     retry: false,
   });
 }

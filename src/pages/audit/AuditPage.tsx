@@ -5,6 +5,7 @@ import { useAuditExecutions, useExecutionEvidence } from '../../features/audit-t
 import type { AuditSearchParams } from '../../features/audit-trace';
 import { normalizeApiError } from '../../shared/api/apiError';
 import { EmptyState, ErrorState, KeyValues, LoadingPanel, PackContextSummary, PageHeader, SearchAssistInput, SectionCard, StatusBadge } from '../../shared/components';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../../shared/config/pagination';
 import { useExecutionPack } from '../../shared/prototype';
 
 export function AuditPage() {
@@ -19,16 +20,17 @@ export function AuditPage() {
         ? 'Policy Decision'
         : null;
   const { selectedPack } = useExecutionPack();
-  const [executionId, setExecutionId] = useState(initialExecutionId);
   const [submittedExecutionId, setSubmittedExecutionId] = useState(initialExecutionId);
   const [workloadId, setWorkloadId] = useState('');
   const [status, setStatus] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
-  const [searchParams, setSearchParams] = useState<AuditSearchParams>({ size: 20 });
+  const [searchParams, setSearchParams] = useState<AuditSearchParams>({ page: 0, size: DEFAULT_TABLE_PAGE_SIZE });
   const audit = useAuditExecutions(searchParams);
   const evidence = useExecutionEvidence(submittedExecutionId);
   const postExecutionEvidenceRef = useRef<HTMLDivElement>(null);
+  const totalPages = audit.data ? Math.ceil(audit.data.totalElements / audit.data.size) : 0;
+  const isRefreshing = audit.isFetching && !audit.isLoading;
 
   useEffect(() => {
     if (!evidence.data || (requestedSection !== 'post-execution' && requestedSection !== 'response-guard')) return;
@@ -51,20 +53,6 @@ export function AuditPage() {
     ];
   }, [audit.data?.items]);
 
-  const executionSuggestions = useMemo(() => (
-    audit.data?.items.map((item) => ({
-      value: item.executionId,
-      label: `${item.workloadId} · ${item.status}`,
-      description: new Date(item.createdAt).toLocaleString('ko-KR'),
-      source: 'api' as const,
-    })) ?? []
-  ), [audit.data?.items]);
-
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSubmittedExecutionId(executionId.trim());
-  }
-
   function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSearchParams({
@@ -73,7 +61,7 @@ export function AuditPage() {
       from: from ? new Date(from).toISOString() : undefined,
       to: to ? new Date(to).toISOString() : undefined,
       page: 0,
-      size: 20,
+      size: DEFAULT_TABLE_PAGE_SIZE,
     });
   }
 
@@ -82,7 +70,11 @@ export function AuditPage() {
     setStatus('');
     setFrom('');
     setTo('');
-    setSearchParams({ size: 20 });
+    setSearchParams({ page: 0, size: DEFAULT_TABLE_PAGE_SIZE });
+  }
+
+  function changePage(page: number) {
+    setSearchParams((current) => ({ ...current, page }));
   }
 
   const activeFilters = [
@@ -138,84 +130,94 @@ export function AuditPage() {
         {activeFilters.length ? <div className="active-filter-row" aria-label="적용된 검색 조건">{activeFilters.map((filter) => <span key={filter}>{filter}</span>)}</div> : null}
       </SectionCard>
 
-      <SectionCard className="search-assist-card" title="Evidence Pack 조회" description="검색 결과에서 선택하거나 Execution ID를 직접 입력해 Privacy-safe 감사 증적을 조회합니다." actions={<FileCheck2 size={16} />}>
-        <form className="search-row" onSubmit={submit}>
-          <label className="field field-grow">
-            <span>Execution ID</span>
-            <SearchAssistInput value={executionId} onChange={setExecutionId} suggestions={executionSuggestions} placeholder="검색 결과의 Execution ID 선택 또는 직접 입력" ariaLabel="Evidence Execution ID" required />
-          </label>
-          <button className="button button-primary" type="submit">검색</button>
-        </form>
-      </SectionCard>
-
-      <SectionCard title={selectedPack.key === 'digital-asset' ? '거래 실행 증적' : '고객상담 AI 안전 실행 증적'} description={selectedPack.objective} actions={<StatusBadge tone={evidence.data ? 'success' : 'neutral'}>{evidence.data ? evidence.data.runtimeStatus : 'NO EVIDENCE'}</StatusBadge>}>
-        {evidence.isLoading ? <LoadingPanel label="감사 증적을 불러오는 중입니다" /> : evidence.isError ? (
-          <ErrorState description={normalizeApiError(evidence.error).message} onRetry={() => evidence.refetch()} />
-        ) : evidence.data ? (
-          <KeyValues items={[
-            ['Execution ID', evidence.data.executionId],
-            ['Trace ID', evidence.data.traceId],
-            ['Workload', evidence.data.workloadId],
-            ['Purpose', evidence.data.purposeCode],
-            ['Final Action', evidence.data.policy.finalAction ?? '—'],
-            ['Policy Version', evidence.data.policy.policyVersion ?? '—'],
-            ['Destination', evidence.data.egress.destinationProfileId ?? '—'],
-            ['Connector', evidence.data.egress.connectorStatus ?? '—'],
-            ['Recovery', String(evidence.data.recovery.recoveryStatus ?? '—')],
-            ['Export Digest', evidence.data.exportContentDigest],
-          ]} />
-        ) : (
-          <EmptyState icon={Search} title="Execution ID 입력 대기" description="Runtime 실행 결과의 executionId를 입력하면 digest 기반 Evidence Pack을 조회합니다." endpoint="GET /api/admin/audit/executions/{executionId}/evidence" />
-        )}
-      </SectionCard>
-
-      {evidence.data ? (
-        <div
-          ref={postExecutionEvidenceRef}
-          id="post-execution-evidence"
-          className={requestedSection === 'post-execution' || requestedSection === 'response-guard' ? 'anchored-section evidence-focus-section evidence-focus-section-active' : 'anchored-section evidence-focus-section'}
-          tabIndex={-1}
-          aria-label="우선 확인 Evidence"
+      <div className="audit-workspace">
+        <SectionCard
+          className="audit-list-card"
+          title="감사 실행 목록"
+          description="실행을 선택하면 오른쪽에서 전체 증적을 확인할 수 있습니다."
+          actions={audit.data ? <span className="result-count">총 {audit.data.totalElements}건</span> : undefined}
         >
-          <SectionCard
-            title="External Execution & Response Evidence"
-            description="Provider 전송부터 Response Guard와 Controlled Delivery까지 원문 없이 검증합니다."
-            actions={<StatusBadge tone={requestedSection ? 'info' : 'neutral'}>{requestedSection === 'response-guard' ? 'RESPONSE GUARD' : requestedSection === 'post-execution' ? 'POST EXECUTION' : 'EVIDENCE'}</StatusBadge>}
-          >
-            <KeyValues items={[
-              ['Destination Profile', evidence.data.egress.destinationProfileId ?? '—'],
-              ['Outbound Guard', evidence.data.egress.outboundGuardStatus ?? '—'],
-              ['Connector Status', evidence.data.egress.connectorStatus ?? '—'],
-              ['Provider Request Digest', evidence.data.egress.providerRequestDigest ?? '—'],
-              ['Provider Response Digest', evidence.data.egress.providerResponseDigest ?? '—'],
-              ['Response Guard', evidence.data.egress.responseGuardStatus ?? '—'],
-              ['Controlled Delivery', evidence.data.egress.controlledDeliveryStatus ?? '—'],
-              ['Delivered Response Digest', evidence.data.egress.controlledDeliveryResponseDigest ?? '—'],
-              ['Recovery Status', String(evidence.data.recovery.recoveryStatus ?? '—')],
-              ['Status Query Evidence', String(evidence.data.recovery.statusQueryEvidenceDigest ?? '—')],
-            ]} />
-          </SectionCard>
-        </div>
-      ) : null}
-
-      <SectionCard title="감사 실행 목록" description="적용된 검색 조건과 권한 범위에 해당하는 실행만 최신순으로 표시합니다." actions={<StatusBadge>{audit.data ? `${audit.data.totalElements} ITEMS` : 'READ MODEL'}</StatusBadge>}>
-        <div className="empty-table">
-          <div className="table-head table-audit">
-            <span>발생 시각</span><span>Execution ID</span><span>Workload</span><span>Final Action</span><span>Status</span>
+          <div className={`table-shell audit-table-shell${isRefreshing ? ' is-refreshing' : ''}`} aria-busy={isRefreshing}>
+            <div className="table-head table-audit">
+              <span>발생 시각</span><span>Execution ID</span><span>Workload</span><span>Final Action</span><span>Status</span>
+            </div>
+            {audit.isLoading ? <LoadingPanel label="감사 실행 목록을 불러오는 중입니다" /> : audit.isError ? (
+              <ErrorState description={normalizeApiError(audit.error).message} onRetry={() => audit.refetch()} compact />
+            ) : audit.data?.items.length ? audit.data.items.map((item) => (
+              <button
+                className={`table-row table-audit${submittedExecutionId === item.executionId ? ' active' : ''}`}
+                type="button"
+                disabled={isRefreshing}
+                key={item.executionId}
+                onClick={() => setSubmittedExecutionId(item.executionId)}
+              >
+                <span>{new Date(item.createdAt).toLocaleString('ko-KR')}</span>
+                <code>{item.executionId}</code>
+                <span>{item.workloadId}</span>
+                <StatusBadge tone={item.finalAction === 'BLOCK' ? 'danger' : item.finalAction === 'REVIEW' ? 'warning' : 'success'}>{item.finalAction}</StatusBadge>
+                <span>{item.status}</span>
+              </button>
+            )) : <EmptyState title="검색 결과가 없습니다" description={activeFilters.length ? '현재 권한 범위에서 검색 조건에 일치하는 Runtime 실행이 없습니다.' : '현재 권한 범위에 저장된 Runtime 실행 이력이 없습니다.'} />}
           </div>
-          {audit.isLoading ? <LoadingPanel label="감사 실행 목록을 불러오는 중입니다" /> : audit.isError ? (
-            <ErrorState description={normalizeApiError(audit.error).message} onRetry={() => audit.refetch()} />
-          ) : audit.data?.items.length ? audit.data.items.map((item) => (
-            <button className="table-row table-audit" type="button" key={item.executionId} onClick={() => { setExecutionId(item.executionId); setSubmittedExecutionId(item.executionId); }}>
-              <span>{new Date(item.createdAt).toLocaleString('ko-KR')}</span>
-              <code>{item.executionId}</code>
-              <span>{item.workloadId}</span>
-              <StatusBadge tone={item.finalAction === 'BLOCK' ? 'danger' : item.finalAction === 'REVIEW' ? 'warning' : 'success'}>{item.finalAction}</StatusBadge>
-              <span>{item.status}</span>
-            </button>
-          )) : <EmptyState title="검색 결과가 없습니다" description={activeFilters.length ? '현재 권한 범위에서 검색 조건에 일치하는 Runtime 실행이 없습니다.' : '현재 권한 범위에 저장된 Runtime 실행 이력이 없습니다.'} endpoint="GET /api/admin/audit/executions" />}
-        </div>
-      </SectionCard>
+          <div className="pagination-row">
+            <span>{audit.data ? `총 ${audit.data.totalElements}건 · ${audit.data.page + 1}/${Math.max(totalPages, 1)} 페이지` : '조회 대기'}</span>
+            <div>
+              <button className="button button-secondary" type="button" disabled={(searchParams.page ?? 0) === 0 || isRefreshing} onClick={() => changePage(Math.max(0, (searchParams.page ?? 0) - 1))}>이전</button>
+              <button className="button button-secondary" type="button" disabled={!totalPages || (searchParams.page ?? 0) + 1 >= totalPages || isRefreshing} onClick={() => changePage((searchParams.page ?? 0) + 1)}>다음</button>
+            </div>
+          </div>
+        </SectionCard>
+
+        <SectionCard
+          className="audit-detail-card"
+          title={selectedPack.key === 'digital-asset' ? '거래 실행 증적' : '고객상담 AI 안전 실행 증적'}
+          description="선택한 실행의 정책, 외부 전송과 복구 증적을 원문 없이 확인합니다."
+          actions={evidence.data ? <StatusBadge tone="success">{evidence.data.runtimeStatus}</StatusBadge> : undefined}
+        >
+          {evidence.isLoading ? <LoadingPanel label="감사 증적을 불러오는 중입니다" /> : evidence.isError ? (
+            <ErrorState description="선택한 실행의 감사 증적을 불러올 수 없습니다." onRetry={() => evidence.refetch()} compact />
+          ) : evidence.data ? (
+            <div className="audit-evidence-stack">
+              <KeyValues items={[
+                ['Execution ID', evidence.data.executionId],
+                ['Trace ID', evidence.data.traceId],
+                ['Workload', evidence.data.workloadId],
+                ['Purpose', evidence.data.purposeCode],
+                ['Final Action', evidence.data.policy.finalAction ?? '—'],
+                ['Policy Version', evidence.data.policy.policyVersion ?? '—'],
+                ['Destination', evidence.data.egress.destinationProfileId ?? '—'],
+                ['Connector', evidence.data.egress.connectorStatus ?? '—'],
+                ['Recovery', String(evidence.data.recovery.recoveryStatus ?? '—')],
+                ['Export Digest', evidence.data.exportContentDigest],
+              ]} />
+              <div
+                ref={postExecutionEvidenceRef}
+                id="post-execution-evidence"
+                className={requestedSection === 'post-execution' || requestedSection === 'response-guard' ? 'anchored-section evidence-focus-section evidence-focus-section-active' : 'anchored-section evidence-focus-section'}
+                tabIndex={-1}
+                aria-label="우선 확인 Evidence"
+              >
+                <h3>External Execution & Response Evidence</h3>
+                <p className="helper-text">Provider 전송부터 Response Guard와 Controlled Delivery까지 검증합니다.</p>
+                <KeyValues items={[
+                  ['Destination Profile', evidence.data.egress.destinationProfileId ?? '—'],
+                  ['Outbound Guard', evidence.data.egress.outboundGuardStatus ?? '—'],
+                  ['Connector Status', evidence.data.egress.connectorStatus ?? '—'],
+                  ['Provider Request Digest', evidence.data.egress.providerRequestDigest ?? '—'],
+                  ['Provider Response Digest', evidence.data.egress.providerResponseDigest ?? '—'],
+                  ['Response Guard', evidence.data.egress.responseGuardStatus ?? '—'],
+                  ['Controlled Delivery', evidence.data.egress.controlledDeliveryStatus ?? '—'],
+                  ['Delivered Response Digest', evidence.data.egress.controlledDeliveryResponseDigest ?? '—'],
+                  ['Recovery Status', String(evidence.data.recovery.recoveryStatus ?? '—')],
+                  ['Status Query Evidence', String(evidence.data.recovery.statusQueryEvidenceDigest ?? '—')],
+                ]} />
+              </div>
+            </div>
+          ) : (
+            <EmptyState icon={Search} title="실행 선택 대기" description="왼쪽 감사 실행 목록에서 확인할 실행을 선택하세요." />
+          )}
+        </SectionCard>
+      </div>
 
       <div className="notice notice-info">
         <LockKeyhole size={17} />

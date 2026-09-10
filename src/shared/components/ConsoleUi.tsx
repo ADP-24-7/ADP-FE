@@ -55,12 +55,12 @@ type EmptyStateProps = {
 };
 
 export function EmptyState({ title, description, endpoint, action, compact = false, icon: Icon = Database }: EmptyStateProps) {
+  void endpoint;
   return (
     <div className={compact ? 'state-panel state-panel-compact' : 'state-panel'} role="status">
       <span className="state-icon" aria-hidden="true"><Icon size={compact ? 17 : 22} /></span>
       <strong>{title}</strong>
       <p>{description}</p>
-      {endpoint ? <details className="state-technical-details"><summary>기술 정보</summary><code>{endpoint}</code></details> : null}
       {action ? <div className="state-action">{action}</div> : null}
     </div>
   );
@@ -71,11 +71,12 @@ type ErrorStateProps = {
   description: string;
   onRetry?: () => void;
   retryLabel?: string;
+  compact?: boolean;
 };
 
-export function ErrorState({ title = '데이터를 불러오지 못했습니다', description, onRetry, retryLabel = '다시 시도' }: ErrorStateProps) {
+export function ErrorState({ title = '데이터를 불러오지 못했습니다', description, onRetry, retryLabel = '다시 시도', compact = false }: ErrorStateProps) {
   return (
-    <div className="state-panel state-panel-error" role="alert">
+    <div className={`state-panel state-panel-error${compact ? ' state-panel-inline' : ''}`} role="alert">
       <span className="state-icon" aria-hidden="true">!</span>
       <strong>{title}</strong>
       <p>{description}</p>

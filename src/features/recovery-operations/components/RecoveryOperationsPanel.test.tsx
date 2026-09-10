@@ -157,12 +157,12 @@ describe('RecoveryOperationsPanel', () => {
     await user.selectOptions(screen.getByRole('combobox', { name: 'Recovery Status' }), 'EXHAUSTED');
 
     expect(screen.getByText('Incident 선택 대기')).toBeInTheDocument();
-    expect(screen.getByRole('status', { name: 'Recovery Incident를 불러오는 중입니다' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /recovery-contract/ })).toBeDisabled();
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
     expect(await screen.findByText('Recovery Incident가 없습니다')).toBeInTheDocument();
   });
 
-  it('clears the selected incident when the page changes', async () => {
+  it('keeps the selected incident while moving to another result page', async () => {
     const user = userEvent.setup();
     server.use(
       http.get('/api/admin/recovery/incidents', ({ request }) => {
@@ -170,8 +170,8 @@ describe('RecoveryOperationsPanel', () => {
         return HttpResponse.json({
           items: [{ ...detailResponse(), recoveryId: page === 0 ? 'recovery-contract' : 'recovery-page-two' }],
           page,
-          size: 20,
-          totalElements: 21,
+          size: 10,
+          totalElements: 11,
         });
       }),
     );
@@ -181,8 +181,8 @@ describe('RecoveryOperationsPanel', () => {
     expect(await screen.findByText('Recovery ID')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '다음' }));
 
-    expect(screen.getByText('Incident 선택 대기')).toBeInTheDocument();
-    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    expect(screen.getByText('Recovery ID')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox')).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: /recovery-page-two/ })).toBeInTheDocument();
   });
 });

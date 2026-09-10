@@ -2,6 +2,7 @@ import { AlertTriangle, CheckCircle2, RefreshCw, RotateCcw, Search, ShieldAlert 
 import { useEffect, useRef, useState } from 'react';
 import { normalizeApiError } from '../../../shared/api/apiError';
 import { EmptyState, ErrorState, KeyValues, LoadingPanel, SectionCard, StatusBadge } from '../../../shared/components';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../../../shared/config/pagination';
 import { useRecoveryCommand, useRecoveryIncident, useRecoveryIncidents } from '../hooks/useRecoveryOperations';
 import { getRecoveryCommandAvailability } from '../model/recoveryCommandPolicy';
 import type { RecoveryOperationType, RecoveryStatus } from '../model/types';
@@ -53,7 +54,7 @@ export function RecoveryOperationsPanel({ executionPack, initialRecoveryId = '',
   const [selectedCommand, setSelectedCommand] = useState<RecoveryOperationType>('RECONCILE');
   const [commandConfirmed, setCommandConfirmed] = useState(false);
   const operationIds = useRef<Partial<Record<RecoveryOperationType, string>>>({});
-  const params = { executionPack, status: status || undefined, page, size: 20 };
+  const params = { executionPack, status: status || undefined, page, size: DEFAULT_TABLE_PAGE_SIZE };
   const incidents = useRecoveryIncidents(params);
   const detail = useRecoveryIncident(selectedRecoveryId, executionPack);
   const command = useRecoveryCommand();
@@ -110,7 +111,6 @@ export function RecoveryOperationsPanel({ executionPack, initialRecoveryId = '',
   }
 
   function changePage(nextPage: number) {
-    clearIncidentSelection();
     setPage(nextPage);
   }
 

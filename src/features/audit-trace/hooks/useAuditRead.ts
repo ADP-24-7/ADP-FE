@@ -7,6 +7,7 @@ export function useAuditExecutions(params: AuditSearchParams, enabled = true) {
     queryKey: ['audit-executions', params],
     queryFn: () => searchAuditExecutions(params),
     enabled,
+    placeholderData: (previous) => previous,
   });
 }
 

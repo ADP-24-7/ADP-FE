@@ -6,6 +6,7 @@ export function useReferenceEvidence(params: ReferenceEvidenceSearch) {
   return useQuery({
     queryKey: ['reference-evidence', 'list', params],
     queryFn: () => getReferenceEvidence(params),
+    placeholderData: (previous) => previous,
     retry: false,
   });
 }
@@ -18,4 +19,3 @@ export function useReferenceEvidenceDetail(evidenceId: string, evidenceVersion: 
     retry: false,
   });
 }
-

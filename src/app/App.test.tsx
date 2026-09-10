@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { http, HttpResponse } from 'msw';
+import { delay, http, HttpResponse } from 'msw';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { OverviewPage } from '../pages/overview/OverviewPage';
@@ -218,6 +218,50 @@ describe('App', () => {
     expect(focusedSection).toHaveClass('evidence-focus-section-active');
     expect(screen.getByText('provider-response-digest')).toBeInTheDocument();
     await waitFor(() => expect(document.activeElement).toBe(focusedSection));
+  });
+
+  it('opens the second audit page without collapsing the current result table', async () => {
+    server.use(http.get('/api/admin/audit/executions', async ({ request }) => {
+      const page = Number(new URL(request.url).searchParams.get('page') ?? 0);
+      if (page === 1) await delay(80);
+      const count = page === 0 ? 10 : 2;
+      return HttpResponse.json({
+        items: Array.from({ length: count }, (_, index) => ({
+          executionId: `exec-page-${page}-${index}`,
+          requestId: `req-page-${page}-${index}`,
+          traceId: `trace-page-${page}-${index}`,
+          institutionId: 'institution_local',
+          workloadId: 'customer_summary',
+          purposeCode: 'CUSTOMER_SUPPORT',
+          status: 'COMPLETED',
+          finalAction: 'ALLOW',
+          createdAt: '2026-09-09T00:00:00Z',
+          updatedAt: '2026-09-09T00:00:01Z',
+        })),
+        page,
+        size: 10,
+        totalElements: 12,
+      });
+    }));
+    const user = userEvent.setup();
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <ExecutionPackProvider>
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={['/audit']}>
+            <AuditPage />
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ExecutionPackProvider>,
+    );
+
+    expect(await screen.findByRole('button', { name: /exec-page-0-0/ })).toBeInTheDocument();
+    expect(screen.getByText('총 12건 · 1/2 페이지')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '다음' }));
+
+    expect(screen.getByRole('button', { name: /exec-page-0-0/ })).toBeDisabled();
+    expect(await screen.findByRole('button', { name: /exec-page-1-0/ })).toBeInTheDocument();
+    expect(screen.getByText('총 12건 · 2/2 페이지')).toBeInTheDocument();
   });
 
   it('scrolls and focuses the operations section selected from overview', async () => {

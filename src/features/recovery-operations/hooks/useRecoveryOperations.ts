@@ -17,6 +17,7 @@ export function useRecoveryIncidents(params: RecoverySearchParams) {
   return useQuery({
     queryKey: recoveryOperationsKeys.list(params),
     queryFn: () => getRecoveryIncidents(params),
+    placeholderData: (previous) => previous,
     retry: false,
   });
 }

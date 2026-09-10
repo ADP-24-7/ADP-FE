@@ -2,6 +2,7 @@ import { BookOpenCheck, RefreshCw, Search } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { normalizeApiError } from '../../../shared/api/apiError';
 import { EmptyState, ErrorState, KeyValues, LoadingPanel, SectionCard, StatusBadge } from '../../../shared/components';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../../../shared/config/pagination';
 import { useReferenceEvidence, useReferenceEvidenceDetail } from '../hooks/useReferenceEvidence';
 import type { ReferenceEvidenceSearch, ReferenceEvidenceType } from '../model/types';
 
@@ -11,22 +12,21 @@ export function ReferenceEvidencePanel() {
   const [type, setType] = useState<ReferenceEvidenceType | ''>('');
   const [workloadId, setWorkloadId] = useState('');
   const [query, setQuery] = useState('');
-  const [params, setParams] = useState<ReferenceEvidenceSearch>({ limit: 20, offset: 0 });
+  const [params, setParams] = useState<ReferenceEvidenceSearch>({ limit: DEFAULT_TABLE_PAGE_SIZE, offset: 0 });
   const [selected, setSelected] = useState({ evidenceId: '', evidenceVersion: '' });
   const evidence = useReferenceEvidence(params);
   const detail = useReferenceEvidenceDetail(selected.evidenceId, selected.evidenceVersion);
-  const page = Math.floor((params.offset ?? 0) / (params.limit ?? 20));
+  const page = Math.floor((params.offset ?? 0) / (params.limit ?? DEFAULT_TABLE_PAGE_SIZE));
   const totalPages = evidence.data ? Math.ceil(evidence.data.total / evidence.data.limit) : 0;
 
   function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSelected({ evidenceId: '', evidenceVersion: '' });
-    setParams({ evidenceType: type || undefined, workloadId: workloadId.trim() || undefined, query: query.trim() || undefined, limit: 20, offset: 0 });
+    setParams({ evidenceType: type || undefined, workloadId: workloadId.trim() || undefined, query: query.trim() || undefined, limit: DEFAULT_TABLE_PAGE_SIZE, offset: 0 });
   }
 
   function changePage(nextPage: number) {
-    setSelected({ evidenceId: '', evidenceVersion: '' });
-    setParams((current) => ({ ...current, offset: nextPage * (current.limit ?? 20) }));
+    setParams((current) => ({ ...current, offset: nextPage * (current.limit ?? DEFAULT_TABLE_PAGE_SIZE) }));
   }
 
   return (
@@ -38,7 +38,7 @@ export function ReferenceEvidencePanel() {
           <label className="field"><span>검색어</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Title · Authority · Claim" /></label>
           <div className="search-filter-actions"><button className="button button-primary" type="submit" disabled={evidence.isFetching}><Search size={14} />검색</button><button className="button button-secondary" type="button" onClick={() => evidence.refetch()} disabled={evidence.isFetching} title="Reference Evidence 새로고침"><RefreshCw size={14} /></button></div>
         </form>
-        <div className="table-shell reference-evidence-table-shell">
+        <div className={`table-shell reference-evidence-table-shell${evidence.isFetching && !evidence.isLoading ? ' is-refreshing' : ''}`} aria-busy={evidence.isFetching}>
           <div className="table-head table-reference-evidence"><span>TYPE / STATUS</span><span>TITLE / AUTHORITY</span><span>VERSION</span><span>WORKLOAD</span><span>EFFECTIVE</span></div>
           {evidence.isLoading ? <LoadingPanel label="Reference Evidence를 불러오는 중입니다" /> : evidence.isError ? <ErrorState description={normalizeApiError(evidence.error).message} onRetry={() => evidence.refetch()} /> : evidence.data?.items.length ? evidence.data.items.map((item) => (
             <button key={`${item.evidenceId}:${item.evidenceVersion}`} type="button" className={`table-row table-reference-evidence${selected.evidenceId === item.evidenceId && selected.evidenceVersion === item.evidenceVersion ? ' active' : ''}`} onClick={() => setSelected({ evidenceId: item.evidenceId, evidenceVersion: item.evidenceVersion })}>

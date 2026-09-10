@@ -2,6 +2,7 @@ import { Eye, RefreshCw, Search, ShieldAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { normalizeApiError } from '../../../shared/api/apiError';
 import { EmptyState, ErrorState, KeyValues, LoadingPanel, SectionCard, StatusBadge } from '../../../shared/components';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../../../shared/config/pagination';
 import { useReviewQueue, useReviewQueueDetail } from '../hooks/useReviewQueue';
 import type { ReviewExecutionPack, ReviewNextAction, ReviewSource } from '../model/types';
 
@@ -32,7 +33,7 @@ type ReviewQueuePanelProps = {
 export function ReviewQueuePanel({ executionPack, onOpenTrace, onOpenRecovery }: ReviewQueuePanelProps) {
   const [page, setPage] = useState(0);
   const [selectedExecutionId, setSelectedExecutionId] = useState('');
-  const queue = useReviewQueue({ executionPack, page, size: 20 });
+  const queue = useReviewQueue({ executionPack, page, size: DEFAULT_TABLE_PAGE_SIZE });
   const detail = useReviewQueueDetail(selectedExecutionId);
   const totalPages = queue.data ? Math.ceil(queue.data.totalElements / queue.data.size) : 0;
 
@@ -54,7 +55,7 @@ export function ReviewQueuePanel({ executionPack, onOpenTrace, onOpenRecovery }:
           </div>
         )}
       >
-        <div className="table-shell recovery-table-shell" aria-busy={queue.isFetching}>
+        <div className={`table-shell recovery-table-shell${queue.isFetching && !queue.isLoading ? ' is-refreshing' : ''}`} aria-busy={queue.isFetching}>
           <div className="table-head table-recovery">
             <span>UPDATED</span><span>EXECUTION</span><span>WORKLOAD</span><span>SOURCE</span><span>ACTION</span><span>REASON</span>
           </div>
@@ -82,8 +83,8 @@ export function ReviewQueuePanel({ executionPack, onOpenTrace, onOpenRecovery }:
         <div className="pagination-row">
           <span>{queue.data ? `${queue.data.totalElements}건 · ${queue.data.page + 1}/${Math.max(totalPages, 1)} 페이지` : '조회 대기'}</span>
           <div>
-            <button className="button button-secondary" type="button" disabled={page === 0 || queue.isFetching} onClick={() => { setPage(Math.max(0, page - 1)); setSelectedExecutionId(''); }}>이전</button>
-            <button className="button button-secondary" type="button" disabled={!totalPages || page + 1 >= totalPages || queue.isFetching} onClick={() => { setPage(page + 1); setSelectedExecutionId(''); }}>다음</button>
+            <button className="button button-secondary" type="button" disabled={page === 0 || queue.isFetching} onClick={() => setPage(Math.max(0, page - 1))}>이전</button>
+            <button className="button button-secondary" type="button" disabled={!totalPages || page + 1 >= totalPages || queue.isFetching} onClick={() => setPage(page + 1)}>다음</button>
           </div>
         </div>
       </SectionCard>

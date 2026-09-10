@@ -6,6 +6,7 @@ import type { PolicyEventCategory, PolicyOperationEventParams } from '../../feat
 import { SecurityFindingPanel } from '../../features/security-findings';
 import { normalizeApiError } from '../../shared/api/apiError';
 import { EmptyState, ErrorState, LoadingPanel, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../../shared/config/pagination';
 import { useExecutionPack } from '../../shared/prototype';
 
 export function MonitoringPage() {
@@ -15,7 +16,7 @@ export function MonitoringPage() {
   const [category, setCategory] = useState<PolicyEventCategory | ''>('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
-  const [eventParams, setEventParams] = useState<PolicyOperationEventParams>({ page: 0, size: 20 });
+  const [eventParams, setEventParams] = useState<PolicyOperationEventParams>({ page: 0, size: DEFAULT_TABLE_PAGE_SIZE });
   const events = usePolicyOperationEvents({ ...eventParams, executionPack: selectedPack.apiValue });
   const totalPages = events.data ? Math.ceil(events.data.total / events.data.size) : 0;
   const eventsRefreshing = events.isFetching && !events.isLoading;
@@ -32,7 +33,7 @@ export function MonitoringPage() {
       from: from ? new Date(from).toISOString() : undefined,
       to: to ? new Date(to).toISOString() : undefined,
       page: 0,
-      size: 20,
+      size: DEFAULT_TABLE_PAGE_SIZE,
     });
   }
 
@@ -41,7 +42,7 @@ export function MonitoringPage() {
     setCategory('');
     setFrom('');
     setTo('');
-    setEventParams({ page: 0, size: 20 });
+    setEventParams({ page: 0, size: DEFAULT_TABLE_PAGE_SIZE });
   }
 
   return (
