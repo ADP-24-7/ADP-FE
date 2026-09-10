@@ -118,7 +118,7 @@ describe('RecoveryOperationsPanel', () => {
   it('keeps incident evidence readable but disables commands without the privileged role', async () => {
     const user = userEvent.setup();
     server.use(
-      http.get('/api/admin/auth/context', () => HttpResponse.json({
+      http.get('/api/auth/me', () => HttpResponse.json({
         principalId: 'auditor-local',
         principalType: 'USER',
         displayName: 'Local Auditor',

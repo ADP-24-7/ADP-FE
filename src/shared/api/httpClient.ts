@@ -5,6 +5,9 @@ export const httpClient = axios.create({
   // or duplicating CORS/auth behavior in the browser.
   baseURL: '',
   timeout: 10_000,
+  withCredentials: true,
+  xsrfCookieName: 'XSRF-TOKEN',
+  xsrfHeaderName: 'X-XSRF-TOKEN',
   headers: {
     'Content-Type': 'application/json',
   },

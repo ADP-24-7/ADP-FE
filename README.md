@@ -70,10 +70,9 @@ cp .env.example .env.local
 | `VITE_APP_ENV` | `local`, `dev`, `staging`, `prod` |
 | `VITE_LOCAL_BFF_ENABLED` | 로컬 Vite credential proxy 활성화 여부 |
 | `ADP_LOCAL_RUNTIME_API_KEY` | Vite 서버 전용 로컬 Runtime API Key. 브라우저 번들에 포함되지 않음 |
-| `ADP_LOCAL_USER_ID` | 로컬 Admin API 검증용 사용자 ID |
-| `ADP_LOCAL_USER_ROLES` | 로컬 Admin API 검증용 역할 목록 |
 
-일반 `npm run dev`는 MSW browser worker를 시작하지 않습니다. 로컬 화면은 Vite proxy를 통해 실제 BE에 연결하며, `ADP_LOCAL_*` credential은 개발 서버에서만 사용합니다.
+일반 `npm run dev`는 MSW browser worker를 시작하지 않습니다. 로컬 화면은 Vite proxy를 통해 실제 BE에 연결합니다.
+관리자 API는 Session 로그인, Runtime API는 Vite 서버가 보관하는 `ADP_LOCAL_RUNTIME_API_KEY`를 사용합니다.
 
 ## Make 명령
 
