@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   Activity,
@@ -44,6 +44,21 @@ export function ConsoleLayout() {
   const auth = useAuthContext();
   const activeNavItem = navItems.find((item) => location.pathname.startsWith(item.to));
 
+  useEffect(() => {
+    if (!location.hash) return;
+
+    const frame = requestAnimationFrame(() => {
+      const target = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+      if (!target) return;
+
+      target.tabIndex = -1;
+      target.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+      target.focus({ preventScroll: true });
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [location.hash, location.pathname]);
+
   return (
     <div className={isSidebarCollapsed ? 'console-shell console-shell-collapsed' : 'console-shell'}>
       <aside className="console-sidebar" aria-label="ADP Console navigation">
@@ -85,7 +100,7 @@ export function ConsoleLayout() {
           <span className={env.localBffEnabled ? 'connection-dot' : 'connection-dot connection-dot-warning'} aria-hidden="true" />
           <div>
             <strong>DATA SOURCE</strong>
-            <span>{env.localBffEnabled ? 'Local BFF' : 'API 연결 대기'}</span>
+            <span>{env.localBffEnabled ? 'Local BFF' : 'BFF unavailable'}</span>
             <small>No mock operations</small>
           </div>
         </div>

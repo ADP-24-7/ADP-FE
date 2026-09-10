@@ -34,19 +34,30 @@ function detailResponse(recoveryStatus = 'PENDING', retryDisposition = 'RECONCIL
   };
 }
 
-function renderPanel() {
+function renderPanel(initialRecoveryId = '') {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
-  const view = render(
+  const panel = (recoveryId: string) => (
     <QueryClientProvider client={queryClient}>
-      <RecoveryOperationsPanel executionPack="AI" />
-    </QueryClientProvider>,
+      <RecoveryOperationsPanel executionPack="AI" initialRecoveryId={recoveryId} />
+    </QueryClientProvider>
   );
-  return { ...view, queryClient };
+  const view = render(panel(initialRecoveryId));
+  return { ...view, queryClient, rerenderRecoveryId: (recoveryId: string) => view.rerender(panel(recoveryId)) };
 }
 
 describe('RecoveryOperationsPanel', () => {
+  it('synchronizes the selected incident when the URL-owned recovery ID changes', async () => {
+    const { rerenderRecoveryId } = renderPanel();
+
+    expect(screen.getByText('Incident 선택 대기')).toBeInTheDocument();
+    rerenderRecoveryId('recovery-contract');
+
+    expect(await screen.findByText('Recovery ID')).toBeInTheDocument();
+    expect(screen.getAllByText('recovery-contract').length).toBeGreaterThan(0);
+  });
+
   it('reuses the logical operation ID when a command is retried', async () => {
     const user = userEvent.setup();
     const operationIds: string[] = [];

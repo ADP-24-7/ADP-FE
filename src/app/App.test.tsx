@@ -91,7 +91,7 @@ describe('App', () => {
     expect(screen.getByLabelText('선택된 Viewing Context')).toHaveTextContent('DIGITAL_ASSET Pack · Security Finding / Policy History 기준 조회');
   });
 
-  it('keeps review and recovery workflows on the runtime operations screen', async () => {
+  it('opens the exact recovery incident selected from the review queue', async () => {
     const user = userEvent.setup();
     window.localStorage.setItem('adp.selectedExecutionPack', 'ai');
     render(<App />);
@@ -100,6 +100,12 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'Runtime · Recovery' })).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: 'Review Queue' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Recovery Incident' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /exec-review-contract/ }));
+    await user.click(await screen.findByRole('button', { name: 'Recovery Incident' }));
+
+    expect(window.location.search).toBe('?recoveryId=recovery-contract');
+    expect(await screen.findByText('Recovery ID')).toBeInTheDocument();
+    expect(screen.getAllByText('recovery-contract').length).toBeGreaterThan(0);
   });
 
   it('shows zero operational signals without inferring attention', async () => {
@@ -160,6 +166,22 @@ describe('App', () => {
     expect(screen.queryByText('TRANSFORM_REQUIRED')).not.toBeInTheDocument();
   });
 
+  it('does not expose disconnected workload or per-field retrieval controls', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('link', { name: /Workload · Data/ }));
+    expect(await screen.findByRole('heading', { name: 'Workload · Data Access' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Workload Registry' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Workload 등록/ })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('link', { name: 'Gateway Lab' }));
+    expect(await screen.findByRole('heading', { name: 'Gateway Lab' })).toBeInTheDocument();
+    expect(screen.queryByText('조회 결과')).not.toBeInTheDocument();
+    expect(screen.queryByText('Valid Until')).not.toBeInTheDocument();
+    expect(screen.queryByText('API 연결 대기')).not.toBeInTheDocument();
+  });
+
   it('focuses the post-execution evidence section from a review deep link', async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
@@ -177,5 +199,20 @@ describe('App', () => {
     expect(focusedSection).toHaveClass('evidence-focus-section-active');
     expect(screen.getByText('provider-response-digest')).toBeInTheDocument();
     await waitFor(() => expect(document.activeElement).toBe(focusedSection));
+  });
+
+  it('scrolls and focuses the operations section selected from overview', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('link', { name: '통합 관제' }));
+    await screen.findByRole('heading', { name: 'Security Overview' });
+    await user.click(await screen.findByRole('button', { name: /Recovery backlog/ }));
+
+    expect(window.location.pathname).toBe('/analysis');
+    expect(window.location.hash).toBe('#recovery-incidents');
+    const target = document.getElementById('recovery-incidents');
+    expect(target).not.toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(target));
   });
 });

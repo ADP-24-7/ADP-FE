@@ -57,6 +57,7 @@ export function RecoveryOperationsPanel({ executionPack, initialRecoveryId = '',
   const incidents = useRecoveryIncidents(params);
   const detail = useRecoveryIncident(selectedRecoveryId, executionPack);
   const command = useRecoveryCommand();
+  const resetCommand = command.reset;
   const totalPages = incidents.data ? Math.ceil(incidents.data.totalElements / incidents.data.size) : 0;
   const isRefreshing = incidents.isFetching && !incidents.isLoading;
   const commandAvailability = detail.data ? getRecoveryCommandAvailability(detail.data) : null;
@@ -75,6 +76,13 @@ export function RecoveryOperationsPanel({ executionPack, initialRecoveryId = '',
     setCommandConfirmed(false);
     operationIds.current = {};
   }, [selectedRecoveryId, selectedCommand]);
+
+  useEffect(() => {
+    resetCommand();
+    setSelectedRecoveryId(initialRecoveryId);
+    setCommandConfirmed(false);
+    operationIds.current = {};
+  }, [initialRecoveryId, resetCommand]);
 
   function selectIncident(recoveryId: string) {
     command.reset();

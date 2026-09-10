@@ -85,7 +85,7 @@ export function PoliciesPage() {
             ['Data Guard', selectedPack.executionSurfaces.join(' · ')],
             ['Capability Guard', selectedPack.key === 'digital-asset' ? 'APPROVED_RAIL · STATUS.READ' : 'CRM.READ · CASE.WRITE'],
             ['Action Guard', selectedPack.key === 'digital-asset' ? 'VERIFY · SUBMIT · RECONCILE' : 'READ · ANALYZE · DRAFT'],
-            ['Destination', selectedPack.destinationProfile[0]?.[1] ?? 'API 연결 대기'],
+            ['Destination', selectedPack.destinationProfile[0]?.[1] ?? '미설정'],
             ['Treatment', selectedPack.fieldTreatments.map(([, value]) => value).join(' · ')],
             ['Human Approval', selectedPack.key === 'digital-asset' ? 'LIMIT_CHANGE · RECONCILE_REQUIRED' : 'TRANSFER · CONTRACT_CHANGE'],
           ].map(([title, value]) => (

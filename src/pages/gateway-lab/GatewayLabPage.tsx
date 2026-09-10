@@ -182,7 +182,6 @@ export function GatewayLabPage() {
     return {
       field,
       requested: isApprovedScenario ? '요청' : '검토 요청',
-      retrieved: 'API 연결 대기',
       obligation,
       treatment: primaryTreatment,
     };
@@ -345,7 +344,6 @@ export function GatewayLabPage() {
             ['Workload', workloadId || '입력 대기'],
             ['Policy', execution.data?.created.policyVersion ?? '실행 대기'],
             ['Approval', execution.data?.trace.evidence.approvalReference ?? (approvalReference || '입력 대기')],
-            ['Valid Until', 'API 연결 대기'],
             ['Data Profile', selectedPack.scope],
             ['Destination', destinationProfileId || selectedPack.destinationProfile[0]?.[1] || '입력 대기'],
             ['Execution Pack', selectedPack.label],
@@ -456,7 +454,6 @@ export function GatewayLabPage() {
             <div className="field-treatment-head" role="row">
               <span>FIELD</span>
               <span>요청</span>
-              <span>조회 결과</span>
               <span>OBLIGATION</span>
               <span>TREATMENT</span>
             </div>
@@ -464,7 +461,6 @@ export function GatewayLabPage() {
               <div className="field-treatment-row" role="row" key={row.field}>
                 <strong>{row.field}</strong>
                 <StatusBadge tone={row.requested === '검토 요청' ? 'warning' : 'info'}>{row.requested}</StatusBadge>
-                <span>{row.retrieved}</span>
                 <span>{row.obligation}</span>
                 <StatusBadge tone={row.treatment.includes('BLOCK') || row.treatment.includes('DENY') ? 'danger' : row.treatment.includes('TOKEN') ? 'purple' : 'success'}>{row.treatment}</StatusBadge>
               </div>

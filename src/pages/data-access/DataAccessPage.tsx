@@ -1,4 +1,4 @@
-import { Boxes, LockKeyhole, Play, Search } from 'lucide-react';
+import { LockKeyhole, Play, Search } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { useContextPreview } from '../../features/workloads';
 import { normalizeApiError } from '../../shared/api/apiError';
@@ -68,10 +68,6 @@ export function DataAccessPage() {
           <BulletList items={selectedPack.evidenceChecks.map(([title, description]) => `${title}: ${description}`)} />
         </SectionCard>
       </div>
-
-      <SectionCard title="Workload Registry" description="현재 BE는 목록 API 없이 인증 Principal의 Workload Scope와 Runtime 검증만 제공합니다." actions={<button className="button button-secondary" type="button" disabled><Boxes size={15} />Workload 등록</button>}>
-        <EmptyState title="API 연결 대기" description="관리자용 Workload Registry Read Model이 구현되면 목록을 표시합니다." endpoint="Workload Registry API 미구현" />
-      </SectionCard>
 
       <div className="notice notice-info">
         <LockKeyhole size={17} />
