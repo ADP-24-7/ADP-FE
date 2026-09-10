@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useSearchParams as useRouterSearchParams } from 'react-router-dom';
 import { FileCheck2, LockKeyhole, RotateCcw, Search } from 'lucide-react';
 import { useAuditExecutions, useExecutionEvidence } from '../../features/audit-trace';
+import { AuditExportPanel } from '../../features/audit-export';
 import type { AuditSearchParams } from '../../features/audit-trace';
 import { normalizeApiError } from '../../shared/api/apiError';
 import { EmptyState, ErrorState, KeyValues, LoadingPanel, PackContextSummary, PageHeader, SearchAssistInput, SectionCard, StatusBadge } from '../../shared/components';
@@ -9,7 +10,7 @@ import { DEFAULT_TABLE_PAGE_SIZE } from '../../shared/config/pagination';
 import { useExecutionPack } from '../../shared/prototype';
 
 export function AuditPage() {
-  const [routeSearchParams] = useRouterSearchParams();
+  const [routeSearchParams, setRouteSearchParams] = useRouterSearchParams();
   const initialExecutionId = routeSearchParams.get('executionId') ?? '';
   const requestedSection = routeSearchParams.get('section');
   const investigationLabel = requestedSection === 'post-execution'
@@ -75,6 +76,10 @@ export function AuditPage() {
   function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmittedExecutionId('');
+    const nextRouteParams = new URLSearchParams(routeSearchParams);
+    nextRouteParams.delete('executionId');
+    nextRouteParams.delete('section');
+    setRouteSearchParams(nextRouteParams, { replace: true });
     setSearchParams({
       executionPack: selectedPack.apiValue,
       workloadId: workloadId.trim() || undefined,
@@ -92,11 +97,23 @@ export function AuditPage() {
     setFrom('');
     setTo('');
     setSubmittedExecutionId('');
+    const nextRouteParams = new URLSearchParams(routeSearchParams);
+    nextRouteParams.delete('executionId');
+    nextRouteParams.delete('section');
+    setRouteSearchParams(nextRouteParams, { replace: true });
     setSearchParams({ executionPack: selectedPack.apiValue, page: 0, size: DEFAULT_TABLE_PAGE_SIZE });
   }
 
   function changePage(page: number) {
     setSearchParams((current) => ({ ...current, page }));
+  }
+
+  function selectExecution(executionId: string) {
+    setSubmittedExecutionId(executionId);
+    const nextRouteParams = new URLSearchParams(routeSearchParams);
+    nextRouteParams.set('executionId', executionId);
+    nextRouteParams.delete('section');
+    setRouteSearchParams(nextRouteParams, { replace: true });
   }
 
   const activeFilters = [
@@ -171,7 +188,7 @@ export function AuditPage() {
                 type="button"
                 disabled={isRefreshing}
                 key={item.executionId}
-                onClick={() => setSubmittedExecutionId(item.executionId)}
+                onClick={() => selectExecution(item.executionId)}
               >
                 <span>{new Date(item.createdAt).toLocaleString('ko-KR')}</span>
                 <code>{item.executionId}</code>
@@ -196,52 +213,57 @@ export function AuditPage() {
           description="선택한 실행의 정책, 외부 전송과 복구 증적을 원문 없이 확인합니다."
           actions={evidence.data ? <StatusBadge tone="success">{evidence.data.runtimeStatus}</StatusBadge> : undefined}
         >
-          {evidence.isLoading ? <LoadingPanel label="감사 증적을 불러오는 중입니다" /> : evidence.isError ? (
-            <ErrorState description="선택한 실행의 감사 증적을 불러올 수 없습니다." onRetry={() => evidence.refetch()} compact />
-          ) : evidence.data ? (
+          {submittedExecutionId ? (
             <div className="audit-evidence-stack">
-              <div
-                ref={policyDecisionEvidenceRef}
-                id="policy-decision-evidence"
-                className={requestedSection === 'decision' ? 'anchored-section evidence-focus-section evidence-focus-section-active' : 'anchored-section evidence-focus-section'}
-                tabIndex={-1}
-                aria-label="Policy Decision Evidence"
-              >
-              <KeyValues items={[
-                ['Execution ID', evidence.data.executionId],
-                ['Trace ID', evidence.data.traceId],
-                ['Workload', evidence.data.workloadId],
-                ['Purpose', evidence.data.purposeCode],
-                ['Final Action', evidence.data.policy.finalAction ?? '—'],
-                ['Policy Version', evidence.data.policy.policyVersion ?? '—'],
-                ['Destination', evidence.data.egress.destinationProfileId ?? '—'],
-                ['Connector', evidence.data.egress.connectorStatus ?? '—'],
-                ['Recovery', String(evidence.data.recovery.recoveryStatus ?? '—')],
-                ['Export Digest', evidence.data.exportContentDigest],
-              ]} />
-              </div>
-              <div
-                ref={postExecutionEvidenceRef}
-                id="post-execution-evidence"
-                className={requestedSection === 'post-execution' || requestedSection === 'response-guard' ? 'anchored-section evidence-focus-section evidence-focus-section-active' : 'anchored-section evidence-focus-section'}
-                tabIndex={-1}
-                aria-label="우선 확인 Evidence"
-              >
-                <h3>External Execution & Response Evidence</h3>
-                <p className="helper-text">Provider 전송부터 Response Guard와 Controlled Delivery까지 검증합니다.</p>
-                <KeyValues items={[
-                  ['Destination Profile', evidence.data.egress.destinationProfileId ?? '—'],
-                  ['Outbound Guard', evidence.data.egress.outboundGuardStatus ?? '—'],
-                  ['Connector Status', evidence.data.egress.connectorStatus ?? '—'],
-                  ['Provider Request Digest', evidence.data.egress.providerRequestDigest ?? '—'],
-                  ['Provider Response Digest', evidence.data.egress.providerResponseDigest ?? '—'],
-                  ['Response Guard', evidence.data.egress.responseGuardStatus ?? '—'],
-                  ['Controlled Delivery', evidence.data.egress.controlledDeliveryStatus ?? '—'],
-                  ['Delivered Response Digest', evidence.data.egress.controlledDeliveryResponseDigest ?? '—'],
-                  ['Recovery Status', String(evidence.data.recovery.recoveryStatus ?? '—')],
-                  ['Status Query Evidence', String(evidence.data.recovery.statusQueryEvidenceDigest ?? '—')],
-                ]} />
-              </div>
+              <AuditExportPanel key={submittedExecutionId} executionId={submittedExecutionId} />
+              {evidence.isLoading ? <LoadingPanel label="감사 증적을 불러오는 중입니다" /> : evidence.isError ? (
+                <ErrorState description="상세 실행 증적은 승인 권한이 있는 운영자만 조회할 수 있습니다." onRetry={() => evidence.refetch()} compact />
+              ) : evidence.data ? (
+                <>
+                  <div
+                    ref={policyDecisionEvidenceRef}
+                    id="policy-decision-evidence"
+                    className={requestedSection === 'decision' ? 'anchored-section evidence-focus-section evidence-focus-section-active' : 'anchored-section evidence-focus-section'}
+                    tabIndex={-1}
+                    aria-label="Policy Decision Evidence"
+                  >
+                  <KeyValues items={[
+                    ['Execution ID', evidence.data.executionId],
+                    ['Trace ID', evidence.data.traceId],
+                    ['Workload', evidence.data.workloadId],
+                    ['Purpose', evidence.data.purposeCode],
+                    ['Final Action', evidence.data.policy.finalAction ?? '—'],
+                    ['Policy Version', evidence.data.policy.policyVersion ?? '—'],
+                    ['Destination', evidence.data.egress.destinationProfileId ?? '—'],
+                    ['Connector', evidence.data.egress.connectorStatus ?? '—'],
+                    ['Recovery', String(evidence.data.recovery.recoveryStatus ?? '—')],
+                    ['Export Digest', evidence.data.exportContentDigest],
+                  ]} />
+                  </div>
+                  <div
+                    ref={postExecutionEvidenceRef}
+                    id="post-execution-evidence"
+                    className={requestedSection === 'post-execution' || requestedSection === 'response-guard' ? 'anchored-section evidence-focus-section evidence-focus-section-active' : 'anchored-section evidence-focus-section'}
+                    tabIndex={-1}
+                    aria-label="우선 확인 Evidence"
+                  >
+                    <h3>External Execution & Response Evidence</h3>
+                    <p className="helper-text">Provider 전송부터 Response Guard와 Controlled Delivery까지 검증합니다.</p>
+                    <KeyValues items={[
+                      ['Destination Profile', evidence.data.egress.destinationProfileId ?? '—'],
+                      ['Outbound Guard', evidence.data.egress.outboundGuardStatus ?? '—'],
+                      ['Connector Status', evidence.data.egress.connectorStatus ?? '—'],
+                      ['Provider Request Digest', evidence.data.egress.providerRequestDigest ?? '—'],
+                      ['Provider Response Digest', evidence.data.egress.providerResponseDigest ?? '—'],
+                      ['Response Guard', evidence.data.egress.responseGuardStatus ?? '—'],
+                      ['Controlled Delivery', evidence.data.egress.controlledDeliveryStatus ?? '—'],
+                      ['Delivered Response Digest', evidence.data.egress.controlledDeliveryResponseDigest ?? '—'],
+                      ['Recovery Status', String(evidence.data.recovery.recoveryStatus ?? '—')],
+                      ['Status Query Evidence', String(evidence.data.recovery.statusQueryEvidenceDigest ?? '—')],
+                    ]} />
+                  </div>
+                </>
+              ) : null}
             </div>
           ) : (
             <EmptyState icon={Search} title="실행 선택 대기" description="왼쪽 감사 실행 목록에서 확인할 실행을 선택하세요." />
