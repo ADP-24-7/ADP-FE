@@ -3,13 +3,25 @@ import { useEffect, useState } from 'react';
 import { normalizeApiError } from '../../../shared/api/apiError';
 import { EmptyState, ErrorState, KeyValues, LoadingPanel, SectionCard, StatusBadge } from '../../../shared/components';
 import { useReviewQueue, useReviewQueueDetail } from '../hooks/useReviewQueue';
-import type { ReviewExecutionPack, ReviewSource } from '../model/types';
+import type { ReviewExecutionPack, ReviewNextAction, ReviewSource } from '../model/types';
 
 function sourceTone(source: ReviewSource) {
   if (source === 'RECOVERY') return 'danger' as const;
   if (source === 'POST_EXECUTION') return 'warning' as const;
   return 'info' as const;
 }
+
+const sourceLabels: Record<ReviewSource, string> = {
+  POLICY: '정책 판단',
+  RECOVERY: '복구 상태',
+  POST_EXECUTION: '실행 결과 증적',
+};
+
+const actionLabels: Record<ReviewNextAction, string> = {
+  INSPECT_TRACE: 'Decision Trace 확인',
+  RECONCILE_EXTERNAL_STATUS: '외부 상태 확인',
+  INSPECT_POST_EXECUTION_EVIDENCE: '실행 결과 증적 검토',
+};
 
 type ReviewQueuePanelProps = {
   executionPack: ReviewExecutionPack;
@@ -53,15 +65,16 @@ export function ReviewQueuePanel({ executionPack, onOpenTrace, onOpenRecovery }:
             <button
               className={`table-row table-recovery${selectedExecutionId === item.executionId ? ' active' : ''}`}
               type="button"
+              disabled={queue.isFetching}
               key={item.executionId}
               onClick={() => setSelectedExecutionId(item.executionId)}
             >
               <span>{new Date(item.updatedAt).toLocaleString('ko-KR')}</span>
               <span><code>{item.executionId}</code><small>{item.executionPack}</small></span>
               <span>{item.workloadId}<small>{item.purposeCode}</small></span>
-              <StatusBadge tone={sourceTone(item.reviewSource)}>{item.reviewSource}</StatusBadge>
-              <span>{item.nextAction}</span>
-              <span>{item.reasonCodes[0] ?? '—'}</span>
+              <StatusBadge tone={sourceTone(item.reviewSource)}>{sourceLabels[item.reviewSource]}</StatusBadge>
+              <span>{actionLabels[item.nextAction]}</span>
+              <span>{item.reasonCodes[0] ?? '—'}{item.reasonCodes.length > 1 ? ` +${item.reasonCodes.length - 1}` : ''}</span>
             </button>
           )) : (
             <EmptyState icon={Search} title="검토 대기 실행이 없습니다" description={`${executionPack} 범위와 현재 권한에 해당하는 REVIEW_REQUIRED 실행이 없습니다.`} endpoint="GET /api/admin/review-queue" />
@@ -87,8 +100,8 @@ export function ReviewQueuePanel({ executionPack, onOpenTrace, onOpenRecovery }:
               ['Execution ID', detail.data.executionId],
               ['Trace ID', detail.data.traceId],
               ['Pack / Workload', `${detail.data.executionPack} · ${detail.data.workloadId}`],
-              ['Review Source', detail.data.reviewSource],
-              ['Next Action', detail.data.nextAction],
+              ['Review Sources', detail.data.reviewSources.map((source) => sourceLabels[source]).join(' · ')],
+              ['Next Actions', detail.data.nextActions.map((action) => actionLabels[action]).join(' · ')],
               ['Reason Codes', detail.data.reasonCodes.join(' · ') || '—'],
               ['Connector / Response Guard', `${detail.data.connectorStatus ?? '—'} · ${detail.data.responseGuardStatus ?? '—'}`],
               ['Recovery', detail.data.recoveryStatus ?? '—'],
@@ -96,10 +109,17 @@ export function ReviewQueuePanel({ executionPack, onOpenTrace, onOpenRecovery }:
               ['Mismatch Fields', detail.data.mismatchedFields.join(' · ') || '—'],
             ]} />
             <div className="section-action-group">
-              <button className="button button-primary" type="button" onClick={() => onOpenTrace(detail.data.executionId)}>
-                <Eye size={14} />Decision Trace
-              </button>
-              {detail.data.recoveryId ? (
+              {detail.data.nextActions.includes('INSPECT_TRACE') ? (
+                <button className="button button-primary" type="button" onClick={() => onOpenTrace(detail.data.executionId)}>
+                  <Eye size={14} />Decision Trace
+                </button>
+              ) : null}
+              {detail.data.nextActions.includes('INSPECT_POST_EXECUTION_EVIDENCE') ? (
+                <button className="button button-secondary" type="button" onClick={() => onOpenTrace(detail.data.executionId)}>
+                  <Eye size={14} />실행 결과 증적
+                </button>
+              ) : null}
+              {detail.data.nextActions.includes('RECONCILE_EXTERNAL_STATUS') && detail.data.recoveryId ? (
                 <button className="button button-secondary" type="button" onClick={() => onOpenRecovery(detail.data.recoveryId!)}>
                   <RefreshCw size={14} />Recovery Incident
                 </button>

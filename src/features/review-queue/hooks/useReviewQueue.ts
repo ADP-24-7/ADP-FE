@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { getReviewQueue, getReviewQueueDetail } from '../api/reviewQueueApi';
 import type { ReviewQueueSearchParams } from '../model/types';
 
@@ -13,7 +13,6 @@ export function useReviewQueue(params: ReviewQueueSearchParams) {
     queryKey: reviewQueueKeys.list(params),
     queryFn: () => getReviewQueue(params),
     retry: false,
-    placeholderData: keepPreviousData,
   });
 }
 

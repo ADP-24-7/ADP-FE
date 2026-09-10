@@ -9,12 +9,17 @@ function renderPanel(
   onOpenRecovery = vi.fn(),
 ) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  render(
+  const view = (executionPack: 'AI' | 'DIGITAL_ASSET') => (
     <QueryClientProvider client={queryClient}>
-      <ReviewQueuePanel executionPack="AI" onOpenTrace={onOpenTrace} onOpenRecovery={onOpenRecovery} />
-    </QueryClientProvider>,
+      <ReviewQueuePanel key={executionPack} executionPack={executionPack} onOpenTrace={onOpenTrace} onOpenRecovery={onOpenRecovery} />
+    </QueryClientProvider>
   );
-  return { onOpenTrace, onOpenRecovery };
+  const rendered = render(view('AI'));
+  return {
+    onOpenTrace,
+    onOpenRecovery,
+    rerenderPack: (executionPack: 'AI' | 'DIGITAL_ASSET') => rendered.rerender(view(executionPack)),
+  };
 }
 
 describe('ReviewQueuePanel', () => {
@@ -28,5 +33,15 @@ describe('ReviewQueuePanel', () => {
 
     await user.click(screen.getByRole('button', { name: 'Decision Trace' }));
     expect(onOpenTrace).toHaveBeenCalledWith('exec-review-contract');
+  });
+
+  it('removes previous pack rows immediately when the operation scope changes', async () => {
+    const { rerenderPack } = renderPanel();
+
+    expect(await screen.findByRole('button', { name: /exec-review-contract/ })).toBeInTheDocument();
+    rerenderPack('DIGITAL_ASSET');
+
+    expect(screen.queryByRole('button', { name: /exec-review-contract/ })).not.toBeInTheDocument();
+    expect(await screen.findByText('검토 대기 실행이 없습니다')).toBeInTheDocument();
   });
 });

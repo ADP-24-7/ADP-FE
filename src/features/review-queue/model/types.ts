@@ -13,7 +13,9 @@ export type ReviewQueueItem = {
   runtimeStatus: 'REVIEW_REQUIRED';
   finalAction: string | null;
   reviewSource: ReviewSource;
+  reviewSources: ReviewSource[];
   nextAction: ReviewNextAction;
+  nextActions: ReviewNextAction[];
   reasonCodes: string[];
   recoveryId: string | null;
   recoveryStatus: string | null;

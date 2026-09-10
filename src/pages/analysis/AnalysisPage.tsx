@@ -54,6 +54,7 @@ export function AnalysisPage() {
       ) : null}
 
       <ReviewQueuePanel
+        key={selectedPack.key}
         executionPack={selectedPack.key === 'digital-asset' ? 'DIGITAL_ASSET' : 'AI'}
         onOpenTrace={(executionId) => navigate(`/audit?executionId=${encodeURIComponent(executionId)}`)}
         onOpenRecovery={(recoveryId) => setSearchParams({ recoveryId }, { replace: true })}
