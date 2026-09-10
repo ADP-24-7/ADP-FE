@@ -168,7 +168,6 @@ export function ConsoleLayout() {
                     <span>기관 <code>{auth.data?.institutionId ?? '—'}</code></span>
                     <span>권한 {formatRoles(auth.data?.roles)}</span>
                     <span>Workload {auth.data ? `${auth.data.workloadIds.length}개` : '—'}</span>
-                    {auth.data?.roles.length ? <small>기술 Role · {auth.data.roles.join(' · ')}</small> : null}
                   </div>
                   <button type="button" role="menuitem" onClick={() => { setIsOperatorMenuOpen(false); navigate('/identities'); }}>권한 상세 보기 <span aria-hidden="true">→</span></button>
                   <button

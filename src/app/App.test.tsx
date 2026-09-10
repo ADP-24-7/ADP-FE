@@ -53,7 +53,8 @@ describe('App', () => {
 
     expect(screen.getByText(/계정 ID/)).toHaveTextContent('operator-local');
     expect(screen.getByText(/기관/)).toHaveTextContent('institution_local');
-    expect(screen.getByText(/기술 Role/)).toHaveTextContent('OPERATOR · PRIVILEGED_OPERATOR');
+    expect(screen.queryByText(/기술 Role/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/PRIVILEGED_OPERATOR/)).not.toBeInTheDocument();
     await user.click(screen.getByRole('menuitem', { name: /권한 상세 보기/ }));
 
     expect(await screen.findByRole('heading', { name: 'Identity · 권한' })).toBeInTheDocument();
@@ -98,6 +99,28 @@ describe('App', () => {
     expect(screen.getByRole('textbox', { name: 'Approved Transaction Reference' })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Requested Amount (Atomic Units)' })).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'Asset Kind' })).toHaveValue('FUNGIBLE_TOKEN');
+  });
+
+  it('keeps the local runtime harness read-only for an auditor session', async () => {
+    const user = userEvent.setup();
+    queryClient.clear();
+    server.use(http.get('/api/auth/me', () => HttpResponse.json({
+      principalId: 'auditor-local',
+      principalType: 'USER',
+      displayName: 'Local Auditor',
+      institutionId: 'institution_local',
+      roles: ['AUDITOR'],
+      workloadIds: ['*'],
+      subjectAuthorizationRequired: false,
+    })));
+
+    render(<App />);
+    await user.click(await screen.findByRole('link', { name: 'Gateway Lab' }));
+
+    expect(await screen.findByRole('heading', { name: 'Gateway Lab' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '실행 권한 없음' })).toBeDisabled();
+    expect(screen.getAllByText('현재 운영자에게 Gateway 실행 권한이 없습니다.').length).toBeGreaterThan(0);
+    queryClient.clear();
   });
 
   it('separates viewing context from operations data scope', async () => {

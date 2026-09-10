@@ -3,7 +3,8 @@ import { BriefcaseBusiness, LockKeyhole, Play, RotateCcw, ShieldCheck, Sparkles,
 import { useEffect, useState, type FormEvent } from 'react';
 import { createDigitalAssetRuntimeInput } from '../../features/digital-asset';
 import type { DigitalAssetKind, DigitalAssetOperation } from '../../features/digital-asset';
-import { createRuntimeExecution, getRuntimeExecutionTrace, runtimeExecutionCapabilities } from '../../features/runtime-execution';
+import { useAuthContext } from '../../features/auth';
+import { createRuntimeExecution, getRuntimeExecutionTrace, hasRuntimeExecutionRole, runtimeExecutionCapabilities } from '../../features/runtime-execution';
 import type { RuntimeExecutionRequest, RuntimeExecutionStatus } from '../../features/runtime-execution';
 import { normalizeApiError } from '../../shared/api/apiError';
 import { BulletList, EmptyState, ErrorState, KeyValues, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
@@ -130,6 +131,7 @@ function createIdempotencyKey() {
 
 export function GatewayLabPage() {
   const { selectedPack } = useExecutionPack();
+  const auth = useAuthContext();
   const [scenarioMode, setScenarioMode] = useState<'approved' | 'scope-change' | 'destination-risk' | 'response-risk'>('approved');
   const [requesterRole, setRequesterRole] = useState<'staff' | 'reviewer'>('staff');
   const [institutionId, setInstitutionId] = useState('');
@@ -159,7 +161,7 @@ export function GatewayLabPage() {
   const [selectedCheckpoint, setSelectedCheckpoint] = useState('01');
 
   const checkpoint = checkpointDetails.find((item) => item.number === selectedCheckpoint) ?? checkpointDetails[0];
-  const canExecute = runtimeExecutionCapabilities.canExecute;
+  const canExecute = runtimeExecutionCapabilities.canExecute && hasRuntimeExecutionRole(auth.data?.roles);
   const targetPipeline = createTargetPipeline(selectedPack);
   const isDigitalAsset = selectedPack.key === 'digital-asset';
   const isApprovedScenario = scenarioMode === 'approved';
@@ -443,7 +445,7 @@ export function GatewayLabPage() {
             </div>
             <button className="button button-primary" type="submit" disabled={!canExecute || execution.isPending} title={canExecute ? '정책 검증 후 실행' : '실행 권한 필요'}>
               <Play size={16} fill="currentColor" />
-              {execution.isPending ? '실행 중...' : canExecute ? '정책 검증 및 실행' : 'Auth 연결 후 실행'}
+              {execution.isPending ? '실행 중...' : canExecute ? '정책 검증 및 실행' : '실행 권한 없음'}
             </button>
           </form>
         </SectionCard>

@@ -55,8 +55,8 @@ export async function login(principalId: string, password: string) {
 }
 
 export async function logout() {
-  const csrf = await getCsrfToken();
   try {
+    const csrf = await getCsrfToken();
     await httpClient.post('/api/auth/logout', undefined, {
       headers: { [csrf.headerName]: csrf.token },
     });
