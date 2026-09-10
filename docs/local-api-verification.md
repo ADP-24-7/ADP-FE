@@ -2,29 +2,28 @@
 
 ## Verified Baseline
 
-- Date: 2026-09-09
-- Backend main baseline: `ADP-BE origin/main@d937f64`
-- Database: fresh Docker PostgreSQL volume in Compose project `adp-fe-ops`
-- Flyway: fresh migration through V39
-- Frontend baseline: `ADP-FE origin/main@99c00f2`
-- Frontend branch: `feat/fe-operations-final-integration`
+- Date: 2026-09-10
+- Backend main baseline: `ADP-BE origin/main@8ffa729`
+- Database: existing local Docker volume `adp-be_adp-be-postgres-data`
+- Frontend baseline: `ADP-FE origin/main@3980472`
+- Frontend branch: `feat/fe-interpreted-operations-monitoring`
 
-BE #34~#40의 Governance, Observability, Recovery Operations 계약을 실제 최신 BE와 빈 DB에서 검증했다. FE 검증 과정에서 BE 파일은 수정하지 않았다.
+최신 BE의 Governance, Observability, Recovery Operations 계약을 실제 기존 로컬 DB 데이터로 검증했다. FE 검증 과정에서 BE 코드, DB 데이터와 Flyway 이력은 수정하지 않았다.
 
 ## Latest Operations Verification
 
 | Flow | Result |
 | --- | --- |
 | `GET /actuator/health/readiness` | 200, `UP` |
-| `GET /api/admin/operations/summary?windowMinutes=60` | 200, `adp-operations-summary/v1`, 전체 집계값 `0` |
-| `GET /api/admin/operations/summary?windowMinutes=1440` | 200, 브라우저 집계 범위 변경 후 즉시 재조회 |
-| `GET /api/admin/operations/policy-events?page=0&size=20` | 200, 빈 DB에서 `items: []`, `total: 0` |
-| `GET /api/admin/recovery/incidents?page=0&size=20` | 200, 빈 DB에서 `items: []`, `totalElements: 0` |
+| `GET /api/admin/operations/summary?windowMinutes=1440` | 200, `adp-operations-summary/v1`; Recovery backlog 1, manual review 3, exhausted 3 |
+| `GET /api/admin/operations/policy-events?page=0&size=5` | 200, 실제 Lifecycle/Selection 이력 `total: 15` |
+| `GET /api/admin/recovery/incidents?page=0&size=5` | 200, `SENT_UNKNOWN`, `EXHAUSTED`, `RETRY_SCHEDULED` 포함 `totalElements: 12` |
+| `GET /api/admin/audit/executions?page=0&size=5` | 200, BLOCKED/COMPLETED 실행 포함 `totalElements: 177` |
 | FE `/overview → /monitoring → /analysis` 이동 | 새로고침 없는 React Router 전환 |
 | AI · Agent → Digital Asset 전환 | 경로 유지, 선택 Pack 문맥만 즉시 변경 |
 | 모바일 390×844 | 내비게이션과 운영 카드가 겹치지 않고 단일 열 배치 |
 
-Operations API는 Local BFF가 서버 측 운영자 인증 헤더를 부착해 호출했다. 브라우저 번들에는 API Key나 서비스 Credential을 추가하지 않았다. Recovery 명령은 Incident가 없는 현재 DB에서 비활성 상태를 유지한다.
+Operations API는 Local BFF가 서버 측 운영자 인증 헤더를 부착해 호출했다. 브라우저 번들에는 API Key나 서비스 Credential을 추가하지 않았다. Monitoring은 실제 Summary와 Recovery Incident만 사용하며 별도 Mock 수치나 Trace ID를 생성하지 않는다.
 
 ## Verified Flows
 
@@ -142,4 +141,4 @@ processingContexts: DIGITAL_ASSET
 
 ## Environment Note
 
-기존 공유 Docker DB에는 V23 Flyway checksum mismatch가 있어 데이터를 변경하거나 repair하지 않았다. 검증은 새 Compose 프로젝트와 새 볼륨으로 수행했다. 이 문제는 기존 DB migration history와 현재 BE migration 파일의 정합성을 별도로 확인해야 한다.
+기존 공유 Docker DB에는 현재 파일과 적용 이력 사이 V40/V41 Flyway checksum mismatch가 있다. DB repair나 volume reset은 수행하지 않았으며, 로컬 통합 확인 동안에만 `SPRING_FLYWAY_VALIDATE_ON_MIGRATE=false` 임시 Compose override를 사용했다. 실제 개발 기준으로 채택하기 전에 migration history와 현재 migration 파일의 정합성을 BE에서 별도로 해결해야 한다.

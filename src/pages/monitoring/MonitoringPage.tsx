@@ -1,9 +1,19 @@
-import { Activity, AlertTriangle, History, RefreshCw, Search, ShieldAlert, ShieldCheck, Workflow } from 'lucide-react';
+import { History, RefreshCw, Search } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
-import { useOperationsSummary, usePolicyOperationEvents } from '../../features/operations-monitoring';
+import {
+  ActionableIssueList,
+  InterpretedMetricCard,
+  OperationsBrief,
+  presentOperationsMonitoring,
+  presentRecoveryIssues,
+  RuntimeStageHealth,
+  useOperationsSummary,
+  usePolicyOperationEvents,
+} from '../../features/operations-monitoring';
 import type { PolicyEventCategory, PolicyOperationEventParams } from '../../features/operations-monitoring';
+import { useRecoveryIncidents } from '../../features/recovery-operations';
 import { normalizeApiError } from '../../shared/api/apiError';
-import { EmptyState, ErrorState, LoadingPanel, MetricCard, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
+import { EmptyState, ErrorState, LoadingPanel, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
 import { useExecutionPack } from '../../shared/prototype';
 
 export function MonitoringPage() {
@@ -15,10 +25,13 @@ export function MonitoringPage() {
   const [to, setTo] = useState('');
   const [eventParams, setEventParams] = useState<PolicyOperationEventParams>({ page: 0, size: 20 });
   const summary = useOperationsSummary(windowMinutes);
+  const recovery = useRecoveryIncidents({ page: 0, size: 20 });
   const events = usePolicyOperationEvents(eventParams);
-  const metricState = summary.isLoading ? 'loading' : summary.isError ? 'error' : 'value';
+  const monitoringView = summary.data ? presentOperationsMonitoring(summary.data, recovery.data?.items ?? []) : null;
+  const recoveryIssues = presentRecoveryIssues(recovery.data?.items ?? []);
   const totalPages = events.data ? Math.ceil(events.data.total / events.data.size) : 0;
   const eventsRefreshing = events.isFetching && !events.isLoading;
+  const summaryError = summary.isError ? normalizeApiError(summary.error) : null;
 
   function searchEvents(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -57,50 +70,78 @@ export function MonitoringPage() {
         dataScope="전체 권한 허용 Workload · Pack 필터 미지원"
       />
 
-      <SectionCard
-        title="Operations Summary"
-        description="브라우저가 Prometheus를 직접 조회하지 않고 BE의 scoped Read Model을 사용합니다."
-        actions={(
-          <label className="inline-select">
-            <span>집계 범위</span>
-            <select value={windowMinutes} onChange={(event) => setWindowMinutes(Number(event.target.value))} aria-label="Operations 집계 범위">
-              <option value={15}>최근 15분</option>
-              <option value={60}>최근 60분</option>
-              <option value={360}>최근 6시간</option>
-              <option value={1440}>최근 24시간</option>
-            </select>
-          </label>
-        )}
-      >
-        <div className="metric-grid metric-grid-six">
-          <MetricCard label="Runtime Total" value={summary.data?.runtime.total} description="지정 시간창 전체" state={metricState} icon={Activity} tone="blue" />
-          <MetricCard label="Completed" value={summary.data?.runtime.completed} description="정상 종결" state={metricState} icon={ShieldCheck} tone="green" />
-          <MetricCard label="Blocked" value={summary.data?.runtime.blocked} description="정책 차단" state={metricState} icon={ShieldAlert} tone="red" />
-          <MetricCard label="Recovery Backlog" value={summary.data?.recovery.backlog} description="처리 대기" state={metricState} icon={Workflow} tone="purple" />
-          <MetricCard label="Policy Drift" value={summary.data?.policy.driftedSelections} description="선택 불일치" state={metricState} icon={AlertTriangle} tone="amber" />
-          <MetricCard label="Denied Attempts" value={summary.data?.security.deniedAttempts} description="보안 거부" state={metricState} icon={ShieldAlert} tone="red" />
+      <div className="monitoring-control-row">
+        <div>
+          <strong>운영 지표 해석</strong>
+          <span>Prometheus를 브라우저에서 직접 조회하지 않고 BE의 권한 범위 Read Model만 사용합니다.</span>
         </div>
-        {summary.isError ? <ErrorState description={normalizeApiError(summary.error).message} onRetry={() => summary.refetch()} /> : null}
-        {summary.data ? (
-          <div className="operations-health-grid">
-            <article>
-              <span>Recovery</span>
-              <strong>{summary.data.recovery.manualReview} review · {summary.data.recovery.exhausted} exhausted</strong>
-              <small>{summary.data.recovery.completedOperations} completed operations · {summary.data.recovery.staleOperations} stale</small>
-            </article>
-            <article>
-              <span>Policy</span>
-              <strong>{summary.data.policy.currentSelections} selections · {summary.data.policy.driftedSelections} drift</strong>
-              <small>{summary.data.policy.activations} activation · {summary.data.policy.rollbacks} rollback</small>
-            </article>
-            <article>
-              <span>Security</span>
-              <strong>{summary.data.security.deniedAttempts} denied attempts</strong>
-              <small>{summary.data.security.institutionScopeMismatch} scope mismatch · {summary.data.security.authorizationPolicyDenied} policy denied</small>
-            </article>
+        <label className="inline-select">
+          <span>집계 범위</span>
+          <select value={windowMinutes} onChange={(event) => setWindowMinutes(Number(event.target.value))} aria-label="Operations 집계 범위">
+            <option value={15}>최근 15분</option>
+            <option value={60}>최근 60분</option>
+            <option value={360}>최근 6시간</option>
+            <option value={1440}>최근 24시간</option>
+          </select>
+        </label>
+      </div>
+
+      {summary.isLoading ? <LoadingPanel label="운영 요약을 불러오는 중입니다" /> : summaryError?.status === 403 ? (
+        <EmptyState title="운영 지표 조회 권한이 없습니다" description="현재 관리자 계정에는 Operations Read Model 조회 권한이 없습니다." endpoint="GET /api/admin/operations/summary" />
+      ) : summaryError ? (
+        <ErrorState description={summaryError.message} onRetry={() => summary.refetch()} />
+      ) : monitoringView ? (
+        <>
+          <OperationsBrief brief={monitoringView.brief} />
+
+          <SectionCard title="해석형 운영 지표" description="절대 건수의 의미와 영향, 다음 조치를 함께 표시합니다. 기준선이 없는 값은 증감이나 이상으로 판정하지 않습니다.">
+            <div className="interpreted-metric-grid">
+              {monitoringView.metrics.map((item) => (
+                <InterpretedMetricCard
+                  key={item.id}
+                  metric={item}
+                  endpoint="GET /api/admin/operations/summary"
+                  windowMinutes={summary.data?.windowMinutes ?? windowMinutes}
+                />
+              ))}
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Runtime 단계별 상태" description="현재 Summary가 제공하는 근거만 사용합니다. 단계별 집계가 없는 영역은 데이터 부족으로 표시합니다.">
+            <RuntimeStageHealth stages={monitoringView.stages} />
+          </SectionCard>
+        </>
+      ) : null}
+
+      <div className="content-grid content-grid-wide-left">
+        <SectionCard
+          title="조치 대상 복구 건"
+          description="실제 Recovery Incident 중 대사가 끝나지 않은 항목입니다. SENT_UNKNOWN은 재전송 전에 외부 상태 확인이 우선입니다."
+          actions={<StatusBadge tone={recovery.isError ? 'danger' : recovery.isFetching ? 'warning' : 'info'}>{recovery.isError ? 'RECOVERY ERROR' : recovery.isFetching ? 'REFRESHING' : `${recovery.data?.totalElements ?? 0} TOTAL`}</StatusBadge>}
+        >
+          {recovery.isLoading ? <LoadingPanel label="복구 인시던트를 불러오는 중입니다" /> : recovery.isError ? (
+            normalizeApiError(recovery.error).status === 403
+              ? <EmptyState compact title="복구 인시던트 조회 권한이 없습니다" description="요약 지표와 별개로 개별 Recovery 정보는 현재 권한으로 조회할 수 없습니다." />
+              : <ErrorState description={normalizeApiError(recovery.error).message} onRetry={() => recovery.refetch()} />
+          ) : <ActionableIssueList issues={recoveryIssues} />}
+        </SectionCard>
+
+        <SectionCard title="관측 범위 안내" description="현재 계약으로 판정할 수 있는 범위와 추가 데이터가 필요한 단계를 구분합니다.">
+          <div className="monitoring-scope-note">
+            <strong>과도한 판정을 하지 않습니다</strong>
+            <p>BE 응답에는 시계열 기준선, 임계치 값, 데이터 출처 모드가 없습니다. 따라서 증가율·이상 탐지·LIVE/SYNTHETIC 여부를 FE가 추정하지 않습니다.</p>
+            <details className="technical-details">
+              <summary>현재 데이터 계약</summary>
+              <div>
+                <span>Summary</span><code>adp-operations-summary/v1</code>
+                <span>Recovery</span><code>GET /api/admin/recovery/incidents</code>
+                <span>Prometheus</span><p>BE 내부 수집·집계 전용</p>
+                <span>Pack Filter</span><p>미지원 · 전체 권한 허용 Workload</p>
+              </div>
+            </details>
           </div>
-        ) : null}
-      </SectionCard>
+        </SectionCard>
+      </div>
 
       <SectionCard
         className="search-assist-card"
@@ -152,9 +193,6 @@ export function MonitoringPage() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Security Finding Detail" description="개별 거부 사건과 Trace를 연결하는 상세 Read Model" actions={<StatusBadge>API 대기</StatusBadge>}>
-        <EmptyState icon={ShieldAlert} title="상세 Finding API 연결 대기" description="Operations Summary는 집계만 제공합니다. 개별 Finding 목록은 BE Controller가 추가될 때 연결합니다." endpoint="Security Finding list/detail API 미구현" />
-      </SectionCard>
     </section>
   );
 }
