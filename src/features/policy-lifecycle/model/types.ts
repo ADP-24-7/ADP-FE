@@ -1,6 +1,7 @@
 export type ExecutionPackType = 'COMMON' | 'AI' | 'DIGITAL_ASSET';
 export type PolicyLayer = 'REGULATORY' | 'INSTITUTION' | 'WORKLOAD' | 'DESTINATION';
 export type PolicyLifecycleStage = 'PROJECT_PROVISIONAL' | 'DRAFT' | 'VALIDATED' | 'CANDIDATE' | 'REPLAY' | 'SHADOW' | 'APPROVED' | 'ACTIVE' | 'SUPERSEDED' | 'REVIEW' | 'ROLLED_BACK';
+export type PolicyLifecycleNextAction = 'VALIDATE' | 'PROMOTE_CANDIDATE' | 'START_REPLAY' | 'RUN_SHADOW' | 'APPROVE' | 'ACTIVATE' | 'ROLLBACK';
 
 export type PolicyLifecycleRecord = {
   artifactId: string;
@@ -20,6 +21,8 @@ export type PolicyLifecycleRecord = {
 
 export type PolicyArtifactSummary = Omit<PolicyLifecycleRecord, 'institutionId'> & {
   currentSelection: boolean;
+  actionable: boolean;
+  nextAction: PolicyLifecycleNextAction | null;
 };
 
 export type PolicyArtifactPage = {
@@ -34,7 +37,7 @@ export type PolicyArtifactSearchParams = {
   lifecycleStage?: PolicyLifecycleStage;
   workloadId?: string;
   query?: string;
-  attentionRequired?: boolean;
+  actionableOnly?: boolean;
   limit?: number;
   offset?: number;
 };
@@ -131,5 +134,9 @@ export type PolicyArtifactHistory = {
   artifact: PolicyLifecycleRecord;
   currentSelection: boolean;
   transitions: PolicyLifecycleTransitionEvent[];
+  transitionTotal: number;
+  transitionHasMore: boolean;
   shadowEvaluations: PolicyShadowEvidence[];
+  shadowTotal: number;
+  shadowHasMore: boolean;
 };

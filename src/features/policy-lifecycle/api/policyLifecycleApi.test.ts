@@ -35,14 +35,18 @@ describe('policyLifecycleApi', () => {
   });
 
   it('searches scoped policy artifacts and loads their history', async () => {
-    await expect(searchPolicyArtifacts({ executionPack: 'AI', attentionRequired: false, limit: 10, offset: 0 }))
+    await expect(searchPolicyArtifacts({ executionPack: 'AI', actionableOnly: false, limit: 10, offset: 0 }))
       .resolves.toMatchObject({
         total: 1,
-        items: [{ artifactId: 'active-policy-contract', currentSelection: true }],
+        items: [{ artifactId: 'active-policy-contract', currentSelection: true, actionable: false }],
       });
     await expect(getPolicyArtifactHistory('active-policy-contract', '1.0.0')).resolves.toMatchObject({
       currentSelection: true,
       transitions: [{ toStage: 'ACTIVE', reasonCode: 'ACTIVATION_APPROVED' }],
+      transitionTotal: 1,
+      transitionHasMore: false,
+      shadowTotal: 0,
+      shadowHasMore: false,
     });
   });
 

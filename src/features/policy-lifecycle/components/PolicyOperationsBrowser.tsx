@@ -7,7 +7,7 @@ import type { ExecutionPackType, PolicyArtifactSummary, PolicyLifecycleStage } f
 
 const PAGE_SIZE = 10;
 const stages: PolicyLifecycleStage[] = [
-  'DRAFT', 'VALIDATED', 'CANDIDATE', 'REPLAY', 'SHADOW', 'APPROVED', 'ACTIVE', 'REVIEW', 'ROLLED_BACK',
+  'DRAFT', 'VALIDATED', 'CANDIDATE', 'REPLAY', 'SHADOW', 'APPROVED', 'ACTIVE', 'SUPERSEDED', 'REVIEW', 'ROLLED_BACK',
 ];
 
 type Props = {
@@ -15,28 +15,47 @@ type Props = {
   selectedArtifactId: string;
   selectedArtifactVersion: string;
   onSelect: (artifact: PolicyArtifactSummary) => void;
+  onClearSelection: () => void;
 };
 
 export function PolicyOperationsBrowser({
-  executionPack, selectedArtifactId, selectedArtifactVersion, onSelect,
+  executionPack, selectedArtifactId, selectedArtifactVersion, onSelect, onClearSelection,
 }: Props) {
   const [queryInput, setQueryInput] = useState('');
   const [query, setQuery] = useState('');
   const [stage, setStage] = useState<PolicyLifecycleStage | ''>('');
-  const [attentionRequired, setAttentionRequired] = useState(false);
+  const [actionableOnly, setActionableOnly] = useState(false);
   const [offset, setOffset] = useState(0);
   const artifacts = usePolicyArtifacts({
     executionPack, lifecycleStage: stage || undefined, query: query || undefined,
-    attentionRequired, limit: PAGE_SIZE, offset,
+    actionableOnly, limit: PAGE_SIZE, offset,
   });
   const history = usePolicyArtifactHistory(selectedArtifactId, selectedArtifactVersion);
 
-  useEffect(() => setOffset(0), [executionPack, stage, attentionRequired]);
+  useEffect(() => setOffset(0), [executionPack]);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    onClearSelection();
     setOffset(0);
     setQuery(queryInput.trim());
+  }
+
+  function changeStage(value: PolicyLifecycleStage | '') {
+    onClearSelection();
+    setOffset(0);
+    setStage(value);
+  }
+
+  function changeActionableOnly(value: boolean) {
+    onClearSelection();
+    setOffset(0);
+    setActionableOnly(value);
+  }
+
+  function changePage(nextOffset: number) {
+    onClearSelection();
+    setOffset(nextOffset);
   }
 
   return (
@@ -47,8 +66,8 @@ export function PolicyOperationsBrowser({
     >
       <form className="recovery-toolbar" onSubmit={submit}>
         <label className="field field-grow"><span>Artifact 검색</span><input value={queryInput} onChange={(event) => setQueryInput(event.target.value)} placeholder="ID, Version, Workload, Purpose, 생성자" /></label>
-        <label className="field"><span>Lifecycle Stage</span><select value={stage} onChange={(event) => setStage(event.target.value as PolicyLifecycleStage | '')}><option value="">전체</option>{stages.map((item) => <option value={item} key={item}>{item}</option>)}</select></label>
-        <label className="checkbox-row"><input type="checkbox" checked={attentionRequired} onChange={(event) => setAttentionRequired(event.target.checked)} /><span>조치 필요만</span></label>
+        <label className="field"><span>Lifecycle Stage</span><select value={stage} onChange={(event) => changeStage(event.target.value as PolicyLifecycleStage | '')}><option value="">전체</option>{stages.map((item) => <option value={item} key={item}>{item}</option>)}</select></label>
+        <label className="checkbox-row"><input type="checkbox" checked={actionableOnly} onChange={(event) => changeActionableOnly(event.target.checked)} /><span>조치 가능만</span></label>
         <button className="button button-secondary" type="submit"><Search size={15} />검색</button>
       </form>
 
@@ -68,15 +87,15 @@ export function PolicyOperationsBrowser({
             >
               <span><code>{item.artifactId}</code><small>{item.artifactVersion}</small></span>
               <span>{item.workloadId}<small>{item.purposeCode}</small></span>
-              <span><StatusBadge tone={item.currentSelection ? 'success' : item.lifecycleStage === 'REVIEW' ? 'warning' : 'neutral'}>{item.currentSelection ? 'CURRENT' : item.lifecycleStage}</StatusBadge></span>
+              <span><StatusBadge tone={item.currentSelection ? 'success' : item.lifecycleStage === 'REVIEW' ? 'warning' : 'neutral'}>{item.currentSelection ? 'CURRENT' : item.lifecycleStage}</StatusBadge><small>{item.nextAction ?? 'NO ACTION'}</small></span>
               <span>{new Date(item.updatedAt).toLocaleString('ko-KR')}<small>rev {item.revision}</small></span>
             </button>
           ))}
           <div className="pagination-row">
             <span>{offset + 1}-{Math.min(offset + PAGE_SIZE, artifacts.data.total)} / {artifacts.data.total}</span>
             <div>
-              <button className="button button-secondary button-icon" type="button" aria-label="이전 Policy Artifact" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}><ChevronLeft size={15} /></button>
-              <button className="button button-secondary button-icon" type="button" aria-label="다음 Policy Artifact" disabled={offset + PAGE_SIZE >= artifacts.data.total} onClick={() => setOffset(offset + PAGE_SIZE)}><ChevronRight size={15} /></button>
+              <button className="button button-secondary button-icon" type="button" aria-label="이전 Policy Artifact" disabled={offset === 0} onClick={() => changePage(Math.max(0, offset - PAGE_SIZE))}><ChevronLeft size={15} /></button>
+              <button className="button button-secondary button-icon" type="button" aria-label="다음 Policy Artifact" disabled={offset + PAGE_SIZE >= artifacts.data.total} onClick={() => changePage(offset + PAGE_SIZE)}><ChevronRight size={15} /></button>
             </div>
           </div>
         </div>
@@ -88,8 +107,8 @@ export function PolicyOperationsBrowser({
         <ErrorState description={normalizeApiError(history.error).message} onRetry={() => history.refetch()} />
       ) : history.data ? (
         <div className="content-grid content-grid-two policy-history-grid">
-          <div className="history-list"><h3>Transition History</h3>{history.data.transitions.length === 0 ? <p className="helper-text">저장된 전이 이력이 없습니다.</p> : history.data.transitions.map((item) => <article key={item.transitionId}><strong>{item.fromStage} → {item.toStage}</strong><span>{item.reasonCode}</span><small>{item.actorId} · {new Date(item.occurredAt).toLocaleString('ko-KR')}</small></article>)}</div>
-          <div className="history-list"><h3>Shadow Evidence</h3>{history.data.shadowEvaluations.length === 0 ? <p className="helper-text">저장된 Shadow Evidence가 없습니다.</p> : history.data.shadowEvaluations.map((item) => <article key={item.shadowEvaluationId}><strong>{item.result} · {item.evaluationCaseId}</strong><span>{item.diffFields.length ? item.diffFields.join(', ') : '변경 없음'}</span><small>{item.evaluatedBy} · {new Date(item.evaluatedAt).toLocaleString('ko-KR')}</small></article>)}</div>
+          <div className="history-list"><h3>Transition History · {history.data.transitions.length}/{history.data.transitionTotal}</h3>{history.data.transitions.length === 0 ? <p className="helper-text">저장된 전이 이력이 없습니다.</p> : history.data.transitions.map((item) => <article key={item.transitionId}><strong>{item.fromStage} → {item.toStage}</strong><span>{item.reasonCode}</span><small>{item.actorId} · {new Date(item.occurredAt).toLocaleString('ko-KR')}</small></article>)}{history.data.transitionHasMore ? <p className="helper-text">최근 100건만 표시합니다.</p> : null}</div>
+          <div className="history-list"><h3>Shadow Evidence · {history.data.shadowEvaluations.length}/{history.data.shadowTotal}</h3>{history.data.shadowEvaluations.length === 0 ? <p className="helper-text">저장된 Shadow Evidence가 없습니다.</p> : history.data.shadowEvaluations.map((item) => <article key={item.shadowEvaluationId}><strong>{item.result} · {item.evaluationCaseId}</strong><span>{item.diffFields.length ? item.diffFields.join(', ') : '변경 없음'}</span><small>{item.evaluatedBy} · {new Date(item.evaluatedAt).toLocaleString('ko-KR')}</small></article>)}{history.data.shadowHasMore ? <p className="helper-text">최근 100건만 표시합니다.</p> : null}</div>
         </div>
       ) : null}
     </SectionCard>

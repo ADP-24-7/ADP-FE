@@ -70,6 +70,7 @@ export function PoliciesPage() {
         selectedArtifactId={lookup.artifactId}
         selectedArtifactVersion={lookup.artifactVersion}
         onSelect={(artifact) => setLookup({ artifactId: artifact.artifactId, artifactVersion: artifact.artifactVersion })}
+        onClearSelection={() => setLookup({ artifactId: '', artifactVersion: '' })}
       />
 
       {policy.data ? <PolicyGovernancePanel key={`${policy.data.artifactId}:${policy.data.artifactVersion}`} policy={policy.data} /> : null}

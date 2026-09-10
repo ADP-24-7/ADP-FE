@@ -23,6 +23,7 @@ export async function searchPolicyArtifacts(params: PolicyArtifactSearchParams) 
 export async function getPolicyArtifactHistory(artifactId: string, artifactVersion: string) {
   const response = await httpClient.get<PolicyArtifactHistory>(
     `/api/admin/policy-lifecycle/${encodeURIComponent(artifactId)}/versions/${encodeURIComponent(artifactVersion)}/history`,
+    { params: { transitionLimit: 100, shadowLimit: 100 } },
   );
   return response.data;
 }

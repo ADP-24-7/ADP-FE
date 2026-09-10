@@ -19,6 +19,8 @@ export const policyLifecycleHandlers = [
         createdAt: '2026-09-09T00:00:00Z',
         updatedAt: '2026-09-09T00:00:01Z',
         currentSelection: true,
+        actionable: false,
+        nextAction: null,
       }],
       total: 1,
       limit: Number(url.searchParams.get('limit') ?? 10),
@@ -53,7 +55,11 @@ export const policyLifecycleHandlers = [
       shadowEvaluationId: null,
       occurredAt: '2026-09-09T00:00:01Z',
     }],
+    transitionTotal: 1,
+    transitionHasMore: false,
     shadowEvaluations: [],
+    shadowTotal: 0,
+    shadowHasMore: false,
   })),
   http.post('/api/admin/policy-lifecycle', async ({ request }) => {
     const body = await request.json() as Record<string, string>;
