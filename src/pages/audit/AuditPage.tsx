@@ -25,37 +25,58 @@ export function AuditPage() {
   const [status, setStatus] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
-  const [searchParams, setSearchParams] = useState<AuditSearchParams>({ page: 0, size: DEFAULT_TABLE_PAGE_SIZE });
+  const [searchParams, setSearchParams] = useState<AuditSearchParams>({ executionPack: selectedPack.apiValue, page: 0, size: DEFAULT_TABLE_PAGE_SIZE });
   const audit = useAuditExecutions(searchParams);
   const evidence = useExecutionEvidence(submittedExecutionId);
+  const activePackRef = useRef(selectedPack.apiValue);
+  const policyDecisionEvidenceRef = useRef<HTMLDivElement>(null);
   const postExecutionEvidenceRef = useRef<HTMLDivElement>(null);
   const totalPages = audit.data ? Math.ceil(audit.data.totalElements / audit.data.size) : 0;
   const isRefreshing = audit.isFetching && !audit.isLoading;
 
   useEffect(() => {
-    if (!evidence.data || (requestedSection !== 'post-execution' && requestedSection !== 'response-guard')) return;
+    if (!evidence.data) return;
 
-    const section = postExecutionEvidenceRef.current;
+    const section = requestedSection === 'decision'
+      ? policyDecisionEvidenceRef.current
+      : requestedSection === 'post-execution' || requestedSection === 'response-guard'
+        ? postExecutionEvidenceRef.current
+        : null;
     if (!section) return;
 
     section.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
     section.focus({ preventScroll: true });
   }, [evidence.data, requestedSection]);
 
+  useEffect(() => {
+    if (activePackRef.current === selectedPack.apiValue) return;
+    activePackRef.current = selectedPack.apiValue;
+    setSubmittedExecutionId('');
+    setSearchParams((current) => ({
+      ...current,
+      executionPack: selectedPack.apiValue,
+      workloadId: undefined,
+      page: 0,
+    }));
+    setWorkloadId('');
+  }, [selectedPack.apiValue]);
+
   const workloadSuggestions = useMemo(() => {
     const apiValues = [...new Set(audit.data?.items.map((item) => item.workloadId) ?? [])];
     return [
       ...apiValues.map((value) => ({ value, description: '현재 감사 목록에서 확인된 Workload', source: 'api' as const })),
       ...[
-        { value: 'customer_summary', label: 'AI 고객 요약', description: 'BE local fixture Workload', source: 'local-example' as const },
-        { value: 'tokenized_asset_purchase', label: 'Digital Asset 구매', description: 'BE local fixture Workload', source: 'local-example' as const },
+        { value: 'customer_summary', label: 'AI 고객 요약', description: '예시 Workload', source: 'local-example' as const },
+        { value: 'tokenized_asset_purchase', label: 'Digital Asset 구매', description: '예시 Workload', source: 'local-example' as const },
       ].filter((example) => !apiValues.includes(example.value)),
     ];
   }, [audit.data?.items]);
 
   function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setSubmittedExecutionId('');
     setSearchParams({
+      executionPack: selectedPack.apiValue,
       workloadId: workloadId.trim() || undefined,
       status: status || undefined,
       from: from ? new Date(from).toISOString() : undefined,
@@ -70,7 +91,8 @@ export function AuditPage() {
     setStatus('');
     setFrom('');
     setTo('');
-    setSearchParams({ page: 0, size: DEFAULT_TABLE_PAGE_SIZE });
+    setSubmittedExecutionId('');
+    setSearchParams({ executionPack: selectedPack.apiValue, page: 0, size: DEFAULT_TABLE_PAGE_SIZE });
   }
 
   function changePage(page: number) {
@@ -178,6 +200,13 @@ export function AuditPage() {
             <ErrorState description="선택한 실행의 감사 증적을 불러올 수 없습니다." onRetry={() => evidence.refetch()} compact />
           ) : evidence.data ? (
             <div className="audit-evidence-stack">
+              <div
+                ref={policyDecisionEvidenceRef}
+                id="policy-decision-evidence"
+                className={requestedSection === 'decision' ? 'anchored-section evidence-focus-section evidence-focus-section-active' : 'anchored-section evidence-focus-section'}
+                tabIndex={-1}
+                aria-label="Policy Decision Evidence"
+              >
               <KeyValues items={[
                 ['Execution ID', evidence.data.executionId],
                 ['Trace ID', evidence.data.traceId],
@@ -190,6 +219,7 @@ export function AuditPage() {
                 ['Recovery', String(evidence.data.recovery.recoveryStatus ?? '—')],
                 ['Export Digest', evidence.data.exportContentDigest],
               ]} />
+              </div>
               <div
                 ref={postExecutionEvidenceRef}
                 id="post-execution-evidence"

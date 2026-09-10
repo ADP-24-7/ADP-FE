@@ -11,9 +11,9 @@ export function DataAccessPage() {
   const [purpose, setPurpose] = useState('');
   const [subject, setSubject] = useState('');
   const preview = useContextPreview();
-  const workloadSuggestions = [{ value: 'customer_summary', label: 'AI 고객 요약', description: 'BE local fixture Context Preview', source: 'local-example' as const }];
+  const workloadSuggestions = [{ value: 'customer_summary', label: 'AI 고객 요약', description: 'Context Preview 예시', source: 'local-example' as const }];
   const purposeSuggestions = [{ value: 'CUSTOMER_SUPPORT', label: '고객 지원 목적', description: 'customer_summary에 허용된 Purpose', source: 'local-example' as const }];
-  const subjectSuggestions = [{ value: 'customer:customer-100', label: 'Local synthetic customer', description: '실제 고객정보가 아닌 BE local fixture Subject', source: 'local-example' as const }];
+  const subjectSuggestions = [{ value: 'customer:customer-100', label: 'Synthetic customer', description: '실제 고객정보가 아닌 검증용 Subject', source: 'local-example' as const }];
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

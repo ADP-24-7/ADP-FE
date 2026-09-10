@@ -5,12 +5,14 @@ export const auditTraceHandlers = [
     const params = new URL(request.url).searchParams;
     const workloadId = params.get('workloadId');
     const status = params.get('status');
+    const executionPack = params.get('executionPack') ?? 'AI';
     return HttpResponse.json({
       items: workloadId || status ? [{
         executionId: 'exec-search-contract',
         requestId: 'req-search-contract',
         traceId: 'trace-search-contract',
         institutionId: 'institution_local',
+        executionPack,
         workloadId: workloadId ?? 'customer_summary',
         purposeCode: 'CUSTOMER_SUPPORT',
         status: status ?? 'COMPLETED',

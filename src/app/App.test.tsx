@@ -220,9 +220,53 @@ describe('App', () => {
     await waitFor(() => expect(document.activeElement).toBe(focusedSection));
   });
 
+  it('focuses the policy decision section from a decision deep link', async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <ExecutionPackProvider>
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={['/audit?executionId=execution-contract&section=decision']}>
+            <AuditPage />
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ExecutionPackProvider>,
+    );
+
+    const focusedSection = await screen.findByLabelText('Policy Decision Evidence');
+    expect(focusedSection).toHaveClass('evidence-focus-section-active');
+    await waitFor(() => expect(document.activeElement).toBe(focusedSection));
+  });
+
+  it('clears the selected audit detail when search conditions change', async () => {
+    const user = userEvent.setup();
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <ExecutionPackProvider>
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={['/audit']}>
+            <AuditPage />
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ExecutionPackProvider>,
+    );
+
+    await user.type(screen.getByLabelText('감사 Workload 검색'), 'customer_summary');
+    await user.click(screen.getByRole('button', { name: '검색' }));
+    await user.click(await screen.findByRole('button', { name: /exec-search-contract/ }));
+    expect(await screen.findByText('provider-response-digest')).toBeInTheDocument();
+
+    await user.clear(screen.getByLabelText('감사 Workload 검색'));
+    await user.type(screen.getByLabelText('감사 Workload 검색'), 'tokenized_asset_purchase');
+    await user.click(screen.getByRole('button', { name: '검색' }));
+    expect(await screen.findByText('실행 선택 대기')).toBeInTheDocument();
+    expect(screen.queryByText('provider-response-digest')).not.toBeInTheDocument();
+  });
+
   it('opens the second audit page without collapsing the current result table', async () => {
     server.use(http.get('/api/admin/audit/executions', async ({ request }) => {
-      const page = Number(new URL(request.url).searchParams.get('page') ?? 0);
+      const params = new URL(request.url).searchParams;
+      expect(params.get('executionPack')).toBe('AI');
+      const page = Number(params.get('page') ?? 0);
       if (page === 1) await delay(80);
       const count = page === 0 ? 10 : 2;
       return HttpResponse.json({
@@ -231,6 +275,7 @@ describe('App', () => {
           requestId: `req-page-${page}-${index}`,
           traceId: `trace-page-${page}-${index}`,
           institutionId: 'institution_local',
+          executionPack: 'AI',
           workloadId: 'customer_summary',
           purposeCode: 'CUSTOMER_SUPPORT',
           status: 'COMPLETED',

@@ -3,6 +3,7 @@ export type AuditExecutionSummary = {
   requestId: string;
   traceId: string;
   institutionId: string;
+  executionPack: 'AI' | 'DIGITAL_ASSET' | 'COMMON' | 'SAAS';
   workloadId: string;
   purposeCode: string;
   status: string;
@@ -25,6 +26,7 @@ export type AuditExecutionPage = {
 };
 
 export type AuditSearchParams = {
+  executionPack?: 'AI' | 'DIGITAL_ASSET' | 'COMMON' | 'SAAS';
   workloadId?: string;
   status?: string;
   from?: string;

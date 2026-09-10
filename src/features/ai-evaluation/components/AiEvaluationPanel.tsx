@@ -26,7 +26,7 @@ export function AiEvaluationPanel() {
     {
       value: 'ai-eval-baseline-2026-09-07',
       label: '3-model baseline',
-      description: 'BE local fixture에 등록된 Evaluation Run 예시',
+      description: '평가 실행 예시',
       source: 'local-example' as const,
     },
   ];
