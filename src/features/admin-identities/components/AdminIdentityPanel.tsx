@@ -5,6 +5,12 @@ import { EmptyState, ErrorState, KeyValues, LoadingPanel, SectionCard, StatusBad
 import { useAdminIdentities, useAdminIdentityDetail } from '../hooks/useAdminIdentities';
 import type { AdminIdentitySearchParams, AdminPrincipalType } from '../model/types';
 
+const registryStatus = {
+  ENABLED: { label: 'WORKLOAD ENABLED', tone: 'success' },
+  DISABLED: { label: 'WORKLOAD DISABLED', tone: 'warning' },
+  UNRESOLVED: { label: 'REGISTRY UNRESOLVED', tone: 'danger' },
+} as const;
+
 export function AdminIdentityPanel() {
   const [query, setQuery] = useState('');
   const [principalType, setPrincipalType] = useState<AdminPrincipalType | ''>('');
@@ -45,7 +51,7 @@ export function AdminIdentityPanel() {
     <div className="identity-permission-stack">
       <SectionCard
         title="Identity Registry"
-        description="현재 Institution의 사용자와 서비스 Principal 및 유효 권한 범위를 조회합니다."
+        description="현재 권한 범위에서 조회 가능한 사용자와 서비스 Principal을 확인합니다."
         actions={<StatusBadge tone={identities.isSuccess ? 'success' : 'warning'}>{identities.isSuccess ? 'IDENTITY API CONNECTED' : 'IDENTITY API'}</StatusBadge>}
       >
         <form className="identity-filter-grid" onSubmit={submit}>
@@ -118,7 +124,7 @@ export function AdminIdentityPanel() {
                   <code>{permission.actionName}</code>
                   <span>{permission.purpose}</span>
                   <span>{permission.subjectType}<small>{permission.subjectGrantCount} scoped grant</small></span>
-                  <StatusBadge tone={permission.workloadEnabled ? 'success' : 'warning'}>{permission.workloadEnabled ? 'WORKLOAD ENABLED' : 'REGISTRY UNRESOLVED'}</StatusBadge>
+                  <StatusBadge tone={registryStatus[permission.workloadRegistryStatus].tone}>{registryStatus[permission.workloadRegistryStatus].label}</StatusBadge>
                 </div>
               )) : <EmptyState compact title="Purpose 권한이 없습니다" description="Role과 Workload 매핑은 존재하지만 Subject/Purpose grant는 없습니다." />}
             </div>

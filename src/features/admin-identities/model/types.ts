@@ -17,7 +17,7 @@ export type AdminIdentityItem = {
 export type AdminIdentityPermission = {
   workloadId: string;
   workloadName: string;
-  workloadEnabled: boolean;
+  workloadRegistryStatus: 'ENABLED' | 'DISABLED' | 'UNRESOLVED';
   actionName: string;
   purpose: string;
   subjectType: string;

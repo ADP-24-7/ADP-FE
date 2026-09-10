@@ -22,6 +22,7 @@ describe('AdminIdentityPanel', () => {
 
     expect(await screen.findByText('CUSTOMER_SUPPORT')).toBeInTheDocument();
     expect(screen.getByText('2 scoped grant')).toBeInTheDocument();
+    expect(screen.getByText('WORKLOAD ENABLED')).toBeInTheDocument();
     expect(screen.queryByText(/local-dev-api-key/)).not.toBeInTheDocument();
     expect(screen.queryByText(/customer-100/)).not.toBeInTheDocument();
   });

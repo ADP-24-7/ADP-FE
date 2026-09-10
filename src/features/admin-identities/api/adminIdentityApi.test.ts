@@ -19,6 +19,7 @@ describe('adminIdentityApi', () => {
       workloadId: 'customer_summary',
       purpose: 'CUSTOMER_SUPPORT',
       subjectGrantCount: 2,
+      workloadRegistryStatus: 'ENABLED',
     });
     expect(detail).not.toHaveProperty('keyHash');
     expect(detail.permissions[0]).not.toHaveProperty('subjectId');

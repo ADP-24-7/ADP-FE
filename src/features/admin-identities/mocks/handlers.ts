@@ -26,7 +26,7 @@ export const adminIdentityHandlers = [
     permissions: [{
       workloadId: 'customer_summary',
       workloadName: 'Customer Support Summary',
-      workloadEnabled: true,
+      workloadRegistryStatus: 'ENABLED',
       actionName: 'RUNTIME_EXECUTE',
       purpose: 'CUSTOMER_SUPPORT',
       subjectType: 'customer',
