@@ -8,6 +8,7 @@ export type RecoveryIncidentSummary = {
   recoveryId: string;
   executionId: string;
   institutionId: string;
+  executionPack: ExecutionPackApiValue | null;
   workloadId: string;
   purposeCode: string;
   connectorId: string;
@@ -50,6 +51,7 @@ export type RecoveryIncidentPage = {
 };
 
 export type RecoverySearchParams = {
+  executionPack?: ExecutionPackApiValue;
   status?: RecoveryStatus;
   page?: number;
   size?: number;
@@ -64,3 +66,4 @@ export type RecoveryCommandResult = {
   reasonCode: string | null;
   replayed: boolean;
 };
+import type { ExecutionPackApiValue } from '../../../shared/prototype';

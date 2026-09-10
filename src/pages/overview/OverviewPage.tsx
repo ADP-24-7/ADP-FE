@@ -14,10 +14,10 @@ const operatorFlow = [
 ] as const;
 
 export function OverviewPage() {
-  const readiness = useBackendReadiness();
-  const operations = useOperationsSummary(60);
-  const navigate = useNavigate();
   const { selectedPack } = useExecutionPack();
+  const readiness = useBackendReadiness();
+  const operations = useOperationsSummary(60, selectedPack.apiValue);
+  const navigate = useNavigate();
 
   const readinessState = readiness.isLoading ? 'loading' : readiness.isError ? 'error' : 'value';
   const operationsState = operations.isLoading ? 'loading' : operations.isError ? 'error' : 'value';
@@ -85,7 +85,7 @@ export function OverviewPage() {
               ['Operations Summary', operations.data?.schemaVersion ?? '연결 확인 중'],
               ['Recovery Worker', operations.data ? `${operations.data.recovery.completedOperations} completed operations` : '연결 확인 중'],
               ['Selected Domain', selectedPack.label],
-              ['Operations Data Scope', 'All authorized workloads'],
+              ['Operations Data Scope', `${selectedPack.apiValue} · Security는 전체 권한 허용 Workload`],
             ]}
           />
         </SectionCard>

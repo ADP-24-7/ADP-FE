@@ -4,6 +4,7 @@ const incident = {
   recoveryId: 'recovery-contract',
   executionId: 'execution-contract',
   institutionId: 'institution_local',
+  executionPack: 'AI',
   workloadId: 'customer_summary',
   purposeCode: 'CUSTOMER_SUPPORT',
   connectorId: 'connector-local',
@@ -23,7 +24,9 @@ export const recoveryOperationsHandlers = [
   http.get('/api/admin/recovery/incidents', ({ request }) => {
     const params = new URL(request.url).searchParams;
     const status = params.get('status');
-    const items = !status || status === incident.recoveryStatus ? [incident] : [];
+    const executionPack = params.get('executionPack');
+    const items = (!status || status === incident.recoveryStatus)
+      && (!executionPack || executionPack === incident.executionPack) ? [incident] : [];
     return HttpResponse.json({
       items,
       page: Number(params.get('page') ?? 0),
@@ -31,16 +34,22 @@ export const recoveryOperationsHandlers = [
       totalElements: items.length,
     });
   }),
-  http.get('/api/admin/recovery/incidents/:recoveryId', ({ params }) => HttpResponse.json({
-    ...incident,
-    recoveryId: params.recoveryId,
-    connectorExecutionId: 'connector-execution-contract',
-    leaseUntil: null,
-    lastStatusQueriedAt: null,
-    statusQueryEvidenceDigest: null,
-    operations: [],
-  })),
+  http.get('/api/admin/recovery/incidents/:recoveryId', ({ params, request }) => {
+    const executionPack = new URL(request.url).searchParams.get('executionPack');
+    if (executionPack && executionPack !== incident.executionPack) return new HttpResponse(null, { status: 404 });
+    return HttpResponse.json({
+      ...incident,
+      recoveryId: params.recoveryId,
+      connectorExecutionId: 'connector-execution-contract',
+      leaseUntil: null,
+      lastStatusQueriedAt: null,
+      statusQueryEvidenceDigest: null,
+      operations: [],
+    });
+  }),
   http.post('/api/admin/recovery/incidents/:recoveryId/:command', async ({ params, request }) => {
+    const executionPack = new URL(request.url).searchParams.get('executionPack');
+    if (executionPack && executionPack !== incident.executionPack) return new HttpResponse(null, { status: 404 });
     const body = await request.json() as { operationId: string };
     const operationType = {
       reconcile: 'RECONCILE',

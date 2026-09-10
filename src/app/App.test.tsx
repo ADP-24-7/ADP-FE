@@ -72,7 +72,7 @@ describe('App', () => {
 
     expect(window.location.pathname).toBe('/monitoring');
     expect(screen.getByLabelText('선택된 Viewing Context')).toHaveTextContent('Digital Asset');
-    expect(screen.getByLabelText('선택된 Viewing Context')).toHaveTextContent('전체 권한 허용 Workload · Pack 필터 미지원');
+    expect(screen.getByLabelText('선택된 Viewing Context')).toHaveTextContent('DIGITAL_ASSET Pack · Runtime / Recovery / Policy / Security Finding 기준 조회');
   });
 
   it('opens the selected recovery incident through an SPA deep link', async () => {
@@ -92,9 +92,15 @@ describe('App', () => {
   it('shows a clear state when there are no attention items', async () => {
     server.use(
       http.get('/api/admin/operations/summary', () => HttpResponse.json({
-        schemaVersion: 'adp-operations-summary/v1',
+        schemaVersion: 'adp-operations-summary/v2',
         windowMinutes: 60,
         generatedAt: '2026-09-09T00:00:00Z',
+        scope: {
+          requestedExecutionPack: 'AI',
+          defaultSemantics: 'REQUESTED_EXECUTION_PACK',
+          packScopedSections: ['RUNTIME', 'RECOVERY', 'POLICY'],
+          allAuthorizedWorkloadSections: ['SECURITY'],
+        },
         runtime: { total: 0, completed: 0, failed: 0, blocked: 0, reviewRequired: 0 },
         recovery: {
           backlog: 0,

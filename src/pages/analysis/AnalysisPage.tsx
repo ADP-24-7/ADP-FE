@@ -18,7 +18,7 @@ export function AnalysisPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { selectedPack } = useExecutionPack();
-  const summary = useOperationsSummary(60);
+  const summary = useOperationsSummary(60, selectedPack.apiValue);
   const metricState = summary.isLoading ? 'loading' : summary.isError ? 'error' : 'value';
 
   return (
@@ -35,7 +35,7 @@ export function AnalysisPage() {
         scope={selectedPack.scope}
         descriptor={selectedPack.descriptor}
         objective={selectedPack.objective}
-        dataScope="전체 권한 허용 Workload · Review Queue는 Pack 기준 조회"
+        dataScope={`${selectedPack.apiValue} Pack · Runtime / Recovery / Review Queue 기준 조회`}
       />
 
       {selectedPack.key === 'ai' ? <AiEvaluationPanel /> : null}
@@ -54,13 +54,15 @@ export function AnalysisPage() {
       ) : null}
 
       <ReviewQueuePanel
-        key={selectedPack.key}
+        key={`review-${selectedPack.key}`}
         executionPack={selectedPack.key === 'digital-asset' ? 'DIGITAL_ASSET' : 'AI'}
         onOpenTrace={(executionId) => navigate(`/audit?executionId=${encodeURIComponent(executionId)}`)}
         onOpenRecovery={(recoveryId) => setSearchParams({ recoveryId }, { replace: true })}
       />
 
       <RecoveryOperationsPanel
+        key={`recovery-${selectedPack.key}`}
+        executionPack={selectedPack.apiValue}
         initialRecoveryId={searchParams.get('recoveryId') ?? ''}
         onSelectionChange={(recoveryId) => {
           if (recoveryId) setSearchParams({ recoveryId }, { replace: true });

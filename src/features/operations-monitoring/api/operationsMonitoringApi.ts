@@ -1,9 +1,9 @@
 import { httpClient } from '../../../shared/api/httpClient';
 import type { OperationsSummary, PolicyOperationEventPage, PolicyOperationEventParams } from '../model/types';
 
-export async function getOperationsSummary(windowMinutes = 60) {
+export async function getOperationsSummary(windowMinutes = 60, executionPack?: string) {
   const response = await httpClient.get<OperationsSummary>('/api/admin/operations/summary', {
-    params: { windowMinutes },
+    params: { windowMinutes, executionPack },
   });
   return response.data;
 }

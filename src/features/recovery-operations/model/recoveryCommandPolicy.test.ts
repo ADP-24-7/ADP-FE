@@ -6,6 +6,7 @@ const incident: RecoveryIncidentDetail = {
   recoveryId: 'recovery-contract',
   executionId: 'execution-contract',
   institutionId: 'institution-local',
+  executionPack: 'AI',
   workloadId: 'customer-summary',
   purposeCode: 'CUSTOMER_SUPPORT',
   connectorId: 'connector-local',

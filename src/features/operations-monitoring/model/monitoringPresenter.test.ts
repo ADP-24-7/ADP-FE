@@ -4,9 +4,15 @@ import type { OperationsSummary } from './types';
 import { presentOperationsMonitoring } from './monitoringPresenter';
 
 const summary: OperationsSummary = {
-  schemaVersion: 'adp-operations-summary/v1',
+  schemaVersion: 'adp-operations-summary/v2',
   windowMinutes: 60,
   generatedAt: '2026-09-10T00:00:00Z',
+  scope: {
+    requestedExecutionPack: 'AI',
+    defaultSemantics: 'REQUESTED_EXECUTION_PACK',
+    packScopedSections: ['RUNTIME', 'RECOVERY', 'POLICY'],
+    allAuthorizedWorkloadSections: ['SECURITY'],
+  },
   runtime: { total: 8, completed: 5, failed: 1, blocked: 2, reviewRequired: 0 },
   recovery: {
     backlog: 1,
@@ -26,6 +32,7 @@ const sentUnknown: RecoveryIncidentSummary = {
   recoveryId: 'recovery-1',
   executionId: 'execution-1',
   institutionId: 'institution-1',
+  executionPack: 'AI',
   workloadId: 'customer_summary',
   purposeCode: 'CUSTOMER_SUPPORT',
   connectorId: 'connector-1',

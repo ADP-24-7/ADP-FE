@@ -3,9 +3,10 @@ import { getOperationsSummary, getPolicyOperationEvents } from './operationsMoni
 
 describe('operationsMonitoringApi', () => {
   it('loads the scoped operations summary with an explicit window', async () => {
-    await expect(getOperationsSummary(360)).resolves.toMatchObject({
-      schemaVersion: 'adp-operations-summary/v1',
+    await expect(getOperationsSummary(360, 'AI')).resolves.toMatchObject({
+      schemaVersion: 'adp-operations-summary/v2',
       windowMinutes: 360,
+      scope: { requestedExecutionPack: 'AI', defaultSemantics: 'REQUESTED_EXECUTION_PACK' },
       runtime: { total: 12, completed: 8 },
       recovery: { backlog: 2, staleOperations: 1 },
       policy: { currentSelections: 2, driftedSelections: 0 },
@@ -15,6 +16,7 @@ describe('operationsMonitoringApi', () => {
 
   it('passes policy event filters and pagination to the read model', async () => {
     await expect(getPolicyOperationEvents({
+      executionPack: 'AI',
       workloadId: 'settlement_reconciliation',
       category: 'LIFECYCLE_TRANSITION',
       from: '2026-09-08T00:00:00Z',
