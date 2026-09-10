@@ -3,7 +3,6 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   Activity,
   DatabaseZap,
-  ChevronDown,
   CircleUserRound,
   FileCheck2,
   FlaskConical,
@@ -40,7 +39,6 @@ function getRuntimeDomainLabel(packKey: string, fallback: string) {
 export function ConsoleLayout() {
   const location = useLocation();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isPolicyMenuOpen, setIsPolicyMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { selectedPackKey, selectPack } = useExecutionPack();
   const auth = useAuthContext();
@@ -112,38 +110,12 @@ export function ConsoleLayout() {
                   title={pack.scope}
                   onClick={() => {
                     selectPack(pack.key);
-                    setIsPolicyMenuOpen(false);
                     setIsSettingsOpen(false);
                   }}
                 >
                   {getRuntimeDomainLabel(pack.key, pack.label)}
                 </button>
               ))}
-            </div>
-            <div className="dropdown">
-              <button
-                className="policy-trigger"
-                type="button"
-                aria-haspopup="menu"
-                aria-expanded={isPolicyMenuOpen}
-                onClick={() => {
-                  setIsPolicyMenuOpen((current) => !current);
-                  setIsSettingsOpen(false);
-                }}
-              >
-                <ShieldCheck size={15} />
-                <span>Policy <b>—</b></span>
-                <StatusPill>No Data</StatusPill>
-                <ChevronDown size={14} />
-              </button>
-              {isPolicyMenuOpen ? (
-                <div className="dropdown-menu dropdown-menu-right" role="menu">
-                  <div className="dropdown-empty">
-                    <strong>Policy 없음</strong>
-                    <span>Policy 목록 API 구현 후 선택할 수 있습니다.</span>
-                  </div>
-                </div>
-              ) : null}
             </div>
             <span className="live-mode-badge">NO MOCK DATA</span>
             <div className="operator-context" aria-label="현재 운영자 권한">
@@ -162,7 +134,6 @@ export function ConsoleLayout() {
                 aria-expanded={isSettingsOpen}
                 onClick={() => {
                   setIsSettingsOpen((current) => !current);
-                  setIsPolicyMenuOpen(false);
                 }}
               >
                 <Settings2 size={17} />
@@ -185,8 +156,4 @@ export function ConsoleLayout() {
       </div>
     </div>
   );
-}
-
-function StatusPill({ children }: { children: string }) {
-  return <span className="topbar-status-pill">{children}</span>;
 }

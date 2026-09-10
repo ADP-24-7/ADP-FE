@@ -159,6 +159,8 @@ button, a { transition: background-color .16s ease, border-color .16s ease, colo
 .investigation-context { background: #f7f9ff; color: var(--color-primary); }
 .anchored-section { display: grid; gap: 14px; scroll-margin-top: 80px; }
 .anchored-section:target > .section-card:first-child { border-color: #9bb0ff; box-shadow: 0 0 0 3px rgba(49,94,251,.08); }
+.evidence-focus-section { outline: none; }
+.evidence-focus-section-active > .section-card:first-child { border-color: #7592ff; box-shadow: 0 0 0 3px rgba(49,94,251,.12); }
 .reference-evidence-stack { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(320px, .85fr); gap: 14px; align-items: start; }
 .reference-evidence-filter { grid-template-columns: .9fr 1fr 1.35fr auto; }
 .reference-evidence-filter .search-filter-actions { grid-column: auto; }

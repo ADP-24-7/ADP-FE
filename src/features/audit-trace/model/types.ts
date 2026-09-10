@@ -67,7 +67,20 @@ export type ExecutionEvidencePack = {
     releasedFieldCount?: number | null;
     releasedFieldsDigest?: string | null;
   };
-  egress: Record<string, string | null>;
+  egress: {
+    destinationProfileId?: string | null;
+    destinationProfileVersion?: string | null;
+    destinationProfileDigest?: string | null;
+    outboundCandidateDigest?: string | null;
+    outboundGuardStatus?: string | null;
+    connectorExecutionId?: string | null;
+    connectorStatus?: string | null;
+    providerRequestDigest?: string | null;
+    providerResponseDigest?: string | null;
+    responseGuardStatus?: string | null;
+    controlledDeliveryStatus?: string | null;
+    controlledDeliveryResponseDigest?: string | null;
+  };
   recovery: Record<string, string | number | null>;
   audit: { auditId: string; reasonCode?: string | null; evidenceRefs: string[] };
   createdAt: string;

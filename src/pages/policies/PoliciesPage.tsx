@@ -1,4 +1,4 @@
-import { ArrowRight, LockKeyhole, RefreshCw } from 'lucide-react';
+import { ArrowRight, LockKeyhole } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DigitalAssetArtifactPanel } from '../../features/digital-asset';
@@ -15,12 +15,6 @@ const lifecycle = [
   ['SHADOW', 'Runtime Diff'],
   ['APPROVED', 'Checker'],
   ['ACTIVE', 'Version Locked'],
-] as const;
-
-const policyOutcomes = [
-  ['동일 조건', 'REUSE_ALLOWED', '기존 승인정책을 그대로 집행합니다.', 'success'],
-  ['보호 가능한 변경', 'TRANSFORM_REQUIRED', '승인된 처리 후 실행합니다.', 'info'],
-  ['범위 확장', 'REVIEW / BLOCK', '실행 전에 중단하고 담당자가 검토합니다.', 'warning'],
 ] as const;
 
 export function PoliciesPage() {
@@ -40,7 +34,6 @@ export function PoliciesPage() {
         eyebrow="CONTROL PLANE · MAKER-CHECKER"
         title="정책 · 승인"
         description="사전 승인 범위를 정의하고, 변경된 조건만 검토해 실행 정책으로 활성화합니다."
-        actions={<button className="button button-secondary" type="button" disabled><RefreshCw size={15} />Artifact 동기화</button>}
       />
 
       <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} objective={selectedPack.objective} />
@@ -105,14 +98,6 @@ export function PoliciesPage() {
         </div>
       </SectionCard>
 
-      <div className="content-grid content-grid-three">
-        {policyOutcomes.map(([title, decision, description, tone]) => (
-          <SectionCard key={title} title={title} description={description} actions={<StatusBadge tone={tone}>{decision}</StatusBadge>}>
-            <EmptyState compact title="API 연결 대기" description="정책 판정 API 연결 후 실제 조건 일치 여부를 표시합니다." endpoint="POST /v1/runtime/executions" />
-          </SectionCard>
-        ))}
-      </div>
-
       <div className="content-grid content-grid-two">
         <SectionCard title={`${selectedPack.label} Policy Harness`} description="법규·내규·승인·Provider 계약을 Runtime 정책으로 고정">
           <div className="policy-harness-list">
@@ -133,9 +118,9 @@ export function PoliciesPage() {
         <SectionCard title="Shadow Evidence Read Model" description="평가 이력과 승인 근거를 다시 조회하는 운영 화면" actions={<StatusBadge tone="success">CONNECTED</StatusBadge>}>
           <EmptyState compact title="Policy Operations에서 조회" description="선택한 Artifact의 Transition과 Shadow Evidence가 상단 Read Model에 표시됩니다." endpoint="GET /api/admin/policy-lifecycle/{artifactId}/versions/{version}/history" />
         </SectionCard>
-        <SectionCard title="Artifact 무결성" description="Schema, Digest, Evidence Reference, Vocabulary" actions={<StatusBadge tone={selectedPack.key === 'digital-asset' ? 'success' : 'neutral'}>{selectedPack.key === 'digital-asset' ? 'P0-5 AVAILABLE' : 'NOT VERIFIED'}</StatusBadge>}>
-          <EmptyState compact title={selectedPack.key === 'digital-asset' ? '상단 Artifact 도구에서 조회' : 'API 연결 대기'} description={selectedPack.key === 'digital-asset' ? 'BE-owned strict schema와 digest 검증 결과를 실제 Lifecycle Candidate로 확인합니다.' : '해당 Pack의 Artifact Loader API가 아직 없습니다.'} endpoint={selectedPack.key === 'digital-asset' ? 'GET /api/admin/digital-assets/artifacts/{artifactId}/versions/{version}' : 'Artifact Loader API 미구현'} />
-        </SectionCard>
+        {selectedPack.key === 'digital-asset' ? <SectionCard title="Artifact 무결성" description="Schema, Digest, Evidence Reference, Vocabulary" actions={<StatusBadge tone="success">P0-5 AVAILABLE</StatusBadge>}>
+          <EmptyState compact title="상단 Artifact 도구에서 조회" description="BE-owned strict schema와 digest 검증 결과를 실제 Lifecycle Candidate로 확인합니다." endpoint="GET /api/admin/digital-assets/artifacts/{artifactId}/versions/{version}" />
+        </SectionCard> : null}
       </div>
     </section>
   );

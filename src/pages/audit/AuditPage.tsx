@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useSearchParams as useRouterSearchParams } from 'react-router-dom';
 import { FileCheck2, LockKeyhole, RotateCcw, Search } from 'lucide-react';
 import { useAuditExecutions, useExecutionEvidence } from '../../features/audit-trace';
@@ -28,6 +28,17 @@ export function AuditPage() {
   const [searchParams, setSearchParams] = useState<AuditSearchParams>({ size: 20 });
   const audit = useAuditExecutions(searchParams);
   const evidence = useExecutionEvidence(submittedExecutionId);
+  const postExecutionEvidenceRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!evidence.data || (requestedSection !== 'post-execution' && requestedSection !== 'response-guard')) return;
+
+    const section = postExecutionEvidenceRef.current;
+    if (!section) return;
+
+    section.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+    section.focus({ preventScroll: true });
+  }, [evidence.data, requestedSection]);
 
   const workloadSuggestions = useMemo(() => {
     const apiValues = [...new Set(audit.data?.items.map((item) => item.workloadId) ?? [])];
@@ -158,6 +169,35 @@ export function AuditPage() {
           <EmptyState icon={Search} title="Execution ID 입력 대기" description="Runtime 실행 결과의 executionId를 입력하면 digest 기반 Evidence Pack을 조회합니다." endpoint="GET /api/admin/audit/executions/{executionId}/evidence" />
         )}
       </SectionCard>
+
+      {evidence.data ? (
+        <div
+          ref={postExecutionEvidenceRef}
+          id="post-execution-evidence"
+          className={requestedSection === 'post-execution' || requestedSection === 'response-guard' ? 'anchored-section evidence-focus-section evidence-focus-section-active' : 'anchored-section evidence-focus-section'}
+          tabIndex={-1}
+          aria-label="우선 확인 Evidence"
+        >
+          <SectionCard
+            title="External Execution & Response Evidence"
+            description="Provider 전송부터 Response Guard와 Controlled Delivery까지 원문 없이 검증합니다."
+            actions={<StatusBadge tone={requestedSection ? 'info' : 'neutral'}>{requestedSection === 'response-guard' ? 'RESPONSE GUARD' : requestedSection === 'post-execution' ? 'POST EXECUTION' : 'EVIDENCE'}</StatusBadge>}
+          >
+            <KeyValues items={[
+              ['Destination Profile', evidence.data.egress.destinationProfileId ?? '—'],
+              ['Outbound Guard', evidence.data.egress.outboundGuardStatus ?? '—'],
+              ['Connector Status', evidence.data.egress.connectorStatus ?? '—'],
+              ['Provider Request Digest', evidence.data.egress.providerRequestDigest ?? '—'],
+              ['Provider Response Digest', evidence.data.egress.providerResponseDigest ?? '—'],
+              ['Response Guard', evidence.data.egress.responseGuardStatus ?? '—'],
+              ['Controlled Delivery', evidence.data.egress.controlledDeliveryStatus ?? '—'],
+              ['Delivered Response Digest', evidence.data.egress.controlledDeliveryResponseDigest ?? '—'],
+              ['Recovery Status', String(evidence.data.recovery.recoveryStatus ?? '—')],
+              ['Status Query Evidence', String(evidence.data.recovery.statusQueryEvidenceDigest ?? '—')],
+            ]} />
+          </SectionCard>
+        </div>
+      ) : null}
 
       <SectionCard title="감사 실행 목록" description="적용된 검색 조건과 권한 범위에 해당하는 실행만 최신순으로 표시합니다." actions={<StatusBadge>{audit.data ? `${audit.data.totalElements} ITEMS` : 'READ MODEL'}</StatusBadge>}>
         <div className="empty-table">
