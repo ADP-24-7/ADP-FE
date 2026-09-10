@@ -178,12 +178,8 @@ export function ConsoleLayout() {
                     onClick={async () => {
                       const returnTo = `${location.pathname}${location.search}${location.hash}`;
                       setIsOperatorMenuOpen(false);
-                      try {
-                        await logout.mutateAsync();
-                        navigate(`/login?returnTo=${encodeURIComponent(returnTo)}`, { replace: true });
-                      } catch {
-                        setIsOperatorMenuOpen(true);
-                      }
+                      await logout.mutateAsync().catch(() => undefined);
+                      navigate(`/login?returnTo=${encodeURIComponent(returnTo)}`, { replace: true });
                     }}
                   >
                     로그아웃 <LogOut size={14} aria-hidden="true" />

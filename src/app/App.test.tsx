@@ -9,6 +9,9 @@ import { AuditPage } from '../pages/audit/AuditPage';
 import { ExecutionPackProvider } from '../shared/prototype';
 import { server } from './mocks/server';
 import { App } from './App';
+import { queryClient } from './queryClient';
+import { login } from '../features/auth';
+import { router } from './router';
 
 describe('App', () => {
   beforeEach(() => {
@@ -322,5 +325,22 @@ describe('App', () => {
     const target = document.getElementById('recovery-incidents');
     expect(target).not.toBeNull();
     await waitFor(() => expect(document.activeElement).toBe(target));
+  });
+
+  it('clears protected state and preserves returnTo when a protected API reports session expiry', async () => {
+    server.use(http.get('/api/admin/operations/summary', () => new HttpResponse(null, { status: 401 })));
+    queryClient.setQueryData(['protected', 'audit'], { executionId: 'sensitive-execution' });
+    queryClient.removeQueries({ queryKey: ['operations-monitoring'] });
+    await router.navigate('/overview?scope=AI#signals', { replace: true });
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: '관리자 로그인' })).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/login');
+    expect(new URLSearchParams(window.location.search).get('returnTo')).toBe('/overview?scope=AI#signals');
+    expect(queryClient.getQueryData(['protected', 'audit'])).toBeUndefined();
+
+    await login('operator-local', 'operator-demo');
+    queryClient.clear();
   });
 });

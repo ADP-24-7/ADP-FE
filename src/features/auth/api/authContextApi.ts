@@ -7,6 +7,7 @@ type CsrfToken = {
 };
 
 let csrfHeaderName: string | undefined;
+let localSessionInvalidated = false;
 
 function applyCsrfToken(csrf: CsrfToken) {
   if (csrfHeaderName && csrfHeaderName !== csrf.headerName) {
@@ -16,14 +17,20 @@ function applyCsrfToken(csrf: CsrfToken) {
   httpClient.defaults.headers.common[csrf.headerName] = csrf.token;
 }
 
-function clearCsrfToken() {
+export function clearCsrfToken() {
   if (csrfHeaderName) {
     delete httpClient.defaults.headers.common[csrfHeaderName];
   }
   csrfHeaderName = undefined;
 }
 
+export function invalidateLocalSession() {
+  localSessionInvalidated = true;
+  clearCsrfToken();
+}
+
 export async function getAuthContext() {
+  if (localSessionInvalidated) throw new Error('Local session invalidated');
   const response = await httpClient.get<AuthContext>('/api/auth/me');
   await getCsrfToken();
   return response.data;
@@ -42,6 +49,7 @@ export async function login(principalId: string, password: string) {
     { principalId, password },
     { headers: { [csrf.headerName]: csrf.token } },
   );
+  localSessionInvalidated = false;
   await getCsrfToken();
   return response.data;
 }
@@ -53,6 +61,6 @@ export async function logout() {
       headers: { [csrf.headerName]: csrf.token },
     });
   } finally {
-    clearCsrfToken();
+    invalidateLocalSession();
   }
 }
