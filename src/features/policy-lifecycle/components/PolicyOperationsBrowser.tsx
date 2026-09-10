@@ -3,9 +3,10 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { normalizeApiError } from '../../../shared/api/apiError';
 import { EmptyState, ErrorState, LoadingPanel, SectionCard, StatusBadge } from '../../../shared/components';
 import { usePolicyArtifactHistory, usePolicyArtifacts } from '../hooks/usePolicyLifecycle';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../../../shared/config/pagination';
 import type { ExecutionPackType, PolicyArtifactSummary, PolicyLifecycleStage } from '../model/types';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = DEFAULT_TABLE_PAGE_SIZE;
 const stages: PolicyLifecycleStage[] = [
   'DRAFT', 'VALIDATED', 'CANDIDATE', 'REPLAY', 'SHADOW', 'APPROVED', 'ACTIVE', 'SUPERSEDED', 'REVIEW', 'ROLLED_BACK',
 ];
@@ -54,7 +55,6 @@ export function PolicyOperationsBrowser({
   }
 
   function changePage(nextOffset: number) {
-    onClearSelection();
     setOffset(nextOffset);
   }
 
@@ -62,7 +62,7 @@ export function PolicyOperationsBrowser({
     <SectionCard
       title="Policy Operations"
       description="권한 범위의 Artifact를 검색하고 Lifecycle·승인 Evidence를 탐색합니다."
-      actions={<StatusBadge tone={artifacts.isSuccess ? 'success' : 'neutral'}>{artifacts.data ? `${artifacts.data.total} ARTIFACTS` : 'LOADING'}</StatusBadge>}
+      actions={artifacts.data ? <span className="result-count">정책 {artifacts.data.total}개</span> : undefined}
     >
       <form className="recovery-toolbar" onSubmit={submit}>
         <label className="field field-grow"><span>Artifact 검색</span><input value={queryInput} onChange={(event) => setQueryInput(event.target.value)} placeholder="ID, Version, Workload, Purpose, 생성자" /></label>
@@ -77,7 +77,7 @@ export function PolicyOperationsBrowser({
         <EmptyState compact title="Policy Artifact가 없습니다" description="현재 Pack·Stage·검색 조건과 권한 Scope에 일치하는 Artifact가 없습니다." />
       ) : (
         <div className={`table-shell${artifacts.isFetching ? ' is-refreshing' : ''}`}>
-          <div className="table-header table-policy-artifacts"><span>Artifact</span><span>Scope</span><span>Stage</span><span>Updated</span></div>
+          <div className="table-head table-policy-artifacts"><span>Artifact</span><span>Scope</span><span>Stage</span><span>Updated</span></div>
           {artifacts.data.items.map((item) => (
             <button
               className={`table-row table-policy-artifacts${selectedArtifactId === item.artifactId && selectedArtifactVersion === item.artifactVersion ? ' active' : ''}`}

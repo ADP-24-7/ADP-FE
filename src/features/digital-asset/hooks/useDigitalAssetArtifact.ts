@@ -12,6 +12,7 @@ export function useDigitalAssetArtifactCurrentStates(params: DigitalAssetArtifac
   return useQuery({
     queryKey: ['digital-asset-artifact-current-states', params],
     queryFn: () => getDigitalAssetArtifactCurrentStates(params),
+    placeholderData: (previous) => previous,
     retry: false,
   });
 }

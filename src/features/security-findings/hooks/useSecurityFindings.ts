@@ -12,6 +12,7 @@ export function useSecurityFindings(params: SecurityFindingSearchParams) {
   return useQuery({
     queryKey: securityFindingKeys.list(params),
     queryFn: () => getSecurityFindings(params),
+    placeholderData: (previous) => previous,
     retry: false,
   });
 }

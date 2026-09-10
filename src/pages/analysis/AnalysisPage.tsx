@@ -1,25 +1,14 @@
-import { Activity, AlertTriangle, Clock3, ListRestart, ShieldX, Workflow } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AiEvaluationPanel } from '../../features/ai-evaluation';
-import { useOperationsSummary } from '../../features/operations-monitoring';
 import { RecoveryOperationsPanel } from '../../features/recovery-operations';
 import { ReviewQueuePanel } from '../../features/review-queue';
-import { normalizeApiError } from '../../shared/api/apiError';
-import { ErrorState, MetricCard, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
+import { PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
 import { useExecutionPack } from '../../shared/prototype';
-
-function secondsLabel(value: number | null | undefined) {
-  if (value == null) return '—';
-  if (value < 60) return `${value}초`;
-  return `${Math.floor(value / 60)}분 ${value % 60}초`;
-}
 
 export function AnalysisPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { selectedPack } = useExecutionPack();
-  const summary = useOperationsSummary(60, selectedPack.apiValue);
-  const metricState = summary.isLoading ? 'loading' : summary.isError ? 'error' : 'value';
 
   return (
     <section className="page-section">
@@ -27,7 +16,7 @@ export function AnalysisPage() {
         eyebrow="RECOVERY OPERATIONS · RECONCILIATION FIRST"
         title="Runtime · Recovery"
         description="SENT_UNKNOWN을 재전송하지 않고 외부 상태 확인, 안전 재시도와 수동 검토 Evidence로 수렴시킵니다."
-        actions={<StatusBadge tone={summary.isSuccess ? 'success' : 'warning'}>{summary.isSuccess ? 'OPERATIONS API CONNECTED' : 'OPERATIONS API'}</StatusBadge>}
+        actions={<StatusBadge tone="info">PACK-SCOPED OPERATIONS</StatusBadge>}
       />
 
       <PackContextSummary
@@ -35,32 +24,21 @@ export function AnalysisPage() {
         scope={selectedPack.scope}
         descriptor={selectedPack.descriptor}
         objective={selectedPack.objective}
-        dataScope={`${selectedPack.apiValue} Pack · Runtime / Recovery / Review Queue 기준 조회`}
+        dataScope="검토 대기 · 복구 인시던트"
       />
 
       {selectedPack.key === 'ai' ? <AiEvaluationPanel /> : null}
 
-      <div className="metric-grid metric-grid-six">
-        <MetricCard label="Runtime Total" value={summary.data?.runtime.total} description="최근 60분 실행" state={metricState} icon={Activity} tone="blue" />
-        <MetricCard label="Runtime Failed" value={summary.data?.runtime.failed} description="FAILED terminal" state={metricState} icon={ShieldX} tone="red" />
-        <MetricCard label="Recovery Backlog" value={summary.data?.recovery.backlog} description="자동 처리 대기" state={metricState} icon={Workflow} tone="purple" />
-        <MetricCard label="Manual Review" value={summary.data?.recovery.manualReview} description="운영자 검토 필요" state={metricState} icon={AlertTriangle} tone="amber" />
-        <MetricCard label="Stale Operations" value={summary.data?.recovery.staleOperations} description="임계시간 초과 명령" state={metricState} icon={ListRestart} tone="red" />
-        <MetricCard label="Oldest Backlog" value={secondsLabel(summary.data?.recovery.oldestBacklogAgeSeconds)} description="가장 오래된 대기" state={metricState} icon={Clock3} tone="amber" />
+      <div id="review-queue" className="anchored-section">
+        <ReviewQueuePanel
+          key={`review-${selectedPack.key}`}
+          executionPack={selectedPack.key === 'digital-asset' ? 'DIGITAL_ASSET' : 'AI'}
+          onOpenTrace={(executionId, section) => navigate(`/audit?executionId=${encodeURIComponent(executionId)}&section=${section}`)}
+          onOpenRecovery={(recoveryId) => setSearchParams({ recoveryId }, { replace: true })}
+        />
       </div>
 
-      {summary.isError ? (
-        <ErrorState title="운영 Summary를 불러오지 못했습니다" description={normalizeApiError(summary.error).message} onRetry={() => summary.refetch()} />
-      ) : null}
-
-      <ReviewQueuePanel
-        key={`review-${selectedPack.key}`}
-        executionPack={selectedPack.key === 'digital-asset' ? 'DIGITAL_ASSET' : 'AI'}
-        onOpenTrace={(executionId) => navigate(`/audit?executionId=${encodeURIComponent(executionId)}`)}
-        onOpenRecovery={(recoveryId) => setSearchParams({ recoveryId }, { replace: true })}
-      />
-
-      <RecoveryOperationsPanel
+      <div id="recovery-incidents" className="anchored-section"><RecoveryOperationsPanel
         key={`recovery-${selectedPack.key}`}
         executionPack={selectedPack.apiValue}
         initialRecoveryId={searchParams.get('recoveryId') ?? ''}
@@ -68,7 +46,7 @@ export function AnalysisPage() {
           if (recoveryId) setSearchParams({ recoveryId }, { replace: true });
           else setSearchParams({}, { replace: true });
         }}
-      />
+      /></div>
 
       <SectionCard title="Recovery 안전 경계" description="BE-9 worker와 수동 명령이 공유하는 fail-closed 처리 순서">
         <div className="runtime-stage-grid">

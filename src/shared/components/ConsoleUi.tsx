@@ -55,12 +55,12 @@ type EmptyStateProps = {
 };
 
 export function EmptyState({ title, description, endpoint, action, compact = false, icon: Icon = Database }: EmptyStateProps) {
+  void endpoint;
   return (
     <div className={compact ? 'state-panel state-panel-compact' : 'state-panel'} role="status">
       <span className="state-icon" aria-hidden="true"><Icon size={compact ? 17 : 22} /></span>
       <strong>{title}</strong>
       <p>{description}</p>
-      {endpoint ? <code>{endpoint}</code> : null}
       {action ? <div className="state-action">{action}</div> : null}
     </div>
   );
@@ -71,11 +71,12 @@ type ErrorStateProps = {
   description: string;
   onRetry?: () => void;
   retryLabel?: string;
+  compact?: boolean;
 };
 
-export function ErrorState({ title = '데이터를 불러오지 못했습니다', description, onRetry, retryLabel = '다시 시도' }: ErrorStateProps) {
+export function ErrorState({ title = '데이터를 불러오지 못했습니다', description, onRetry, retryLabel = '다시 시도', compact = false }: ErrorStateProps) {
   return (
-    <div className="state-panel state-panel-error" role="alert">
+    <div className={`state-panel state-panel-error${compact ? ' state-panel-inline' : ''}`} role="alert">
       <span className="state-icon" aria-hidden="true">!</span>
       <strong>{title}</strong>
       <p>{description}</p>
@@ -150,15 +151,15 @@ type PackContextSummaryProps = {
 
 export function PackContextSummary({ label, scope, descriptor, objective, dataScope }: PackContextSummaryProps) {
   return (
-    <div className="pack-context-summary" aria-label={dataScope ? '선택된 Viewing Context' : '선택된 Execution Pack'}>
+    <div className="pack-context-summary" aria-label="선택된 운영 영역">
       <div>
-        <span>{dataScope ? 'VIEWING CONTEXT' : 'SELECTED EXECUTION PACK'}</span>
+        <span>운영 영역</span>
         <strong>{label}</strong>
         <p>{objective ?? scope}</p>
       </div>
       <div className="pack-context-meta">
         <StatusBadge tone="purple">{descriptor}</StatusBadge>
-        {dataScope ? <small><b>OPERATIONS DATA</b>{dataScope}</small> : null}
+        {dataScope ? <small><b>조회 범위</b>{dataScope}</small> : null}
       </div>
     </div>
   );

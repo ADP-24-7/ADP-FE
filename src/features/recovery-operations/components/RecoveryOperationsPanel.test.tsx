@@ -34,19 +34,30 @@ function detailResponse(recoveryStatus = 'PENDING', retryDisposition = 'RECONCIL
   };
 }
 
-function renderPanel() {
+function renderPanel(initialRecoveryId = '') {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
-  const view = render(
+  const panel = (recoveryId: string) => (
     <QueryClientProvider client={queryClient}>
-      <RecoveryOperationsPanel executionPack="AI" />
-    </QueryClientProvider>,
+      <RecoveryOperationsPanel executionPack="AI" initialRecoveryId={recoveryId} />
+    </QueryClientProvider>
   );
-  return { ...view, queryClient };
+  const view = render(panel(initialRecoveryId));
+  return { ...view, queryClient, rerenderRecoveryId: (recoveryId: string) => view.rerender(panel(recoveryId)) };
 }
 
 describe('RecoveryOperationsPanel', () => {
+  it('synchronizes the selected incident when the URL-owned recovery ID changes', async () => {
+    const { rerenderRecoveryId } = renderPanel();
+
+    expect(screen.getByText('Incident 선택 대기')).toBeInTheDocument();
+    rerenderRecoveryId('recovery-contract');
+
+    expect(await screen.findByText('Recovery ID')).toBeInTheDocument();
+    expect(screen.getAllByText('recovery-contract').length).toBeGreaterThan(0);
+  });
+
   it('reuses the logical operation ID when a command is retried', async () => {
     const user = userEvent.setup();
     const operationIds: string[] = [];
@@ -104,6 +115,29 @@ describe('RecoveryOperationsPanel', () => {
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
   });
 
+  it('keeps incident evidence readable but disables commands without the privileged role', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get('/api/admin/auth/context', () => HttpResponse.json({
+        principalId: 'auditor-local',
+        principalType: 'USER',
+        displayName: 'Local Auditor',
+        institutionId: 'institution_local',
+        roles: ['AUDITOR'],
+        workloadIds: ['*'],
+        subjectAuthorizationRequired: false,
+      })),
+    );
+    renderPanel();
+
+    await user.click(await screen.findByRole('button', { name: /recovery-contract/ }));
+
+    expect(await screen.findByText('READ ONLY')).toBeInTheDocument();
+    expect(screen.getByText('Recovery 명령에는 PRIVILEGED_OPERATOR Role이 필요합니다.')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /외부 상태 확인/ })).toBeDisabled();
+    expect(screen.getByRole('checkbox', { name: /RECONCILE 명령/ })).toBeDisabled();
+  });
+
   it('clears the selected incident when the status filter changes', async () => {
     const user = userEvent.setup();
     server.use(
@@ -123,12 +157,12 @@ describe('RecoveryOperationsPanel', () => {
     await user.selectOptions(screen.getByRole('combobox', { name: 'Recovery Status' }), 'EXHAUSTED');
 
     expect(screen.getByText('Incident 선택 대기')).toBeInTheDocument();
-    expect(screen.getByRole('status', { name: 'Recovery Incident를 불러오는 중입니다' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /recovery-contract/ })).toBeDisabled();
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
     expect(await screen.findByText('Recovery Incident가 없습니다')).toBeInTheDocument();
   });
 
-  it('clears the selected incident when the page changes', async () => {
+  it('keeps the selected incident while moving to another result page', async () => {
     const user = userEvent.setup();
     server.use(
       http.get('/api/admin/recovery/incidents', ({ request }) => {
@@ -136,8 +170,8 @@ describe('RecoveryOperationsPanel', () => {
         return HttpResponse.json({
           items: [{ ...detailResponse(), recoveryId: page === 0 ? 'recovery-contract' : 'recovery-page-two' }],
           page,
-          size: 20,
-          totalElements: 21,
+          size: 10,
+          totalElements: 11,
         });
       }),
     );
@@ -147,8 +181,8 @@ describe('RecoveryOperationsPanel', () => {
     expect(await screen.findByText('Recovery ID')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '다음' }));
 
-    expect(screen.getByText('Incident 선택 대기')).toBeInTheDocument();
-    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    expect(screen.getByText('Recovery ID')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox')).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: /recovery-page-two/ })).toBeInTheDocument();
   });
 });

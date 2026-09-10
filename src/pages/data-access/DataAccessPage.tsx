@@ -1,4 +1,4 @@
-import { Boxes, LockKeyhole, Play, Search } from 'lucide-react';
+import { LockKeyhole, Play, Search } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { useContextPreview } from '../../features/workloads';
 import { normalizeApiError } from '../../shared/api/apiError';
@@ -11,9 +11,9 @@ export function DataAccessPage() {
   const [purpose, setPurpose] = useState('');
   const [subject, setSubject] = useState('');
   const preview = useContextPreview();
-  const workloadSuggestions = [{ value: 'customer_summary', label: 'AI 고객 요약', description: 'BE local fixture Context Preview', source: 'local-example' as const }];
+  const workloadSuggestions = [{ value: 'customer_summary', label: 'AI 고객 요약', description: 'Context Preview 예시', source: 'local-example' as const }];
   const purposeSuggestions = [{ value: 'CUSTOMER_SUPPORT', label: '고객 지원 목적', description: 'customer_summary에 허용된 Purpose', source: 'local-example' as const }];
-  const subjectSuggestions = [{ value: 'customer:customer-100', label: 'Local synthetic customer', description: '실제 고객정보가 아닌 BE local fixture Subject', source: 'local-example' as const }];
+  const subjectSuggestions = [{ value: 'customer:customer-100', label: 'Synthetic customer', description: '실제 고객정보가 아닌 검증용 Subject', source: 'local-example' as const }];
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -68,10 +68,6 @@ export function DataAccessPage() {
           <BulletList items={selectedPack.evidenceChecks.map(([title, description]) => `${title}: ${description}`)} />
         </SectionCard>
       </div>
-
-      <SectionCard title="Workload Registry" description="현재 BE는 목록 API 없이 인증 Principal의 Workload Scope와 Runtime 검증만 제공합니다." actions={<button className="button button-secondary" type="button" disabled><Boxes size={15} />Workload 등록</button>}>
-        <EmptyState title="API 연결 대기" description="관리자용 Workload Registry Read Model이 구현되면 목록을 표시합니다." endpoint="Workload Registry API 미구현" />
-      </SectionCard>
 
       <div className="notice notice-info">
         <LockKeyhole size={17} />

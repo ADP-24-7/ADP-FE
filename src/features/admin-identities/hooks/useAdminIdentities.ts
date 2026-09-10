@@ -12,6 +12,7 @@ export function useAdminIdentities(params: AdminIdentitySearchParams) {
   return useQuery({
     queryKey: adminIdentityKeys.list(params),
     queryFn: () => getAdminIdentities(params),
+    placeholderData: (previous) => previous,
     retry: false,
   });
 }

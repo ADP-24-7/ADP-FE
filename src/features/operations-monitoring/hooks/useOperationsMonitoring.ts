@@ -23,6 +23,7 @@ export function usePolicyOperationEvents(params: PolicyOperationEventParams) {
   return useQuery({
     queryKey: operationsMonitoringKeys.policyEvents(params),
     queryFn: () => getPolicyOperationEvents(params),
+    placeholderData: (previous) => previous,
     retry: false,
   });
 }

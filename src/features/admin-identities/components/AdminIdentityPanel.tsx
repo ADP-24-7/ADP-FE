@@ -2,6 +2,7 @@ import { KeyRound, RefreshCw, Search, ShieldCheck, UserRound } from 'lucide-reac
 import { useState, type FormEvent } from 'react';
 import { normalizeApiError } from '../../../shared/api/apiError';
 import { EmptyState, ErrorState, KeyValues, LoadingPanel, SectionCard, StatusBadge } from '../../../shared/components';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../../../shared/config/pagination';
 import { useAdminIdentities, useAdminIdentityDetail } from '../hooks/useAdminIdentities';
 import type { AdminIdentitySearchParams, AdminPrincipalType } from '../model/types';
 
@@ -17,7 +18,7 @@ export function AdminIdentityPanel() {
   const [role, setRole] = useState('');
   const [workloadId, setWorkloadId] = useState('');
   const [enabled, setEnabled] = useState<'all' | 'true' | 'false'>('all');
-  const [params, setParams] = useState<AdminIdentitySearchParams>({ page: 0, size: 20 });
+  const [params, setParams] = useState<AdminIdentitySearchParams>({ page: 0, size: DEFAULT_TABLE_PAGE_SIZE });
   const [selectedPrincipalId, setSelectedPrincipalId] = useState('');
   const identities = useAdminIdentities(params);
   const detail = useAdminIdentityDetail(selectedPrincipalId);
@@ -33,7 +34,7 @@ export function AdminIdentityPanel() {
       workloadId: workloadId.trim() || undefined,
       enabled: enabled === 'all' ? undefined : enabled === 'true',
       page: 0,
-      size: 20,
+      size: DEFAULT_TABLE_PAGE_SIZE,
     });
   }
 
@@ -44,7 +45,7 @@ export function AdminIdentityPanel() {
     setWorkloadId('');
     setEnabled('all');
     setSelectedPrincipalId('');
-    setParams({ page: 0, size: 20 });
+    setParams({ page: 0, size: DEFAULT_TABLE_PAGE_SIZE });
   }
 
   return (
@@ -52,7 +53,6 @@ export function AdminIdentityPanel() {
       <SectionCard
         title="Identity Registry"
         description="현재 권한 범위에서 조회 가능한 사용자와 서비스 Principal을 확인합니다."
-        actions={<StatusBadge tone={identities.isSuccess ? 'success' : 'warning'}>{identities.isSuccess ? 'IDENTITY API CONNECTED' : 'IDENTITY API'}</StatusBadge>}
       >
         <form className="identity-filter-grid" onSubmit={submit}>
           <label className="field"><span>Identity</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="이름 또는 Principal ID" /></label>
@@ -66,7 +66,7 @@ export function AdminIdentityPanel() {
           </div>
         </form>
 
-        <div className="table-shell identity-table-shell" aria-busy={identities.isFetching}>
+        <div className={`table-shell identity-table-shell${identities.isFetching && !identities.isLoading ? ' is-refreshing' : ''}`} aria-busy={identities.isFetching}>
           <div className="table-head table-identities">
             <span>IDENTITY</span><span>TYPE</span><span>ROLES</span><span>WORKLOADS</span><span>API KEYS</span><span>STATUS</span>
           </div>
@@ -94,8 +94,8 @@ export function AdminIdentityPanel() {
         <div className="pagination-row">
           <span>{identities.data ? `${identities.data.totalElements}건 · ${identities.data.page + 1}/${Math.max(totalPages, 1)} 페이지` : '조회 대기'}</span>
           <div>
-            <button className="button button-secondary" type="button" disabled={(params.page ?? 0) === 0 || identities.isFetching} onClick={() => { setSelectedPrincipalId(''); setParams((value) => ({ ...value, page: Math.max(0, (value.page ?? 0) - 1) })); }}>이전</button>
-            <button className="button button-secondary" type="button" disabled={!totalPages || (params.page ?? 0) + 1 >= totalPages || identities.isFetching} onClick={() => { setSelectedPrincipalId(''); setParams((value) => ({ ...value, page: (value.page ?? 0) + 1 })); }}>다음</button>
+            <button className="button button-secondary" type="button" disabled={(params.page ?? 0) === 0 || identities.isFetching} onClick={() => setParams((value) => ({ ...value, page: Math.max(0, (value.page ?? 0) - 1) }))}>이전</button>
+            <button className="button button-secondary" type="button" disabled={!totalPages || (params.page ?? 0) + 1 >= totalPages || identities.isFetching} onClick={() => setParams((value) => ({ ...value, page: (value.page ?? 0) + 1 }))}>다음</button>
           </div>
         </div>
       </SectionCard>

@@ -11,6 +11,7 @@ import {
   useTransitionPolicyLifecycle,
 } from '../hooks/usePolicyLifecycle';
 import type { PolicyLifecycleRecord, PolicyLifecycleStage } from '../model/types';
+import { useAuthContext } from '../../auth';
 
 const nextTransitions: Partial<Record<PolicyLifecycleStage, { targetStage: PolicyLifecycleStage; reasonCode: string; label: string }>> = {
   DRAFT: { targetStage: 'VALIDATED', reasonCode: 'VALIDATION_PASSED', label: '검증 완료' },
@@ -24,6 +25,7 @@ type PolicyGovernancePanelProps = {
 };
 
 export function PolicyGovernancePanel({ policy }: PolicyGovernancePanelProps) {
+  const auth = useAuthContext();
   const [evaluationCaseId, setEvaluationCaseId] = useState('');
   const [shadowEvaluationId, setShadowEvaluationId] = useState('');
   const [transitionConfirmed, setTransitionConfirmed] = useState(false);
@@ -51,6 +53,16 @@ export function PolicyGovernancePanel({ policy }: PolicyGovernancePanelProps) {
   const isKnownShadowEvidence = shadow.data?.shadowEvaluationId === enteredShadowEvaluationId;
   const isKnownDiffEvidence = isKnownShadowEvidence && shadow.data?.result === 'DIFF';
   const isMutating = transition.isPending || approval.isPending || activation.isPending || rollback.isPending;
+  const canOperate = auth.data?.roles.some((role) => role === 'OPERATOR' || role === 'PRIVILEGED_OPERATOR') ?? false;
+  const canRunPrivilegedCommand = auth.data?.roles.includes('PRIVILEGED_OPERATOR') ?? false;
+  const operatorReason = auth.isLoading
+    ? '현재 운영자 권한을 확인하고 있습니다.'
+    : canOperate
+      ? '현재 Role로 Lifecycle 검증과 Shadow 실행이 가능합니다.'
+      : 'Lifecycle 변경에는 OPERATOR 또는 PRIVILEGED_OPERATOR Role이 필요합니다.';
+  const privilegedReason = canRunPrivilegedCommand
+    ? '현재 Role로 승인·활성화·롤백 명령을 요청할 수 있습니다.'
+    : '승인·활성화·롤백에는 PRIVILEGED_OPERATOR Role이 필요합니다.';
   const terminalStateCopy: Partial<Record<PolicyLifecycleStage, { title: string; description: string }>> = {
     APPROVED: {
       title: 'Shadow Evidence 승인 완료',
@@ -163,7 +175,11 @@ export function PolicyGovernancePanel({ policy }: PolicyGovernancePanelProps) {
       description="Shadow Evidence, Maker-Checker 승인, Current Selection과 Rollback을 BE authoritative revision으로 실행합니다."
       actions={<StatusBadge tone={policy.lifecycleStage === 'ACTIVE' ? 'success' : policy.lifecycleStage === 'REVIEW' ? 'warning' : 'info'}>{policy.lifecycleStage}</StatusBadge>}
     >
-      <p className="helper-text"><ShieldCheck size={14} />현재 관리자 Role 조회 API 미연결 · 승인·활성화·롤백 요구 권한: PRIVILEGED_OPERATOR · BE authoritative 검증</p>
+      <div className={canRunPrivilegedCommand ? 'action-eligibility action-eligibility-allowed' : 'action-eligibility action-eligibility-blocked'}>
+        <ShieldCheck size={16} />
+        <p><strong>{auth.data?.principalId ?? '권한 확인 중'}</strong><span>{operatorReason} {privilegedReason}</span></p>
+        <StatusBadge tone={canRunPrivilegedCommand ? 'success' : 'warning'}>{canRunPrivilegedCommand ? 'ACTION ELIGIBLE' : 'READ ONLY'}</StatusBadge>
+      </div>
       <div className="governance-grid">
         <div className="governance-column">
           <div className="governance-section-heading">
@@ -187,7 +203,7 @@ export function PolicyGovernancePanel({ policy }: PolicyGovernancePanelProps) {
                   required
                 />
               </label>
-              <button className="button button-secondary" type="submit" disabled={!evaluationCaseId.trim() || shadow.isPending}>
+              <button className="button button-secondary" type="submit" disabled={!canOperate || !evaluationCaseId.trim() || shadow.isPending} title={operatorReason}>
                 {shadow.isPending ? '비교 중...' : 'Shadow 비교 실행'}
               </button>
             </form>
@@ -228,13 +244,14 @@ export function PolicyGovernancePanel({ policy }: PolicyGovernancePanelProps) {
           {nextTransition ? (
             <div className="governance-command">
               <label className="checkbox-row">
-                <input type="checkbox" checked={transitionConfirmed} onChange={(event) => setTransitionConfirmed(event.target.checked)} />
+                <input type="checkbox" checked={transitionConfirmed} onChange={(event) => setTransitionConfirmed(event.target.checked)} disabled={!canOperate} />
                 <span>{nextTransition.label} 명령과 현재 Revision 사용을 확인합니다.</span>
               </label>
               <button
                 className="button button-primary"
                 type="button"
-                disabled={!transitionConfirmed || isMutating || (nextTransition.targetStage === 'SHADOW' && !shadowEvaluationId.trim())}
+                disabled={!canOperate || !transitionConfirmed || isMutating || (nextTransition.targetStage === 'SHADOW' && !shadowEvaluationId.trim())}
+                title={operatorReason}
                 onClick={advanceLifecycle}
               >
                 <ArrowRight size={15} />{nextTransition.label}
@@ -245,10 +262,10 @@ export function PolicyGovernancePanel({ policy }: PolicyGovernancePanelProps) {
           {policy.lifecycleStage === 'SHADOW' ? (
             <div className="governance-command">
               <label className="checkbox-row">
-                <input type="checkbox" checked={approvalConfirmed} onChange={(event) => setApprovalConfirmed(event.target.checked)} disabled={isKnownDiffEvidence} />
+                <input type="checkbox" checked={approvalConfirmed} onChange={(event) => setApprovalConfirmed(event.target.checked)} disabled={!canRunPrivilegedCommand || isKnownDiffEvidence} />
                 <span>BE가 MATCH Evidence, 승인 권한과 Maker-Checker 조건을 검증하도록 요청합니다.</span>
               </label>
-              <button className="button button-primary" type="button" disabled={!approvalConfirmed || !enteredShadowEvaluationId || isKnownDiffEvidence || isMutating} onClick={approve}>
+              <button className="button button-primary" type="button" disabled={!canRunPrivilegedCommand || !approvalConfirmed || !enteredShadowEvaluationId || isKnownDiffEvidence || isMutating} onClick={approve} title={privilegedReason}>
                 <CheckCircle2 size={15} />Evidence 기반 승인
               </button>
             </div>
@@ -282,10 +299,10 @@ export function PolicyGovernancePanel({ policy }: PolicyGovernancePanelProps) {
           {isGenericSelectionSupported && policy.lifecycleStage === 'APPROVED' ? (
             <div className="governance-command">
               <label className="checkbox-row">
-                <input type="checkbox" checked={activationConfirmed} onChange={(event) => setActivationConfirmed(event.target.checked)} disabled={!canUseSelectionRevision} />
+                <input type="checkbox" checked={activationConfirmed} onChange={(event) => setActivationConfirmed(event.target.checked)} disabled={!canRunPrivilegedCommand || !canUseSelectionRevision} />
                 <span>Artifact rev {policy.revision} / Selection rev {expectedSelectionRevision} 기준으로 ACTIVE를 교체합니다.</span>
               </label>
-              <button className="button button-primary" type="button" disabled={!activationConfirmed || !canUseSelectionRevision || isMutating} onClick={activate}>
+              <button className="button button-primary" type="button" disabled={!canRunPrivilegedCommand || !activationConfirmed || !canUseSelectionRevision || isMutating} onClick={activate} title={privilegedReason}>
                 <ShieldCheck size={15} />Current Selection 활성화
               </button>
             </div>
@@ -294,10 +311,10 @@ export function PolicyGovernancePanel({ policy }: PolicyGovernancePanelProps) {
           {isGenericSelectionSupported && policy.lifecycleStage === 'SUPERSEDED' ? (
             <div className="governance-command governance-command-danger">
               <label className="checkbox-row">
-                <input type="checkbox" checked={rollbackConfirmed} onChange={(event) => setRollbackConfirmed(event.target.checked)} disabled={!currentSelection.data} />
+                <input type="checkbox" checked={rollbackConfirmed} onChange={(event) => setRollbackConfirmed(event.target.checked)} disabled={!canRunPrivilegedCommand || !currentSelection.data} />
                 <span>선택 Revision을 검증하고 이 SUPERSEDED 버전으로 롤백합니다.</span>
               </label>
-              <button className="button button-danger" type="button" disabled={!rollbackConfirmed || !currentSelection.data || isMutating} onClick={rollbackSelection}>
+              <button className="button button-danger" type="button" disabled={!canRunPrivilegedCommand || !rollbackConfirmed || !currentSelection.data || isMutating} onClick={rollbackSelection} title={privilegedReason}>
                 <RotateCcw size={15} />이 버전으로 롤백
               </button>
             </div>

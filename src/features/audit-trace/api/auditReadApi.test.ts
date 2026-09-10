@@ -3,11 +3,12 @@ import { getExecutionEvidence, searchAuditExecutions } from './auditReadApi';
 
 describe('auditReadApi', () => {
   it('reads the institution-scoped audit page', async () => {
-    await expect(searchAuditExecutions({ size: 20 })).resolves.toMatchObject({ items: [], totalElements: 0 });
+    await expect(searchAuditExecutions({ executionPack: 'AI', size: 20 })).resolves.toMatchObject({ items: [], totalElements: 0 });
   });
 
   it('passes workload, status, time range, and pagination search conditions', async () => {
     const result = await searchAuditExecutions({
+      executionPack: 'DIGITAL_ASSET',
       workloadId: 'tokenized_asset_purchase',
       status: 'EXTERNALLY_RECONCILED',
       from: '2026-09-08T00:00:00Z',
@@ -18,7 +19,7 @@ describe('auditReadApi', () => {
 
     expect(result).toMatchObject({
       totalElements: 1,
-      items: [{ workloadId: 'tokenized_asset_purchase', status: 'EXTERNALLY_RECONCILED' }],
+      items: [{ executionPack: 'DIGITAL_ASSET', workloadId: 'tokenized_asset_purchase', status: 'EXTERNALLY_RECONCILED' }],
     });
   });
 

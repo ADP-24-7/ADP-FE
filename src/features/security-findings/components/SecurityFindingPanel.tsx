@@ -2,6 +2,7 @@ import { Eye, RefreshCw, Search, ShieldAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { normalizeApiError } from '../../../shared/api/apiError';
 import { EmptyState, ErrorState, KeyValues, LoadingPanel, SectionCard, StatusBadge } from '../../../shared/components';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../../../shared/config/pagination';
 import { useSecurityFindingDetail, useSecurityFindings } from '../hooks/useSecurityFindings';
 import type { SecurityFindingExecutionPack } from '../model/types';
 
@@ -21,7 +22,7 @@ type SecurityFindingPanelProps = {
 export function SecurityFindingPanel({ executionPack, onOpenTrace }: SecurityFindingPanelProps) {
   const [page, setPage] = useState(0);
   const [selectedFindingId, setSelectedFindingId] = useState<number | null>(null);
-  const findings = useSecurityFindings({ executionPack, page, size: 20 });
+  const findings = useSecurityFindings({ executionPack, page, size: DEFAULT_TABLE_PAGE_SIZE });
   const detail = useSecurityFindingDetail(selectedFindingId);
   const totalPages = findings.data ? Math.ceil(findings.data.totalElements / findings.data.size) : 0;
 
@@ -37,14 +38,13 @@ export function SecurityFindingPanel({ executionPack, onOpenTrace }: SecurityFin
         description="Provider 응답에서 차단된 민감정보 Finding을 원문 없이 탐색합니다."
         actions={(
           <div className="section-action-group">
-            <StatusBadge tone={findings.isSuccess ? 'success' : 'warning'}>{findings.isSuccess ? 'FINDING API CONNECTED' : 'FINDING API'}</StatusBadge>
             <button className="button button-secondary" type="button" onClick={() => findings.refetch()} disabled={findings.isFetching} title="Security Finding 새로고침">
               <RefreshCw size={14} />새로고침
             </button>
           </div>
         )}
       >
-        <div className="table-shell security-findings-table-shell" aria-busy={findings.isFetching}>
+        <div className={`table-shell security-findings-table-shell${findings.isFetching && !findings.isLoading ? ' is-refreshing' : ''}`} aria-busy={findings.isFetching}>
           <div className="table-head table-security-findings">
             <span>DETECTED</span><span>EXECUTION</span><span>WORKLOAD</span><span>TYPE</span><span>LOCATION</span><span>DETECTOR</span>
           </div>
@@ -66,14 +66,14 @@ export function SecurityFindingPanel({ executionPack, onOpenTrace }: SecurityFin
               <span>{item.detectorVersion}</span>
             </button>
           )) : (
-            <EmptyState icon={Search} title="탐지된 민감정보가 없습니다" description={`${executionPack} 범위와 현재 권한에 해당하는 Response Finding이 없습니다.`} endpoint="GET /api/admin/security-findings" />
+            <EmptyState icon={Search} title="탐지된 민감정보가 없습니다" description={`현재 선택한 ${executionPack === 'DIGITAL_ASSET' ? 'Digital Asset' : 'AI · Agent'} 영역에서 확인할 보안 탐지 항목이 없습니다.`} endpoint="GET /api/admin/security-findings" />
           )}
         </div>
         <div className="pagination-row">
           <span>{findings.data ? `${findings.data.totalElements}건 · ${findings.data.page + 1}/${Math.max(totalPages, 1)} 페이지` : '조회 대기'}</span>
           <div>
-            <button className="button button-secondary" type="button" disabled={page === 0 || findings.isFetching} onClick={() => { setPage(Math.max(0, page - 1)); setSelectedFindingId(null); }}>이전</button>
-            <button className="button button-secondary" type="button" disabled={!totalPages || page + 1 >= totalPages || findings.isFetching} onClick={() => { setPage(page + 1); setSelectedFindingId(null); }}>다음</button>
+            <button className="button button-secondary" type="button" disabled={page === 0 || findings.isFetching} onClick={() => setPage(Math.max(0, page - 1))}>이전</button>
+            <button className="button button-secondary" type="button" disabled={!totalPages || page + 1 >= totalPages || findings.isFetching} onClick={() => setPage(page + 1)}>다음</button>
           </div>
         </div>
       </SectionCard>

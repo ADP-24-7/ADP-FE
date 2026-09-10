@@ -21,11 +21,11 @@ export function OverviewPage() {
 
   const readinessState = readiness.isLoading ? 'loading' : readiness.isError ? 'error' : 'value';
   const operationsState = operations.isLoading ? 'loading' : operations.isError ? 'error' : 'value';
-  const attentionItems = operations.data ? [
-    [operations.data.recovery.backlog, 'Recovery backlog', `${operations.data.recovery.backlog}건 · 가장 오래된 대기 ${operations.data.recovery.oldestBacklogAgeSeconds ?? '—'}초`, '/analysis'],
-    [operations.data.recovery.manualReview, 'Manual review', `${operations.data.recovery.manualReview}건 · exhausted ${operations.data.recovery.exhausted}건`, '/analysis'],
-    [operations.data.policy.driftedSelections, 'Policy selection drift', `${operations.data.policy.driftedSelections}건 · current ${operations.data.policy.currentSelections}건`, '/monitoring'],
-    [operations.data.security.institutionScopeMismatch, 'Institution scope mismatch', `${operations.data.security.institutionScopeMismatch}건 · 전체 denied ${operations.data.security.deniedAttempts}건`, '/monitoring'],
+  const operationalSignals = operations.data ? [
+    [operations.data.recovery.backlog, 'Recovery backlog', `${operations.data.recovery.backlog}건 · 가장 오래된 대기 ${operations.data.recovery.oldestBacklogAgeSeconds ?? '—'}초`, '/analysis#recovery-incidents'],
+    [operations.data.recovery.manualReview, 'Manual review', `${operations.data.recovery.manualReview}건 · exhausted ${operations.data.recovery.exhausted}건`, '/analysis#review-queue'],
+    [operations.data.policy.driftedSelections, 'Policy selection drift', `${operations.data.policy.driftedSelections}건 · current ${operations.data.policy.currentSelections}건`, '/monitoring#policy-events'],
+    [operations.data.security.institutionScopeMismatch, 'Institution scope mismatch', `${operations.data.security.institutionScopeMismatch}건 · 전체 denied ${operations.data.security.deniedAttempts}건`, '/monitoring#security-findings'],
   ].filter(([value]) => Number(value) > 0) as Array<[number, string, string, string]> : [];
 
   return (
@@ -33,7 +33,7 @@ export function OverviewPage() {
       <PageHeader
         eyebrow="POLICY DECISION → FINDING → TRACE → RECOVERY"
         title="Security Overview"
-        description="현재 위험, 영향받은 실행과 필요한 조치를 한 화면에서 확인합니다."
+        description="현재 운영 상태와 서버가 집계한 신호를 한 화면에서 확인합니다."
         actions={<StatusBadge tone={readiness.isError ? 'danger' : readiness.data?.status === 'UP' ? 'success' : 'warning'}>{readiness.isError ? 'BE UNAVAILABLE' : readiness.data?.status === 'UP' ? 'BE READY' : 'BE CHECKING'}</StatusBadge>}
       />
 
@@ -47,12 +47,12 @@ export function OverviewPage() {
       </div>
 
       <div className="content-grid content-grid-wide-left">
-        <SectionCard title="Attention Required" description="정상 BLOCK이 아닌 운영 확인 대상" actions={<button className="button button-secondary" type="button" onClick={() => navigate('/monitoring')}>전체 보기 <ArrowRight size={14} /></button>}>
+        <SectionCard title="Current Operational Signals" description="0이 아닌 서버 집계값을 표시하며 FE가 임계치나 이상 여부를 판정하지 않습니다." actions={<button className="button button-secondary" type="button" onClick={() => navigate('/monitoring')}>상세 보기 <ArrowRight size={14} /></button>}>
           {operations.isError ? (
             <EmptyState title="Operations API 오류" description="운영 집계를 불러오지 못했습니다. Monitoring 화면에서 연결 상태를 확인하세요." endpoint="GET /api/admin/operations/summary" />
-          ) : attentionItems.length ? (
+          ) : operationalSignals.length ? (
             <div className="finding-list">
-              {attentionItems.map(([, title, detail, path]) => (
+              {operationalSignals.map(([, title, detail, path]) => (
                 <button key={title} type="button" className="finding-row" onClick={() => navigate(path)}>
                   <span>API</span>
                   <strong>{title}</strong>
@@ -62,7 +62,7 @@ export function OverviewPage() {
               ))}
             </div>
           ) : operations.data ? (
-            <EmptyState icon={ShieldCheck} title="현재 확인이 필요한 운영 이슈가 없습니다" description="최근 60분 Recovery, Policy Drift와 Security 거부 집계가 모두 0입니다." />
+            <EmptyState icon={ShieldCheck} title="현재 0이 아닌 운영 신호가 없습니다" description="최근 60분 Recovery, Policy Drift와 Security 거부 집계가 모두 0입니다." />
           ) : <EmptyState title="운영 집계 조회 중" description="권한 범위의 Operations Summary를 불러오고 있습니다." />}
         </SectionCard>
 
@@ -71,12 +71,12 @@ export function OverviewPage() {
             <article>
               <strong>AI · Agent</strong>
               <span>Data · Tool · Action · Provider · Response</span>
-              <StatusBadge tone={selectedPack.key === 'ai' ? 'success' : 'neutral'}>{selectedPack.key === 'ai' ? 'SELECTED' : 'API 대기'}</StatusBadge>
+              <StatusBadge tone={selectedPack.key === 'ai' ? 'success' : 'neutral'}>{selectedPack.key === 'ai' ? 'SELECTED' : 'NOT SELECTED'}</StatusBadge>
             </article>
             <article>
               <strong>Digital Asset</strong>
               <span>Value-use · Transaction · Settlement · Reconciliation</span>
-              <StatusBadge tone={selectedPack.key === 'digital-asset' ? 'success' : 'neutral'}>{selectedPack.key === 'digital-asset' ? 'SELECTED' : 'API 대기'}</StatusBadge>
+              <StatusBadge tone={selectedPack.key === 'digital-asset' ? 'success' : 'neutral'}>{selectedPack.key === 'digital-asset' ? 'SELECTED' : 'NOT SELECTED'}</StatusBadge>
             </article>
           </div>
           <KeyValues
@@ -104,11 +104,11 @@ export function OverviewPage() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Operations Read Model" description="현재 FE가 사용하는 실제 운영 데이터 소스" actions={<StatusBadge tone={operations.isSuccess ? 'success' : 'warning'}>{operations.isSuccess ? 'CONNECTED' : 'CHECKING'}</StatusBadge>}>
+        <SectionCard title="운영 집계" description="현재 권한 범위의 최근 운영 상태">
           <EmptyState
             icon={ListChecks}
-            title={operations.data ? `${operations.data.windowMinutes}분 집계 연결됨` : 'Operations Summary 확인 중'}
-            description={operations.data ? `생성 시각 ${new Date(operations.data.generatedAt).toLocaleString('ko-KR')} · 개별 Security Finding은 별도 Read Model이 필요합니다.` : 'BE scoped Operations Summary 응답을 기다리고 있습니다.'}
+            title={operations.data ? `최근 ${operations.data.windowMinutes}분 집계` : '운영 상태 확인 중'}
+            description={operations.data ? `기준 시각 ${new Date(operations.data.generatedAt).toLocaleString('ko-KR')} · 상세 보안 탐지는 Security Monitoring에서 확인합니다.` : '현재 권한 범위의 운영 상태를 불러오고 있습니다.'}
             endpoint="GET /api/admin/operations/summary"
           />
         </SectionCard>

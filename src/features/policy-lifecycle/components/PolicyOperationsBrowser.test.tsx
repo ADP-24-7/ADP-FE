@@ -49,7 +49,7 @@ describe('PolicyOperationsBrowser', () => {
     expect(onClearSelection).toHaveBeenCalledTimes(3);
   });
 
-  it('clears the command target when moving to another result page', async () => {
+  it('keeps the command target stable when moving to another result page', async () => {
     server.use(http.get('/api/admin/policy-lifecycle', ({ request }) => {
       const url = new URL(request.url);
       return HttpResponse.json({
@@ -68,8 +68,10 @@ describe('PolicyOperationsBrowser', () => {
     const user = userEvent.setup();
     const { onClearSelection } = renderBrowser();
 
+    expect((await screen.findByText('Artifact')).parentElement).toHaveClass('table-head', 'table-policy-artifacts');
     await user.click(await screen.findByRole('button', { name: '다음 Policy Artifact' }));
 
-    expect(onClearSelection).toHaveBeenCalledOnce();
+    expect(onClearSelection).not.toHaveBeenCalled();
+    expect(await screen.findByText('11-11 / 11')).toBeInTheDocument();
   });
 });
