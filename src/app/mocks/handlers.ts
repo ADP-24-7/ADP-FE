@@ -1,4 +1,5 @@
 import { aiEvaluationHandlers } from '../../features/ai-evaluation/mocks/handlers';
+import { adminIdentityHandlers } from '../../features/admin-identities/mocks/handlers';
 import { auditTraceHandlers } from '../../features/audit-trace/mocks/handlers';
 import { digitalAssetHandlers } from '../../features/digital-asset/mocks/handlers';
 import { monitoringHandlers } from '../../features/monitoring/mocks/handlers';
@@ -11,6 +12,7 @@ import { runtimeExecutionHandlers } from '../../features/runtime-execution/mocks
 import { workloadHandlers } from '../../features/workloads/mocks/handlers';
 
 export const handlers = [
+  ...adminIdentityHandlers,
   ...aiEvaluationHandlers,
   ...auditTraceHandlers,
   ...digitalAssetHandlers,

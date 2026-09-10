@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   ShieldAlert,
   SlidersHorizontal,
+  UsersRound,
 } from 'lucide-react';
 import { executionPacks, useExecutionPack } from '../shared/prototype';
 import { env } from '../shared/config/env';
@@ -19,6 +20,7 @@ import { env } from '../shared/config/env';
 const navItems = [
   { to: '/overview', label: '통합 관제', icon: LayoutDashboard },
   { to: '/policies', label: '정책 · 승인', icon: SlidersHorizontal },
+  { to: '/identities', label: 'Identity · 권한', icon: UsersRound },
   { to: '/gateway-lab', label: 'Gateway Lab', icon: FlaskConical },
   { to: '/monitoring', label: 'Security Monitoring', icon: ShieldAlert },
   { to: '/analysis', label: 'Runtime · Recovery', icon: Activity },

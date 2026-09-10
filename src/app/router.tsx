@@ -5,6 +5,7 @@ import { AuditPage } from '../pages/audit/AuditPage';
 import { DataAccessPage } from '../pages/data-access/DataAccessPage';
 import { ErrorPage } from '../pages/error/ErrorPage';
 import { GatewayLabPage } from '../pages/gateway-lab/GatewayLabPage';
+import { IdentitiesPage } from '../pages/identities/IdentitiesPage';
 import { MonitoringPage } from '../pages/monitoring/MonitoringPage';
 import { NotFoundPage } from '../pages/not-found/NotFoundPage';
 import { OverviewPage } from '../pages/overview/OverviewPage';
@@ -20,6 +21,7 @@ export const router = createBrowserRouter([
       { path: 'overview', element: <OverviewPage /> },
       { path: 'data-access', element: <DataAccessPage /> },
       { path: 'gateway-lab', element: <GatewayLabPage /> },
+      { path: 'identities', element: <IdentitiesPage /> },
       { path: 'analysis', element: <AnalysisPage /> },
       { path: 'policies', element: <PoliciesPage /> },
       { path: 'monitoring', element: <MonitoringPage /> },
