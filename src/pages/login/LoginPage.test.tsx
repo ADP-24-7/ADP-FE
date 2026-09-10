@@ -9,10 +9,13 @@ import { LoginPage } from './LoginPage';
 describe('LoginPage', () => {
   it('uses credentials only, clears protected cache, and returns to the requested execution', async () => {
     let loginBody: Record<string, unknown> | undefined;
+    let csrfHeader: string | null = null;
+    document.cookie = 'XSRF-TOKEN=raw-cookie-token; Path=/';
     server.use(
       http.get('/api/auth/me', () => new HttpResponse(null, { status: 401 })),
       http.post('/api/auth/login', async ({ request }) => {
         loginBody = await request.json() as Record<string, unknown>;
+        csrfHeader = request.headers.get('X-XSRF-TOKEN');
         return HttpResponse.json({
           principalId: 'auditor-local', principalType: 'USER', displayName: 'Local Audit User',
           institutionId: 'institution_local', roles: ['AUDITOR'],
@@ -40,9 +43,11 @@ describe('LoginPage', () => {
 
     expect(await screen.findByText('감사 실행 복귀')).toBeInTheDocument();
     expect(loginBody).toEqual({ principalId: 'auditor-local', password: 'auditor-demo' });
+    expect(csrfHeader).toBe('test-csrf');
     expect(queryClient.getQueryData(['audit', 'protected'])).toBeUndefined();
     await waitFor(() => expect(queryClient.getQueryData(['auth', 'context'])).toMatchObject({
       principalId: 'auditor-local', roles: ['AUDITOR'],
     }));
+    document.cookie = 'XSRF-TOKEN=; Max-Age=0; Path=/';
   });
 });

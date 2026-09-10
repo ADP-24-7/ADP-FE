@@ -6,8 +6,10 @@ export const httpClient = axios.create({
   baseURL: '',
   timeout: 10_000,
   withCredentials: true,
-  xsrfCookieName: 'XSRF-TOKEN',
-  xsrfHeaderName: 'X-XSRF-TOKEN',
+  // Spring returns the request token from /api/auth/csrf. The auth boundary
+  // installs that value explicitly so Axios does not replace it with the raw
+  // cookie token when dispatching a browser request.
+  withXSRFToken: false,
   headers: {
     'Content-Type': 'application/json',
   },
