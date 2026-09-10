@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react';
+import { useSearchParams as useRouterSearchParams } from 'react-router-dom';
 import { FileCheck2, LockKeyhole, RotateCcw, Search } from 'lucide-react';
 import { useAuditExecutions, useExecutionEvidence } from '../../features/audit-trace';
 import type { AuditSearchParams } from '../../features/audit-trace';
@@ -7,9 +8,11 @@ import { EmptyState, ErrorState, KeyValues, LoadingPanel, PackContextSummary, Pa
 import { useExecutionPack } from '../../shared/prototype';
 
 export function AuditPage() {
+  const [routeSearchParams] = useRouterSearchParams();
+  const initialExecutionId = routeSearchParams.get('executionId') ?? '';
   const { selectedPack } = useExecutionPack();
-  const [executionId, setExecutionId] = useState('');
-  const [submittedExecutionId, setSubmittedExecutionId] = useState('');
+  const [executionId, setExecutionId] = useState(initialExecutionId);
+  const [submittedExecutionId, setSubmittedExecutionId] = useState(initialExecutionId);
   const [workloadId, setWorkloadId] = useState('');
   const [status, setStatus] = useState('');
   const [from, setFrom] = useState('');
