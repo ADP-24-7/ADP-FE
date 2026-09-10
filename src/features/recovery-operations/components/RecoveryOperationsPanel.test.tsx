@@ -12,6 +12,7 @@ function detailResponse(recoveryStatus = 'PENDING', retryDisposition = 'RECONCIL
     recoveryId: 'recovery-contract',
     executionId: 'execution-contract',
     institutionId: 'institution_local',
+    executionPack: 'AI',
     workloadId: 'customer_summary',
     purposeCode: 'CUSTOMER_SUPPORT',
     connectorId: 'connector-local',
@@ -39,7 +40,7 @@ function renderPanel() {
   });
   const view = render(
     <QueryClientProvider client={queryClient}>
-      <RecoveryOperationsPanel />
+      <RecoveryOperationsPanel executionPack="AI" />
     </QueryClientProvider>,
   );
   return { ...view, queryClient };
@@ -122,7 +123,7 @@ describe('RecoveryOperationsPanel', () => {
     await user.selectOptions(screen.getByRole('combobox', { name: 'Recovery Status' }), 'EXHAUSTED');
 
     expect(screen.getByText('Incident 선택 대기')).toBeInTheDocument();
-    expect(screen.getByText('REFRESHING')).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: 'Recovery Incident를 불러오는 중입니다' })).toBeInTheDocument();
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
     expect(await screen.findByText('Recovery Incident가 없습니다')).toBeInTheDocument();
   });

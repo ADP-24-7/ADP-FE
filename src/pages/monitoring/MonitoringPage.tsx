@@ -1,5 +1,5 @@
 import { History, RefreshCw, Search } from 'lucide-react';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ActionableIssueList,
@@ -27,9 +27,9 @@ export function MonitoringPage() {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [eventParams, setEventParams] = useState<PolicyOperationEventParams>({ page: 0, size: 20 });
-  const summary = useOperationsSummary(windowMinutes);
-  const recovery = useRecoveryIncidents({ page: 0, size: 20 });
-  const events = usePolicyOperationEvents(eventParams);
+  const summary = useOperationsSummary(windowMinutes, selectedPack.apiValue);
+  const recovery = useRecoveryIncidents({ executionPack: selectedPack.apiValue, page: 0, size: 20 });
+  const events = usePolicyOperationEvents({ ...eventParams, executionPack: selectedPack.apiValue });
   const monitoringView = summary.data ? presentOperationsMonitoring(summary.data, recovery.data?.items ?? []) : null;
   const recoveryIssues = presentRecoveryIssues(recovery.data?.items ?? []);
   const primaryMetrics = monitoringView?.metrics.filter((item) => item.priority === 'primary') ?? [];
@@ -37,6 +37,10 @@ export function MonitoringPage() {
   const totalPages = events.data ? Math.ceil(events.data.total / events.data.size) : 0;
   const eventsRefreshing = events.isFetching && !events.isLoading;
   const summaryError = summary.isError ? normalizeApiError(summary.error) : null;
+
+  useEffect(() => {
+    setEventParams((current) => ({ ...current, page: 0 }));
+  }, [selectedPack.apiValue]);
 
   function searchEvents(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -72,12 +76,12 @@ export function MonitoringPage() {
         scope={selectedPack.scope}
         descriptor={selectedPack.descriptor}
         objective={selectedPack.objective}
-        dataScope="전체 권한 허용 Workload · Pack 필터 미지원 지표 / Security Finding은 Pack 기준 조회"
+        dataScope={`${selectedPack.apiValue} Pack · Runtime / Recovery / Policy / Security Finding 기준 조회`}
       />
 
       <SecurityFindingPanel
         key={selectedPack.key}
-        executionPack={selectedPack.key === 'digital-asset' ? 'DIGITAL_ASSET' : selectedPack.key === 'saas' ? 'SAAS' : selectedPack.key === 'common' ? 'COMMON' : 'AI'}
+        executionPack={selectedPack.apiValue}
         onOpenTrace={(executionId) => navigate(`/audit?executionId=${encodeURIComponent(executionId)}`)}
       />
 
@@ -142,13 +146,13 @@ export function MonitoringPage() {
             <details className="technical-details">
               <summary>현재 데이터 계약</summary>
               <div>
-                <span>Summary</span><code>adp-operations-summary/v1</code>
+                <span>Summary</span><code>adp-operations-summary/v2</code>
                 <span>Recovery</span><code>GET /api/admin/recovery/incidents</code>
                 <span>관측 범위</span><p>최근 {summary.data?.windowMinutes ?? windowMinutes}분</p>
                 <span>Summary API</span><code>GET /api/admin/operations/summary</code>
                 <span>Prometheus</span><p>BE 내부 수집·집계 전용</p>
                 <span>데이터 출처</span><p>API 응답에 모드 정보 없음</p>
-                <span>Pack Filter</span><p>미지원 · 전체 권한 허용 Workload</p>
+                <span>Pack Filter</span><p>{selectedPack.apiValue} · Security 거부 집계만 전체 권한 허용 Workload</p>
               </div>
             </details>
           </div>

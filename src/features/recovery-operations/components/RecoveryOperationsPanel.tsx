@@ -5,6 +5,7 @@ import { EmptyState, ErrorState, KeyValues, LoadingPanel, SectionCard, StatusBad
 import { useRecoveryCommand, useRecoveryIncident, useRecoveryIncidents } from '../hooks/useRecoveryOperations';
 import { getRecoveryCommandAvailability } from '../model/recoveryCommandPolicy';
 import type { RecoveryOperationType, RecoveryStatus } from '../model/types';
+import type { ExecutionPackApiValue } from '../../../shared/prototype';
 
 const recoveryStatuses: RecoveryStatus[] = [
   'PENDING',
@@ -38,20 +39,21 @@ function statusTone(status: RecoveryStatus) {
 }
 
 type RecoveryOperationsPanelProps = {
+  executionPack: ExecutionPackApiValue;
   initialRecoveryId?: string;
   onSelectionChange?: (recoveryId: string) => void;
 };
 
-export function RecoveryOperationsPanel({ initialRecoveryId = '', onSelectionChange }: RecoveryOperationsPanelProps = {}) {
+export function RecoveryOperationsPanel({ executionPack, initialRecoveryId = '', onSelectionChange }: RecoveryOperationsPanelProps) {
   const [status, setStatus] = useState<RecoveryStatus | ''>('');
   const [page, setPage] = useState(0);
   const [selectedRecoveryId, setSelectedRecoveryId] = useState(initialRecoveryId);
   const [selectedCommand, setSelectedCommand] = useState<RecoveryOperationType>('RECONCILE');
   const [commandConfirmed, setCommandConfirmed] = useState(false);
   const operationIds = useRef<Partial<Record<RecoveryOperationType, string>>>({});
-  const params = { status: status || undefined, page, size: 20 };
+  const params = { executionPack, status: status || undefined, page, size: 20 };
   const incidents = useRecoveryIncidents(params);
-  const detail = useRecoveryIncident(selectedRecoveryId);
+  const detail = useRecoveryIncident(selectedRecoveryId, executionPack);
   const command = useRecoveryCommand();
   const totalPages = incidents.data ? Math.ceil(incidents.data.totalElements / incidents.data.size) : 0;
   const isRefreshing = incidents.isFetching && !incidents.isLoading;
@@ -103,7 +105,7 @@ export function RecoveryOperationsPanel({ initialRecoveryId = '', onSelectionCha
     const operationId = operationIds.current[effectiveCommand]
       ?? `fe_${effectiveCommand.toLowerCase()}_${crypto.randomUUID()}`;
     operationIds.current[effectiveCommand] = operationId;
-    command.mutate({ recoveryId: selectedRecoveryId, operationType: effectiveCommand, operationId }, {
+    command.mutate({ recoveryId: selectedRecoveryId, operationType: effectiveCommand, operationId, executionPack }, {
       onSuccess: () => {
         delete operationIds.current[effectiveCommand];
         setCommandConfirmed(false);
@@ -115,7 +117,7 @@ export function RecoveryOperationsPanel({ initialRecoveryId = '', onSelectionCha
     <>
       <SectionCard
         title="Recovery Incident"
-        description="현재 사용자에게 허용된 Institution·Workload 범위의 외부 실행 불명 상태를 조회합니다."
+        description={`${executionPack} Pack과 현재 사용자에게 허용된 Institution·Workload 범위의 외부 실행 불명 상태를 조회합니다.`}
         actions={(
           <div className="section-action-group">
             {isRefreshing ? <StatusBadge tone="warning">REFRESHING</StatusBadge> : null}
@@ -152,7 +154,7 @@ export function RecoveryOperationsPanel({ initialRecoveryId = '', onSelectionCha
             >
               <span>{new Date(item.updatedAt).toLocaleString('ko-KR')}</span>
               <span><code>{item.recoveryId}</code><small>{item.executionId}</small></span>
-              <span>{item.workloadId}<small>{item.purposeCode}</small></span>
+              <span>{item.workloadId}<small>{item.executionPack ?? 'LEGACY'} · {item.purposeCode}</small></span>
               <StatusBadge tone={statusTone(item.recoveryStatus)}>{item.recoveryStatus}</StatusBadge>
               <span>{item.attemptCount} / {item.maxAttempts}</span>
               <span>{item.retryDisposition}</span>
@@ -187,6 +189,7 @@ export function RecoveryOperationsPanel({ initialRecoveryId = '', onSelectionCha
               <KeyValues items={[
                 ['Recovery ID', detail.data.recoveryId],
                 ['Execution ID', detail.data.executionId],
+                ['Pack / Workload', `${detail.data.executionPack ?? 'LEGACY'} · ${detail.data.workloadId}`],
                 ['Connector', `${detail.data.connectorId} · ${detail.data.observedStatus}`],
                 ['External Status', detail.data.lastObservedExternalStatus ?? '확인 전'],
                 ['Recovery Status', detail.data.recoveryStatus],

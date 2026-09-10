@@ -1,7 +1,9 @@
 export type ExecutionPackKey = 'common' | 'ai' | 'saas' | 'digital-asset';
+export type ExecutionPackApiValue = 'COMMON' | 'AI' | 'SAAS' | 'DIGITAL_ASSET';
 
 export type ExecutionPack = {
   key: ExecutionPackKey;
+  apiValue: ExecutionPackApiValue;
   label: string;
   role: string;
   scope: string;
@@ -80,6 +82,7 @@ const sharedBoundaries = [
 export const executionPacks: ExecutionPack[] = [
   {
     key: 'common',
+    apiValue: 'COMMON',
     label: 'Common Core',
     role: '공통 통제 계약',
     scope: 'Workload·Policy·Evidence·Audit',
@@ -138,6 +141,7 @@ export const executionPacks: ExecutionPack[] = [
   },
   {
     key: 'ai',
+    apiValue: 'AI',
     label: 'AI',
     role: 'Reference Implementation',
     scope: '금융상담·문서 RAG',
@@ -196,6 +200,7 @@ export const executionPacks: ExecutionPack[] = [
   },
   {
     key: 'saas',
+    apiValue: 'SAAS',
     label: 'SaaS',
     role: 'Contract Validation',
     scope: '외부 문서·업무 Workflow',
@@ -254,6 +259,7 @@ export const executionPacks: ExecutionPack[] = [
   },
   {
     key: 'digital-asset',
+    apiValue: 'DIGITAL_ASSET',
     label: 'Digital Asset',
     role: 'Canonical Runtime Contract',
     scope: 'Approved Transaction·Outbound Request·Artifact',

@@ -1,7 +1,15 @@
+import type { ExecutionPackApiValue } from '../../../shared/prototype';
+
 export type OperationsSummary = {
-  schemaVersion: 'adp-operations-summary/v1';
+  schemaVersion: 'adp-operations-summary/v2';
   windowMinutes: number;
   generatedAt: string;
+  scope: {
+    requestedExecutionPack: ExecutionPackApiValue | null;
+    defaultSemantics: 'ALL_AUTHORIZED_WORKLOADS' | 'REQUESTED_EXECUTION_PACK';
+    packScopedSections: string[];
+    allAuthorizedWorkloadSections: string[];
+  };
   runtime: {
     total: number;
     completed: number;
@@ -62,6 +70,7 @@ export type PolicyOperationEventPage = {
 };
 
 export type PolicyOperationEventParams = {
+  executionPack?: ExecutionPackApiValue;
   workloadId?: string;
   category?: PolicyEventCategory;
   from?: string;

@@ -3,13 +3,17 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { OverviewPage } from '../pages/overview/OverviewPage';
 import { ExecutionPackProvider } from '../shared/prototype';
 import { server } from './mocks/server';
 import { App } from './App';
 
 describe('App', () => {
+  beforeEach(() => {
+    window.history.replaceState({}, '', '/overview');
+  });
+
   it('renders the real API console without mock environment labels', async () => {
     render(<App />);
 
@@ -19,6 +23,15 @@ describe('App', () => {
     expect(screen.queryByText('MOCK DATA')).not.toBeInTheDocument();
     expect(screen.queryByText('PROJECT_PROVISIONAL')).not.toBeInTheDocument();
     expect(screen.getAllByText('NO MOCK DATA').length).toBeGreaterThan(0);
+  });
+
+  it('does not restore a persisted pack that the runtime selector does not support', async () => {
+    window.localStorage.setItem('adp.selectedExecutionPack', 'saas');
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: 'Security Overview' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /AI · Agent/ })).toHaveClass('active');
   });
 
   it('updates runtime domain from the global selector without page reload', async () => {
@@ -72,12 +85,13 @@ describe('App', () => {
 
     expect(window.location.pathname).toBe('/monitoring');
     expect(screen.getByLabelText('선택된 Viewing Context')).toHaveTextContent('Digital Asset');
-    expect(screen.getByLabelText('선택된 Viewing Context')).toHaveTextContent('전체 권한 허용 Workload · Pack 필터 미지원');
+    expect(screen.getByLabelText('선택된 Viewing Context')).toHaveTextContent('DIGITAL_ASSET Pack · Runtime / Recovery / Policy / Security Finding 기준 조회');
   });
 
   it('opens the selected recovery incident through an SPA deep link', async () => {
     const user = userEvent.setup();
-    window.history.pushState({}, '', '/monitoring');
+    window.localStorage.setItem('adp.selectedExecutionPack', 'ai');
+    window.history.replaceState({}, '', '/monitoring');
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: 'Operations Monitoring' })).toBeInTheDocument();
@@ -92,9 +106,15 @@ describe('App', () => {
   it('shows a clear state when there are no attention items', async () => {
     server.use(
       http.get('/api/admin/operations/summary', () => HttpResponse.json({
-        schemaVersion: 'adp-operations-summary/v1',
+        schemaVersion: 'adp-operations-summary/v2',
         windowMinutes: 60,
         generatedAt: '2026-09-09T00:00:00Z',
+        scope: {
+          requestedExecutionPack: 'AI',
+          defaultSemantics: 'REQUESTED_EXECUTION_PACK',
+          packScopedSections: ['RUNTIME', 'RECOVERY', 'POLICY'],
+          allAuthorizedWorkloadSections: ['SECURITY'],
+        },
         runtime: { total: 0, completed: 0, failed: 0, blocked: 0, reviewRequired: 0 },
         recovery: {
           backlog: 0,
