@@ -5,6 +5,7 @@ import { DigitalAssetArtifactPanel } from '../../features/digital-asset';
 import { PolicyArtifactCreatePanel, PolicyGovernancePanel, PolicyOperationsBrowser, usePolicyLifecycle } from '../../features/policy-lifecycle';
 import { EmptyState, KeyValues, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
 import { useExecutionPack } from '../../shared/prototype';
+import { ReferenceEvidencePanel } from '../../features/reference-evidence';
 
 const lifecycle = [
   ['DRAFT', 'Policy Owner'],
@@ -78,6 +79,8 @@ export function PoliciesPage() {
         onSelect={(artifact) => setLookup({ artifactId: artifact.artifactId, artifactVersion: artifact.artifactVersion })}
         onClearSelection={() => setLookup({ artifactId: '', artifactVersion: '' })}
       />
+
+      <ReferenceEvidencePanel />
 
       {policy.data ? <PolicyGovernancePanel key={`${policy.data.artifactId}:${policy.data.artifactVersion}`} policy={policy.data} /> : null}
 

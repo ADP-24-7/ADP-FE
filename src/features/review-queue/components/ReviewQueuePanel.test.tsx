@@ -32,7 +32,10 @@ describe('ReviewQueuePanel', () => {
     expect(screen.getAllByText('SENSITIVE_INPUT_REVIEW_REQUIRED')).toHaveLength(2);
 
     await user.click(screen.getByRole('button', { name: 'Decision Trace' }));
-    expect(onOpenTrace).toHaveBeenCalledWith('exec-review-contract');
+    expect(onOpenTrace).toHaveBeenCalledWith('exec-review-contract', 'decision');
+
+    await user.click(screen.getByRole('button', { name: '실행 결과 증적' }));
+    expect(onOpenTrace).toHaveBeenCalledWith('exec-review-contract', 'post-execution');
   });
 
   it('removes previous pack rows immediately when the operation scope changes', async () => {

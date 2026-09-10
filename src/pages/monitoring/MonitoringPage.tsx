@@ -79,11 +79,11 @@ export function MonitoringPage() {
         dataScope={`${selectedPack.apiValue} Pack · Runtime / Recovery / Policy / Security Finding 기준 조회`}
       />
 
-      <SecurityFindingPanel
+      <div id="security-findings" className="anchored-section"><SecurityFindingPanel
         key={selectedPack.key}
         executionPack={selectedPack.apiValue}
-        onOpenTrace={(executionId) => navigate(`/audit?executionId=${encodeURIComponent(executionId)}`)}
-      />
+        onOpenTrace={(executionId) => navigate(`/audit?executionId=${encodeURIComponent(executionId)}&section=response-guard`)}
+      /></div>
 
       <div className="monitoring-control-row">
         <div>
@@ -159,7 +159,7 @@ export function MonitoringPage() {
         </SectionCard>
       </div>
 
-      <SectionCard
+      <div id="policy-events" className="anchored-section"><SectionCard
         className="search-assist-card"
         title="Policy Operation History"
         description="Lifecycle Transition과 Current Selection Event를 단일 append-only 이력으로 검색합니다."
@@ -207,7 +207,7 @@ export function MonitoringPage() {
             <button className="button button-secondary" type="button" disabled={!totalPages || (eventParams.page ?? 0) + 1 >= totalPages || eventsRefreshing} onClick={() => setEventParams((value) => ({ ...value, page: (value.page ?? 0) + 1 }))}>다음</button>
           </div>
         </div>
-      </SectionCard>
+      </SectionCard></div>
 
     </section>
   );

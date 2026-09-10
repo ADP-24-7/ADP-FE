@@ -10,6 +10,14 @@ import { useExecutionPack } from '../../shared/prototype';
 export function AuditPage() {
   const [routeSearchParams] = useRouterSearchParams();
   const initialExecutionId = routeSearchParams.get('executionId') ?? '';
+  const requestedSection = routeSearchParams.get('section');
+  const investigationLabel = requestedSection === 'post-execution'
+    ? '실행 결과 증적'
+    : requestedSection === 'response-guard'
+      ? 'Response Guard Finding'
+      : requestedSection === 'decision'
+        ? 'Policy Decision'
+        : null;
   const { selectedPack } = useExecutionPack();
   const [executionId, setExecutionId] = useState(initialExecutionId);
   const [submittedExecutionId, setSubmittedExecutionId] = useState(initialExecutionId);
@@ -83,6 +91,14 @@ export function AuditPage() {
       />
 
       <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} objective={selectedPack.objective} />
+
+      {investigationLabel ? (
+        <div className="investigation-context" role="status">
+          <FileCheck2 size={17} />
+          <p><strong>{investigationLabel} 조사 문맥</strong><span>{initialExecutionId} 실행의 전체 Evidence Chain에서 해당 구간을 우선 확인합니다.</span></p>
+          <StatusBadge tone="info">TRACE LINKED</StatusBadge>
+        </div>
+      ) : null}
 
       <SectionCard className="search-assist-card" title="감사 실행 검색" description="현재 인증 사용자의 Institution·Workload 범위 안에서 서버 Read Model을 검색합니다." actions={<Search size={16} />}>
         <form className="search-filter-grid" onSubmit={search}>

@@ -53,14 +53,16 @@ export function AnalysisPage() {
         <ErrorState title="운영 Summary를 불러오지 못했습니다" description={normalizeApiError(summary.error).message} onRetry={() => summary.refetch()} />
       ) : null}
 
-      <ReviewQueuePanel
-        key={`review-${selectedPack.key}`}
-        executionPack={selectedPack.key === 'digital-asset' ? 'DIGITAL_ASSET' : 'AI'}
-        onOpenTrace={(executionId) => navigate(`/audit?executionId=${encodeURIComponent(executionId)}`)}
-        onOpenRecovery={(recoveryId) => setSearchParams({ recoveryId }, { replace: true })}
-      />
+      <div id="review-queue" className="anchored-section">
+        <ReviewQueuePanel
+          key={`review-${selectedPack.key}`}
+          executionPack={selectedPack.key === 'digital-asset' ? 'DIGITAL_ASSET' : 'AI'}
+          onOpenTrace={(executionId, section) => navigate(`/audit?executionId=${encodeURIComponent(executionId)}&section=${section}`)}
+          onOpenRecovery={(recoveryId) => setSearchParams({ recoveryId }, { replace: true })}
+        />
+      </div>
 
-      <RecoveryOperationsPanel
+      <div id="recovery-incidents" className="anchored-section"><RecoveryOperationsPanel
         key={`recovery-${selectedPack.key}`}
         executionPack={selectedPack.apiValue}
         initialRecoveryId={searchParams.get('recoveryId') ?? ''}
@@ -68,7 +70,7 @@ export function AnalysisPage() {
           if (recoveryId) setSearchParams({ recoveryId }, { replace: true });
           else setSearchParams({}, { replace: true });
         }}
-      />
+      /></div>
 
       <SectionCard title="Recovery 안전 경계" description="BE-9 worker와 수동 명령이 공유하는 fail-closed 처리 순서">
         <div className="runtime-stage-grid">

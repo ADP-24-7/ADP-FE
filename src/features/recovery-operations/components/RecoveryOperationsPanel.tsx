@@ -6,6 +6,7 @@ import { useRecoveryCommand, useRecoveryIncident, useRecoveryIncidents } from '.
 import { getRecoveryCommandAvailability } from '../model/recoveryCommandPolicy';
 import type { RecoveryOperationType, RecoveryStatus } from '../model/types';
 import type { ExecutionPackApiValue } from '../../../shared/prototype';
+import { useAuthContext } from '../../auth';
 
 const recoveryStatuses: RecoveryStatus[] = [
   'PENDING',
@@ -45,6 +46,7 @@ type RecoveryOperationsPanelProps = {
 };
 
 export function RecoveryOperationsPanel({ executionPack, initialRecoveryId = '', onSelectionChange }: RecoveryOperationsPanelProps) {
+  const auth = useAuthContext();
   const [status, setStatus] = useState<RecoveryStatus | ''>('');
   const [page, setPage] = useState(0);
   const [selectedRecoveryId, setSelectedRecoveryId] = useState(initialRecoveryId);
@@ -58,6 +60,10 @@ export function RecoveryOperationsPanel({ executionPack, initialRecoveryId = '',
   const totalPages = incidents.data ? Math.ceil(incidents.data.totalElements / incidents.data.size) : 0;
   const isRefreshing = incidents.isFetching && !incidents.isLoading;
   const commandAvailability = detail.data ? getRecoveryCommandAvailability(detail.data) : null;
+  const canRunCommand = auth.data?.roles.includes('PRIVILEGED_OPERATOR') ?? false;
+  const roleReason = canRunCommand
+    ? '현재 운영자는 Recovery 명령을 실행할 수 있습니다.'
+    : 'Recovery 명령에는 PRIVILEGED_OPERATOR Role이 필요합니다.';
   const availableCommands = commandAvailability
     ? (Object.keys(commandCopy) as RecoveryOperationType[]).filter((type) => commandAvailability[type].enabled)
     : [];
@@ -101,7 +107,7 @@ export function RecoveryOperationsPanel({ executionPack, initialRecoveryId = '',
   }
 
   function executeCommand() {
-    if (!selectedRecoveryId || !commandConfirmed || !commandAvailability?.[effectiveCommand].enabled) return;
+    if (!canRunCommand || !selectedRecoveryId || !commandConfirmed || !commandAvailability?.[effectiveCommand].enabled) return;
     const operationId = operationIds.current[effectiveCommand]
       ?? `fe_${effectiveCommand.toLowerCase()}_${crypto.randomUUID()}`;
     operationIds.current[effectiveCommand] = operationId;
@@ -225,6 +231,11 @@ export function RecoveryOperationsPanel({ executionPack, initialRecoveryId = '',
             />
           ) : (
             <div className="recovery-command-panel">
+              <div className={canRunCommand ? 'action-eligibility action-eligibility-allowed' : 'action-eligibility action-eligibility-blocked'}>
+                <ShieldAlert size={16} />
+                <p><strong>{auth.data?.principalId ?? '권한 확인 중'}</strong><span>{roleReason}</span></p>
+                <StatusBadge tone={canRunCommand ? 'success' : 'warning'}>{canRunCommand ? 'ACTION ELIGIBLE' : 'READ ONLY'}</StatusBadge>
+              </div>
               <div className="command-state-guidance">
                 <StatusBadge tone={statusTone(detail.data.recoveryStatus)}>{detail.data.recoveryStatus}</StatusBadge>
                 <span>현재 상태와 Retry Disposition에 따라 실행 가능한 명령만 활성화됩니다.</span>
@@ -237,8 +248,8 @@ export function RecoveryOperationsPanel({ executionPack, initialRecoveryId = '',
                     role="tab"
                     aria-selected={effectiveCommand === type}
                     className={effectiveCommand === type ? 'active' : ''}
-                    disabled={!commandAvailability?.[type].enabled}
-                    title={commandAvailability?.[type].reason}
+                    disabled={!canRunCommand || !commandAvailability?.[type].enabled}
+                    title={canRunCommand ? commandAvailability?.[type].reason : roleReason}
                     onClick={() => selectCommandType(type)}
                   >
                     {type === 'RECONCILE' ? <RefreshCw size={14} /> : type === 'RETRY' ? <RotateCcw size={14} /> : <AlertTriangle size={14} />}
@@ -252,10 +263,10 @@ export function RecoveryOperationsPanel({ executionPack, initialRecoveryId = '',
                 <small>{commandAvailability?.[effectiveCommand].reason}</small>
               </div>
               <label className="checkbox-row">
-                <input type="checkbox" checked={commandConfirmed} onChange={(event) => setCommandConfirmed(event.target.checked)} />
+                <input type="checkbox" checked={commandConfirmed} onChange={(event) => setCommandConfirmed(event.target.checked)} disabled={!canRunCommand} />
                 <span>{detail.data.recoveryId}에 {effectiveCommand} 명령을 실행합니다.</span>
               </label>
-              <button className={effectiveCommand === 'RETRY' ? 'button button-danger' : 'button button-primary'} type="button" disabled={!commandConfirmed || command.isPending} onClick={executeCommand}>
+              <button className={effectiveCommand === 'RETRY' ? 'button button-danger' : 'button button-primary'} type="button" disabled={!canRunCommand || !commandConfirmed || command.isPending} onClick={executeCommand} title={roleReason}>
                 {command.isPending ? '명령 처리 중...' : commandCopy[effectiveCommand].label}
               </button>
               {command.isError ? (

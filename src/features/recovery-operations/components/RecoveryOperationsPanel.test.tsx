@@ -104,6 +104,29 @@ describe('RecoveryOperationsPanel', () => {
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
   });
 
+  it('keeps incident evidence readable but disables commands without the privileged role', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get('/api/admin/auth/context', () => HttpResponse.json({
+        principalId: 'auditor-local',
+        principalType: 'USER',
+        displayName: 'Local Auditor',
+        institutionId: 'institution_local',
+        roles: ['AUDITOR'],
+        workloadIds: ['*'],
+        subjectAuthorizationRequired: false,
+      })),
+    );
+    renderPanel();
+
+    await user.click(await screen.findByRole('button', { name: /recovery-contract/ }));
+
+    expect(await screen.findByText('READ ONLY')).toBeInTheDocument();
+    expect(screen.getByText('Recovery 명령에는 PRIVILEGED_OPERATOR Role이 필요합니다.')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /외부 상태 확인/ })).toBeDisabled();
+    expect(screen.getByRole('checkbox', { name: /RECONCILE 명령/ })).toBeDisabled();
+  });
+
   it('clears the selected incident when the status filter changes', async () => {
     const user = userEvent.setup();
     server.use(

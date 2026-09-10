@@ -25,7 +25,7 @@ const actionLabels: Record<ReviewNextAction, string> = {
 
 type ReviewQueuePanelProps = {
   executionPack: ReviewExecutionPack;
-  onOpenTrace: (executionId: string) => void;
+  onOpenTrace: (executionId: string, section: 'decision' | 'post-execution') => void;
   onOpenRecovery: (recoveryId: string) => void;
 };
 
@@ -110,12 +110,12 @@ export function ReviewQueuePanel({ executionPack, onOpenTrace, onOpenRecovery }:
             ]} />
             <div className="section-action-group">
               {detail.data.nextActions.includes('INSPECT_TRACE') ? (
-                <button className="button button-primary" type="button" onClick={() => onOpenTrace(detail.data.executionId)}>
+                <button className="button button-primary" type="button" onClick={() => onOpenTrace(detail.data.executionId, 'decision')}>
                   <Eye size={14} />Decision Trace
                 </button>
               ) : null}
               {detail.data.nextActions.includes('INSPECT_POST_EXECUTION_EVIDENCE') ? (
-                <button className="button button-secondary" type="button" onClick={() => onOpenTrace(detail.data.executionId)}>
+                <button className="button button-secondary" type="button" onClick={() => onOpenTrace(detail.data.executionId, 'post-execution')}>
                   <Eye size={14} />실행 결과 증적
                 </button>
               ) : null}

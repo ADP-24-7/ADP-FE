@@ -13,7 +13,7 @@ const item = {
   reviewSource: 'POLICY',
   reviewSources: ['POLICY'],
   nextAction: 'INSPECT_TRACE',
-  nextActions: ['INSPECT_TRACE'],
+  nextActions: ['INSPECT_TRACE', 'INSPECT_POST_EXECUTION_EVIDENCE'],
   reasonCodes: ['SENSITIVE_INPUT_REVIEW_REQUIRED'],
   recoveryId: null,
   recoveryStatus: null,

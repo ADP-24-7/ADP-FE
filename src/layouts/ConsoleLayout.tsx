@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   Activity,
+  DatabaseZap,
   ChevronDown,
+  CircleUserRound,
   FileCheck2,
   FlaskConical,
   LayoutDashboard,
@@ -16,11 +18,13 @@ import {
 } from 'lucide-react';
 import { executionPacks, useExecutionPack } from '../shared/prototype';
 import { env } from '../shared/config/env';
+import { useAuthContext } from '../features/auth';
 
 const navItems = [
   { to: '/overview', label: '통합 관제', icon: LayoutDashboard },
   { to: '/policies', label: '정책 · 승인', icon: SlidersHorizontal },
   { to: '/identities', label: 'Identity · 권한', icon: UsersRound },
+  { to: '/data-access', label: 'Workload · Data', icon: DatabaseZap },
   { to: '/gateway-lab', label: 'Gateway Lab', icon: FlaskConical },
   { to: '/monitoring', label: 'Security Monitoring', icon: ShieldAlert },
   { to: '/analysis', label: 'Runtime · Recovery', icon: Activity },
@@ -39,6 +43,7 @@ export function ConsoleLayout() {
   const [isPolicyMenuOpen, setIsPolicyMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { selectedPackKey, selectPack } = useExecutionPack();
+  const auth = useAuthContext();
   const activeNavItem = navItems.find((item) => location.pathname.startsWith(item.to));
 
   return (
@@ -141,6 +146,13 @@ export function ConsoleLayout() {
               ) : null}
             </div>
             <span className="live-mode-badge">NO MOCK DATA</span>
+            <div className="operator-context" aria-label="현재 운영자 권한">
+              <CircleUserRound size={17} aria-hidden="true" />
+              <span>
+                <strong>{auth.data?.displayName ?? (auth.isError ? '인증 확인 필요' : '권한 확인 중')}</strong>
+                <small>{auth.data?.roles.join(' · ') || 'Action 권한을 확인합니다'}</small>
+              </span>
+            </div>
             <div className="dropdown">
               <button
                 className="icon-button"
@@ -157,9 +169,11 @@ export function ConsoleLayout() {
               </button>
               {isSettingsOpen ? (
                 <div className="dropdown-menu dropdown-menu-right" role="menu">
-                  <button type="button" role="menuitem" disabled>Auth Integration</button>
-                  <button type="button" role="menuitem" disabled>API Health</button>
-                  <button type="button" role="menuitem" disabled>Console Preferences</button>
+                  <div className="operator-menu-summary">
+                    <strong>{auth.data?.principalType ?? 'AUTH'} · {auth.data?.principalId ?? 'Unavailable'}</strong>
+                    <span>{auth.data ? `${auth.data.institutionId} · ${auth.data.workloadIds.length} workload scope` : '인증 컨텍스트를 불러오지 못했습니다.'}</span>
+                  </div>
+                  <button type="button" role="menuitem" onClick={() => auth.refetch()} disabled={auth.isFetching}>권한 다시 확인</button>
                 </div>
               ) : null}
             </div>
