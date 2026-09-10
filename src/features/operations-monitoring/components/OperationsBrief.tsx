@@ -3,7 +3,7 @@ import { StatusBadge } from '../../../shared/components';
 import type { OperationsMonitoringViewModel } from '../model/monitoringViewModel';
 
 export function OperationsBrief({ brief }: { brief: OperationsMonitoringViewModel['brief'] }) {
-  const isNormal = brief.state === 'normal';
+  const isNormal = brief.state === 'normal' || brief.state === 'info';
 
   return (
     <section className={`operations-brief operations-brief-${brief.state}`} aria-labelledby="operations-brief-title">
@@ -16,8 +16,8 @@ export function OperationsBrief({ brief }: { brief: OperationsMonitoringViewMode
         <p>{brief.summary}</p>
       </div>
       <div className="operations-brief-meta">
-        <StatusBadge tone={brief.state === 'action' ? 'danger' : brief.state === 'observe' ? 'warning' : 'success'}>
-          {brief.actionSignalCount} SIGNALS
+        <StatusBadge tone={brief.state === 'critical' ? 'danger' : brief.state === 'attention' ? 'warning' : brief.state === 'info' ? 'info' : 'success'}>
+          {brief.priorityCount} PRIORITIES
         </StatusBadge>
         <small>생성 {new Date(brief.generatedAt).toLocaleString('ko-KR')}</small>
       </div>

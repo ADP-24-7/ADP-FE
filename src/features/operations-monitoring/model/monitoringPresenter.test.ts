@@ -46,7 +46,7 @@ describe('presentOperationsMonitoring', () => {
     const view = presentOperationsMonitoring(summary, []);
     const blocked = view.metrics.find((item) => item.id === 'runtime-blocked');
 
-    expect(blocked).toMatchObject({ state: 'normal', stateLabel: '정상 통제', value: '2건' });
+    expect(blocked).toMatchObject({ state: 'info', stateLabel: '발생 · 관찰', value: '2건' });
     expect(blocked?.impact).toContain('시스템 장애가 아니라');
   });
 
@@ -66,10 +66,20 @@ describe('presentOperationsMonitoring', () => {
     expect(failed?.criterion).toContain('기준선 미제공');
   });
 
-  it('marks unsupported stage summaries as insufficient data', () => {
+  it('marks unsupported stage summaries as not connected', () => {
     const view = presentOperationsMonitoring(summary, []);
 
-    expect(view.stages.find((item) => item.id === 'data')?.state).toBe('insufficient');
-    expect(view.stages.find((item) => item.id === 'response')?.state).toBe('insufficient');
+    expect(view.stages.find((item) => item.id === 'data')).toMatchObject({ state: 'unknown', connectionLabel: 'NOT CONNECTED' });
+    expect(view.stages.find((item) => item.id === 'response')).toMatchObject({ state: 'unknown', connectionLabel: 'NOT CONNECTED' });
+  });
+
+  it('summarizes the highest-priority concrete counts in the brief', () => {
+    const view = presentOperationsMonitoring({
+      ...summary,
+      recovery: { ...summary.recovery, manualReview: 3, exhausted: 2 },
+    }, []);
+
+    expect(view.brief.summary).toContain('자동 복구 소진 2건, 수동 검토 3건');
+    expect(view.brief.priorityCount).toBe(2);
   });
 });

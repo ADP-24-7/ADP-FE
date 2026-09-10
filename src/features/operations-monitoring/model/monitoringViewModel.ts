@@ -1,4 +1,4 @@
-export type MonitoringSignalState = 'normal' | 'observe' | 'action' | 'insufficient';
+export type MonitoringSignalState = 'normal' | 'info' | 'attention' | 'critical' | 'unknown';
 
 export type MonitoringMetric = {
   id: string;
@@ -12,6 +12,7 @@ export type MonitoringMetric = {
   rawField: string;
   rawValue: string;
   criterion: string;
+  priority: 'primary' | 'secondary';
 };
 
 export type MonitoringIssue = {
@@ -36,6 +37,8 @@ export type RuntimeStageHealth = {
   stateLabel: string;
   summary: string;
   evidence: string;
+  connection: 'observed' | 'partial' | 'not-connected';
+  connectionLabel: 'OBSERVED' | 'PARTIAL' | 'NOT CONNECTED';
 };
 
 export type OperationsMonitoringViewModel = {
@@ -43,7 +46,7 @@ export type OperationsMonitoringViewModel = {
     state: MonitoringSignalState;
     title: string;
     summary: string;
-    actionSignalCount: number;
+    priorityCount: number;
     generatedAt: string;
   };
   metrics: MonitoringMetric[];

@@ -37,10 +37,15 @@ function statusTone(status: RecoveryStatus) {
   return 'info' as const;
 }
 
-export function RecoveryOperationsPanel() {
+type RecoveryOperationsPanelProps = {
+  initialRecoveryId?: string;
+  onSelectionChange?: (recoveryId: string) => void;
+};
+
+export function RecoveryOperationsPanel({ initialRecoveryId = '', onSelectionChange }: RecoveryOperationsPanelProps = {}) {
   const [status, setStatus] = useState<RecoveryStatus | ''>('');
   const [page, setPage] = useState(0);
-  const [selectedRecoveryId, setSelectedRecoveryId] = useState('');
+  const [selectedRecoveryId, setSelectedRecoveryId] = useState(initialRecoveryId);
   const [selectedCommand, setSelectedCommand] = useState<RecoveryOperationType>('RECONCILE');
   const [commandConfirmed, setCommandConfirmed] = useState(false);
   const operationIds = useRef<Partial<Record<RecoveryOperationType, string>>>({});
@@ -66,6 +71,7 @@ export function RecoveryOperationsPanel() {
   function selectIncident(recoveryId: string) {
     command.reset();
     setSelectedRecoveryId(recoveryId);
+    onSelectionChange?.(recoveryId);
   }
 
   function selectCommandType(operationType: RecoveryOperationType) {
@@ -75,6 +81,7 @@ export function RecoveryOperationsPanel() {
 
   function clearIncidentSelection() {
     setSelectedRecoveryId('');
+    onSelectionChange?.('');
     setCommandConfirmed(false);
     operationIds.current = {};
     command.reset();

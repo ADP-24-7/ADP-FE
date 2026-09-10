@@ -29,6 +29,8 @@ export function MonitoringPage() {
   const events = usePolicyOperationEvents(eventParams);
   const monitoringView = summary.data ? presentOperationsMonitoring(summary.data, recovery.data?.items ?? []) : null;
   const recoveryIssues = presentRecoveryIssues(recovery.data?.items ?? []);
+  const primaryMetrics = monitoringView?.metrics.filter((item) => item.priority === 'primary') ?? [];
+  const secondaryMetrics = monitoringView?.metrics.filter((item) => item.priority === 'secondary') ?? [];
   const totalPages = events.data ? Math.ceil(events.data.total / events.data.size) : 0;
   const eventsRefreshing = events.isFetching && !events.isLoading;
   const summaryError = summary.isError ? normalizeApiError(summary.error) : null;
@@ -94,20 +96,18 @@ export function MonitoringPage() {
         <>
           <OperationsBrief brief={monitoringView.brief} />
 
-          <SectionCard title="해석형 운영 지표" description="절대 건수의 의미와 영향, 다음 조치를 함께 표시합니다. 기준선이 없는 값은 증감이나 이상으로 판정하지 않습니다.">
+          <SectionCard title="해석형 운영 지표" description="우선 확인할 지표와 참고 지표를 구분합니다. 기준선이 없는 값은 증감이나 이상으로 판정하지 않습니다.">
+            <div className="metric-group-heading"><strong>우선 확인</strong><span>Recovery · Policy · Institution scope</span></div>
             <div className="interpreted-metric-grid">
-              {monitoringView.metrics.map((item) => (
-                <InterpretedMetricCard
-                  key={item.id}
-                  metric={item}
-                  endpoint="GET /api/admin/operations/summary"
-                  windowMinutes={summary.data?.windowMinutes ?? windowMinutes}
-                />
-              ))}
+              {primaryMetrics.map((item) => <InterpretedMetricCard key={item.id} metric={item} />)}
+            </div>
+            <div className="metric-group-heading metric-group-heading-secondary"><strong>운영 참고</strong><span>Recovery limit · Runtime outcome</span></div>
+            <div className="interpreted-metric-grid interpreted-metric-grid-secondary">
+              {secondaryMetrics.map((item) => <InterpretedMetricCard key={item.id} metric={item} />)}
             </div>
           </SectionCard>
 
-          <SectionCard title="Runtime 단계별 상태" description="현재 Summary가 제공하는 근거만 사용합니다. 단계별 집계가 없는 영역은 데이터 부족으로 표시합니다.">
+          <SectionCard title="Runtime 단계별 관측 가능 범위" description="실제 관측 중인 단계와 일부 집계만 연결된 단계, 아직 연결되지 않은 단계를 구분합니다.">
             <RuntimeStageHealth stages={monitoringView.stages} />
           </SectionCard>
         </>
@@ -123,7 +123,7 @@ export function MonitoringPage() {
             normalizeApiError(recovery.error).status === 403
               ? <EmptyState compact title="복구 인시던트 조회 권한이 없습니다" description="요약 지표와 별개로 개별 Recovery 정보는 현재 권한으로 조회할 수 없습니다." />
               : <ErrorState description={normalizeApiError(recovery.error).message} onRetry={() => recovery.refetch()} />
-          ) : <ActionableIssueList issues={recoveryIssues} />}
+          ) : <ActionableIssueList issues={recoveryIssues} total={recovery.data?.totalElements ?? 0} />}
         </SectionCard>
 
         <SectionCard title="관측 범위 안내" description="현재 계약으로 판정할 수 있는 범위와 추가 데이터가 필요한 단계를 구분합니다.">
@@ -135,7 +135,10 @@ export function MonitoringPage() {
               <div>
                 <span>Summary</span><code>adp-operations-summary/v1</code>
                 <span>Recovery</span><code>GET /api/admin/recovery/incidents</code>
+                <span>관측 범위</span><p>최근 {summary.data?.windowMinutes ?? windowMinutes}분</p>
+                <span>Summary API</span><code>GET /api/admin/operations/summary</code>
                 <span>Prometheus</span><p>BE 내부 수집·집계 전용</p>
+                <span>데이터 출처</span><p>API 응답에 모드 정보 없음</p>
                 <span>Pack Filter</span><p>미지원 · 전체 권한 허용 Workload</p>
               </div>
             </details>

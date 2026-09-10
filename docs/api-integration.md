@@ -152,6 +152,9 @@ Digital Asset 실행의 GET/Trace 응답에는 다음 server-owned 증적이 포
 - `SENT_UNKNOWN`은 즉시 재전송 대상으로 표현하지 않고 외부 상태 조회 후 대사를 우선 권고한다.
 - 실패 건수에 기준선이 없으면 증가·이상으로 판정하지 않고 절대 건수와 `기준선 미제공`을 함께 표시한다.
 - 사람이 읽는 설명은 presenter에서 만들고, Read Model field·집계 기준·Endpoint는 접힌 기술 상세에 둔다.
+- 단순 발생 건수는 `발생·관찰`, 운영자 판단 대상은 `확인 필요`, BE 지연 기준을 넘긴 항목은 `즉시 조치`로 구분한다.
+- Monitoring의 Recovery 항목은 `/analysis?recoveryId={id}`로 이동해 대상 Incident를 자동 선택한다.
+- 카드별 기술 상세에는 고유 Read Model field와 기준만 두고 공통 시간창·Endpoint·출처 정보는 섹션 단위로 표시한다.
 - Policy Event는 `workloadId`, `category`, `from`, `to`, `page`, `size`를 서버 검색 조건으로 전달한다.
 - Summary의 실제 `0`은 `0`으로 표시하고, API 오류나 미연결 상태와 구분한다.
 - 단순 `deniedAttempts`는 정상 차단도 포함할 수 있으므로 Attention으로 분류하지 않는다. 현재는 `institutionScopeMismatch`가 있을 때만 Security Attention을 표시한다.

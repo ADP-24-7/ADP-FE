@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { EmptyState, StatusBadge } from '../../../shared/components';
 import type { MonitoringIssue } from '../model/monitoringViewModel';
 
-export function ActionableIssueList({ issues }: { issues: MonitoringIssue[] }) {
+export function ActionableIssueList({ issues, total }: { issues: MonitoringIssue[]; total: number }) {
   const navigate = useNavigate();
 
   if (!issues.length) {
@@ -15,13 +15,13 @@ export function ActionableIssueList({ issues }: { issues: MonitoringIssue[] }) {
       {issues.slice(0, 8).map((issue) => (
         <article key={issue.id}>
           <div className="actionable-issue-main">
-            <StatusBadge tone={issue.state === 'action' ? 'danger' : 'warning'}>{issue.stateLabel}</StatusBadge>
+            <StatusBadge tone={issue.state === 'critical' ? 'danger' : issue.state === 'attention' ? 'warning' : 'info'}>{issue.stateLabel}</StatusBadge>
             <div>
               <strong>{issue.title}</strong>
               <span>{issue.summary}</span>
               <p>{issue.recommendation}</p>
             </div>
-            <button className="button button-secondary" type="button" onClick={() => navigate('/analysis')}>
+            <button className="button button-secondary" type="button" onClick={() => navigate(`/analysis?recoveryId=${encodeURIComponent(issue.id)}`)}>
               Recovery 열기 <ArrowRight size={14} />
             </button>
           </div>
@@ -37,6 +37,10 @@ export function ActionableIssueList({ issues }: { issues: MonitoringIssue[] }) {
           </details>
         </article>
       ))}
+      <footer className="actionable-issue-footer">
+        <span>열린 항목 {issues.length}건 중 {Math.min(issues.length, 8)}건 표시 · 조회된 전체 Incident {total}건</span>
+        <button className="button button-secondary" type="button" onClick={() => navigate('/analysis')}>전체 Recovery 보기 <ArrowRight size={14} /></button>
+      </footer>
     </div>
   );
 }
