@@ -1,5 +1,5 @@
 import { History, RefreshCw, Search } from 'lucide-react';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ActionableIssueList,
@@ -37,6 +37,10 @@ export function MonitoringPage() {
   const totalPages = events.data ? Math.ceil(events.data.total / events.data.size) : 0;
   const eventsRefreshing = events.isFetching && !events.isLoading;
   const summaryError = summary.isError ? normalizeApiError(summary.error) : null;
+
+  useEffect(() => {
+    setEventParams((current) => ({ ...current, page: 0 }));
+  }, [selectedPack.apiValue]);
 
   function searchEvents(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

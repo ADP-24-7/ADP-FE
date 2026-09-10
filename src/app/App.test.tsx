@@ -3,13 +3,17 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { OverviewPage } from '../pages/overview/OverviewPage';
 import { ExecutionPackProvider } from '../shared/prototype';
 import { server } from './mocks/server';
 import { App } from './App';
 
 describe('App', () => {
+  beforeEach(() => {
+    window.history.replaceState({}, '', '/overview');
+  });
+
   it('renders the real API console without mock environment labels', async () => {
     render(<App />);
 
@@ -19,6 +23,15 @@ describe('App', () => {
     expect(screen.queryByText('MOCK DATA')).not.toBeInTheDocument();
     expect(screen.queryByText('PROJECT_PROVISIONAL')).not.toBeInTheDocument();
     expect(screen.getAllByText('NO MOCK DATA').length).toBeGreaterThan(0);
+  });
+
+  it('does not restore a persisted pack that the runtime selector does not support', async () => {
+    window.localStorage.setItem('adp.selectedExecutionPack', 'saas');
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: 'Security Overview' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /AI · Agent/ })).toHaveClass('active');
   });
 
   it('updates runtime domain from the global selector without page reload', async () => {
@@ -77,7 +90,8 @@ describe('App', () => {
 
   it('opens the selected recovery incident through an SPA deep link', async () => {
     const user = userEvent.setup();
-    window.history.pushState({}, '', '/monitoring');
+    window.localStorage.setItem('adp.selectedExecutionPack', 'ai');
+    window.history.replaceState({}, '', '/monitoring');
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: 'Operations Monitoring' })).toBeInTheDocument();

@@ -5,6 +5,7 @@ import { executionPacks } from './executionPacks';
 import type { ExecutionPackKey } from './executionPacks';
 
 const executionPackStorageKey = 'adp.selectedExecutionPack';
+const selectableExecutionPackKeys = new Set<ExecutionPackKey>(['ai', 'digital-asset']);
 
 function readInitialExecutionPackKey(): ExecutionPackKey {
   if (typeof window === 'undefined' || !window.localStorage) {
@@ -12,7 +13,9 @@ function readInitialExecutionPackKey(): ExecutionPackKey {
   }
 
   const storedKey = window.localStorage.getItem(executionPackStorageKey);
-  const matchedPack = executionPacks.find((pack) => pack.key === storedKey);
+  const matchedPack = executionPacks.find(
+    (pack) => pack.key === storedKey && selectableExecutionPackKeys.has(pack.key),
+  );
 
   return matchedPack?.key ?? 'ai';
 }
