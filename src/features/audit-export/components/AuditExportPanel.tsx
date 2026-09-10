@@ -16,6 +16,7 @@ export function AuditExportPanel({ executionId }: { executionId: string }) {
   const storageKey = `adp.audit-export.${executionId}`;
   const [format, setFormat] = useState<AuditExportFormat>('CSV');
   const [reason, setReason] = useState('내부 감사 증적 제출');
+  const [decisionReason, setDecisionReason] = useState('');
   const [exportId, setExportId] = useState(() => window.localStorage.getItem(storageKey) ?? '');
   const [idempotencyKey, setIdempotencyKey] = useState(() => `exp-${crypto.randomUUID()}`);
   const create = useCreateAuditExport();
@@ -23,6 +24,8 @@ export function AuditExportPanel({ executionId }: { executionId: string }) {
   const decide = useDecideAuditExport();
   const download = useDownloadAuditExport();
   const job = detail.data?.job ?? create.data;
+  const canRequest = Boolean(auth.data?.roles.includes('AUDITOR')
+    || auth.data?.roles.includes('PRIVILEGED_OPERATOR'));
   const canApprove = Boolean(job && job.status === 'REQUESTED'
     && auth.data?.roles.includes('PRIVILEGED_OPERATOR')
     && auth.data.principalId !== job.requesterId);
@@ -52,6 +55,11 @@ export function AuditExportPanel({ executionId }: { executionId: string }) {
     await detail.refetch();
   }
 
+  async function decideExport(action: 'APPROVE' | 'REJECT' | 'REVOKE') {
+    await decide.mutateAsync({ exportId: job!.exportId, action, reason: decisionReason.trim() });
+    setDecisionReason('');
+  }
+
   function resetExport() {
     window.localStorage.removeItem(storageKey);
     setExportId('');
@@ -68,7 +76,9 @@ export function AuditExportPanel({ executionId }: { executionId: string }) {
         {job ? <StatusBadge tone={job.status === 'READY' ? 'success' : job.status === 'FAILED' || job.status === 'REJECTED' ? 'danger' : 'warning'}>{STATUS_LABELS[job.status]}</StatusBadge> : <FileOutput size={18} />}
       </div>
 
-      {!job ? (
+      {!job && !canRequest ? (
+        <p className="helper-text">현재 계정에는 감사 증적 반출 권한이 없습니다.</p>
+      ) : !job ? (
         <div className="audit-export-request">
           <div className="segmented-control" role="group" aria-label="내보내기 형식">
             {(['CSV', 'PDF'] as const).map((value) => (
@@ -89,10 +99,11 @@ export function AuditExportPanel({ executionId }: { executionId: string }) {
           ]} />
           <div className="audit-export-actions">
             <button className="button button-secondary" type="button" title="상태 새로고침" onClick={() => detail.refetch()} disabled={detail.isFetching}><RefreshCw size={15} /></button>
-            {canApprove ? <button className="button button-primary" type="button" onClick={() => decide.mutate({ exportId: job.exportId, action: 'APPROVE', reason: '반출 범위와 목적 확인' })}><Check size={15} />승인</button> : null}
-            {canApprove ? <button className="button button-danger" type="button" onClick={() => decide.mutate({ exportId: job.exportId, action: 'REJECT', reason: '반출 조건 미충족' })}><X size={15} />반려</button> : null}
+            {canApprove || canRevoke ? <label className="field audit-export-decision-reason"><span>{canRevoke ? '폐기 사유' : '검토 사유'}</span><input maxLength={500} value={decisionReason} onChange={(event) => setDecisionReason(event.target.value)} placeholder="요청번호와 판단 근거를 입력하세요" /></label> : null}
+            {canApprove ? <button className="button button-primary" type="button" disabled={!decisionReason.trim() || decide.isPending} onClick={() => decideExport('APPROVE')}><Check size={15} />승인</button> : null}
+            {canApprove ? <button className="button button-danger" type="button" disabled={!decisionReason.trim() || decide.isPending} onClick={() => decideExport('REJECT')}><X size={15} />반려</button> : null}
             {job.status === 'READY' ? <button className="button button-primary" type="button" disabled={download.isPending} onClick={downloadFile}><Download size={15} />다운로드</button> : null}
-            {canRevoke ? <button className="button button-danger" type="button" onClick={() => decide.mutate({ exportId: job.exportId, action: 'REVOKE', reason: '다운로드 권한 회수' })}><X size={15} />폐기</button> : null}
+            {canRevoke ? <button className="button button-danger" type="button" disabled={!decisionReason.trim() || decide.isPending} onClick={() => decideExport('REVOKE')}><X size={15} />폐기</button> : null}
             {['REJECTED', 'FAILED', 'EXPIRED', 'REVOKED'].includes(job.status) ? <button className="button button-secondary" type="button" onClick={resetExport}><FileOutput size={15} />새 요청</button> : null}
           </div>
           {job.status === 'REQUESTED' && !canApprove ? <p className="helper-text">요청자와 다른 권한자의 승인이 필요합니다.</p> : null}

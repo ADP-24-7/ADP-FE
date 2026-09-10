@@ -157,7 +157,8 @@ button, a { transition: background-color .16s ease, border-color .16s ease, colo
 .audit-export-heading h3 { margin: 0 0 4px; font-size: 15px; }
 .audit-export-heading p { margin: 0; color: var(--color-muted); font-size: 13px; line-height: 1.5; }
 .audit-export-request { display: grid; grid-template-columns: auto minmax(220px, 1fr) auto; align-items: end; gap: 10px; }
-.audit-export-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.audit-export-actions { display: flex; align-items: flex-end; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.audit-export-decision-reason { flex: 1; min-width: min(280px, 100%); margin-right: auto; }
 .segmented-control { display: inline-flex; min-height: 40px; padding: 3px; border: 1px solid var(--color-border); background: var(--color-page); border-radius: 7px; }
 .segmented-control button { min-width: 58px; border: 0; border-radius: 5px; background: transparent; color: var(--color-muted); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
 .segmented-control button.active { background: var(--color-surface); color: var(--color-text); box-shadow: 0 1px 3px rgba(15, 23, 42, .12); }

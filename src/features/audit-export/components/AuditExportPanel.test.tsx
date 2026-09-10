@@ -20,6 +20,11 @@ function job(status = 'REQUESTED') {
 }
 
 function renderPanel() {
+  server.use(http.get('/api/admin/auth/context', () => HttpResponse.json({
+    principalId: 'operator-local', principalType: 'USER', displayName: 'Local Operator',
+    institutionId: 'institution_local', roles: ['OPERATOR', 'PRIVILEGED_OPERATOR'],
+    workloadIds: ['*'], subjectAuthorizationRequired: false,
+  })));
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   return render(<QueryClientProvider client={queryClient}><AuditExportPanel executionId="exec-contract" /></QueryClientProvider>);
 }
@@ -39,7 +44,7 @@ describe('AuditExportPanel', () => {
     const user = userEvent.setup();
     renderPanel();
 
-    await user.click(screen.getByRole('button', { name: 'PDF' }));
+    await user.click(await screen.findByRole('button', { name: 'PDF' }));
     await user.click(screen.getByRole('button', { name: '승인 요청' }));
 
     expect((await screen.findAllByText('승인 대기')).length).toBeGreaterThan(0);
@@ -62,7 +67,7 @@ describe('AuditExportPanel', () => {
     renderPanel();
 
     expect(screen.queryByRole('button', { name: '다운로드' })).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: '승인 요청' }));
+    await user.click(await screen.findByRole('button', { name: '승인 요청' }));
     expect(await screen.findByRole('button', { name: '다운로드' })).toBeInTheDocument();
     expect(screen.queryByText(/Object/)).not.toBeInTheDocument();
   });
