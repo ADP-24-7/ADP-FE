@@ -8,6 +8,7 @@ import {
   FileCheck2,
   FlaskConical,
   LayoutDashboard,
+  LogOut,
   PanelLeftClose,
   PanelLeftOpen,
   ShieldCheck,
@@ -16,7 +17,7 @@ import {
   UsersRound,
 } from 'lucide-react';
 import { executionPacks, useExecutionPack } from '../shared/prototype';
-import { useAuthContext } from '../features/auth';
+import { useAuthContext, useLogout } from '../features/auth';
 import type { AuthRole } from '../features/auth';
 
 const navItems = [
@@ -61,6 +62,7 @@ export function ConsoleLayout() {
   const [isOperatorMenuOpen, setIsOperatorMenuOpen] = useState(false);
   const { selectedPackKey, selectPack } = useExecutionPack();
   const auth = useAuthContext();
+  const logout = useLogout();
   const activeNavItem = navItems.find((item) => location.pathname.startsWith(item.to));
 
   useEffect(() => {
@@ -166,9 +168,21 @@ export function ConsoleLayout() {
                     <span>기관 <code>{auth.data?.institutionId ?? '—'}</code></span>
                     <span>권한 {formatRoles(auth.data?.roles)}</span>
                     <span>Workload {auth.data ? `${auth.data.workloadIds.length}개` : '—'}</span>
-                    {auth.data?.roles.length ? <small>기술 Role · {auth.data.roles.join(' · ')}</small> : null}
                   </div>
                   <button type="button" role="menuitem" onClick={() => { setIsOperatorMenuOpen(false); navigate('/identities'); }}>권한 상세 보기 <span aria-hidden="true">→</span></button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    disabled={logout.isPending}
+                    onClick={async () => {
+                      const returnTo = `${location.pathname}${location.search}${location.hash}`;
+                      setIsOperatorMenuOpen(false);
+                      await logout.mutateAsync().catch(() => undefined);
+                      navigate(`/login?returnTo=${encodeURIComponent(returnTo)}`, { replace: true });
+                    }}
+                  >
+                    로그아웃 <LogOut size={14} aria-hidden="true" />
+                  </button>
                 </div>
               ) : null}
             </div>

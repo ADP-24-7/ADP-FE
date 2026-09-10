@@ -7,17 +7,12 @@ export default defineConfig(({ mode }) => {
   const apiBaseUrl = env.VITE_API_BASE_URL || 'http://localhost:8080';
   const localBffEnabled = env.VITE_LOCAL_BFF_ENABLED === 'true';
   const runtimeApiKey = env.ADP_LOCAL_RUNTIME_API_KEY;
-  const localUserId = env.ADP_LOCAL_USER_ID || 'operator-local';
-  const localUserRoles = env.ADP_LOCAL_USER_ROLES || 'OPERATOR,PRIVILEGED_OPERATOR';
 
   if (localBffEnabled && !runtimeApiKey) {
     throw new Error('ADP_LOCAL_RUNTIME_API_KEY is required when VITE_LOCAL_BFF_ENABLED=true.');
   }
 
   const runtimeHeaders = localBffEnabled ? { 'X-ADP-API-Key': runtimeApiKey } : undefined;
-  const adminHeaders = localBffEnabled
-    ? { 'X-ADP-User-Id': localUserId, 'X-ADP-User-Roles': localUserRoles }
-    : undefined;
 
   return {
     plugins: [react()],
@@ -37,12 +32,14 @@ export default defineConfig(({ mode }) => {
         '/api/admin': {
           target: apiBaseUrl,
           changeOrigin: true,
-          headers: adminHeaders,
         },
         '/api/v1': {
           target: apiBaseUrl,
           changeOrigin: true,
-          headers: adminHeaders,
+        },
+        '/api/auth': {
+          target: apiBaseUrl,
+          changeOrigin: true,
         },
         '/api/runtime': {
           target: apiBaseUrl,

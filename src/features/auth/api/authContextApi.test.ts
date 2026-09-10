@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getAuthContext } from './authContextApi';
+import { getAuthContext, login, logout } from './authContextApi';
 
 describe('authContextApi', () => {
   it('loads the server-owned principal roles and workload scope', async () => {
@@ -13,5 +13,11 @@ describe('authContextApi', () => {
       roles: ['OPERATOR', 'PRIVILEGED_OPERATOR'],
       workloadIds: ['*'],
     });
+  });
+
+  it('authenticates and closes the user session through the auth boundary', async () => {
+    const context = await login('operator-local', 'operator-demo');
+    expect(context.principalId).toBe('operator-local');
+    await expect(logout()).resolves.toBeUndefined();
   });
 });

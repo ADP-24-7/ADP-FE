@@ -70,10 +70,12 @@ cp .env.example .env.local
 | `VITE_APP_ENV` | `local`, `dev`, `staging`, `prod` |
 | `VITE_LOCAL_BFF_ENABLED` | 로컬 Vite credential proxy 활성화 여부 |
 | `ADP_LOCAL_RUNTIME_API_KEY` | Vite 서버 전용 로컬 Runtime API Key. 브라우저 번들에 포함되지 않음 |
-| `ADP_LOCAL_USER_ID` | 로컬 Admin API 검증용 사용자 ID |
-| `ADP_LOCAL_USER_ROLES` | 로컬 Admin API 검증용 역할 목록 |
 
-일반 `npm run dev`는 MSW browser worker를 시작하지 않습니다. 로컬 화면은 Vite proxy를 통해 실제 BE에 연결하며, `ADP_LOCAL_*` credential은 개발 서버에서만 사용합니다.
+일반 `npm run dev`는 MSW browser worker를 시작하지 않습니다. 로컬 화면은 Vite proxy를 통해 실제 BE에 연결합니다.
+관리자 API는 Session 로그인, Runtime API는 Vite 서버가 보관하는 `ADP_LOCAL_RUNTIME_API_KEY`를 사용합니다.
+Gateway Lab은 로컬 Runtime Service Principal을 사용하는 테스트 Harness이며 관리자 Session 인증과 별도 경계입니다.
+FE에서는 `OPERATOR` 또는 `DEVELOPER` 역할에만 실행 UI를 제공하지만, 운영 환경에서는 Session-aware BFF 또는 내부
+Service Orchestration 계층이 사용자 권한을 검증한 뒤 Runtime Service Principal로 호출해야 합니다.
 
 ## Make 명령
 

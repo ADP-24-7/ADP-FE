@@ -6,7 +6,7 @@
 
 | Product area | Endpoint | State | UI owner / role |
 | --- | --- | --- | --- |
-| Authentication | `GET /api/admin/auth/context` | Connected | 전역 운영자 Identity, Institution, Role, Workload scope |
+| Authentication | `/api/auth/login`, `/api/auth/me`, `/api/auth/logout` | Connected | Session 기반 관리자 로그인과 서버 소유 Identity, Institution, Role, Workload scope |
 | Overview | `GET /api/admin/operations/summary` | Connected | 최근 운영 집계의 단일 대표 화면. FE 임계치 판정 없이 서버 값을 표시 |
 | Security Monitoring | `GET /api/admin/security-findings` | Connected | Pack·Workload 범위 Finding 목록 |
 | Security Monitoring | `GET /api/admin/security-findings/{findingId}` | Connected | Finding 상세와 Decision Trace 이동 |

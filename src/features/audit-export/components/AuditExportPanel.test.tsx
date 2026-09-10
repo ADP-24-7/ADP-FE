@@ -20,7 +20,7 @@ function job(status = 'REQUESTED') {
 }
 
 function renderPanel() {
-  server.use(http.get('/api/admin/auth/context', () => HttpResponse.json({
+  server.use(http.get('/api/auth/me', () => HttpResponse.json({
     principalId: 'operator-local', principalType: 'USER', displayName: 'Local Operator',
     institutionId: 'institution_local', roles: ['OPERATOR', 'PRIVILEGED_OPERATOR'],
     workloadIds: ['*'], subjectAuthorizationRequired: false,

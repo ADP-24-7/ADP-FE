@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { getAuthContext } from '../api/authContextApi';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { getAuthContext, login, logout } from '../api/authContextApi';
 
 export const authContextKey = ['auth', 'context'] as const;
 
@@ -11,3 +11,22 @@ export function useAuthContext() {
   });
 }
 
+export function useLogin() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ principalId, password }: { principalId: string; password: string }) =>
+      login(principalId, password),
+    onSuccess: (context) => {
+      queryClient.clear();
+      queryClient.setQueryData(authContextKey, context);
+    },
+  });
+}
+
+export function useLogout() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: logout,
+    onSettled: () => queryClient.clear(),
+  });
+}
