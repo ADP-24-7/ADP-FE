@@ -356,6 +356,7 @@ button, a { transition: background-color .16s ease, border-color .16s ease, colo
 .table-security-findings { grid-template-columns: .9fr 1.35fr 1.1fr .8fr 1.3fr 1fr; }
 .table-identities { grid-template-columns: minmax(180px, 1.4fr) .65fr 1.1fr 1.35fr .55fr .7fr; }
 .table-permissions { grid-template-columns: 1.35fr .9fr 1.15fr .8fr .8fr; }
+.table-digital-asset-current-state { grid-template-columns: minmax(210px, 1.4fr) minmax(170px, 1fr) minmax(135px, .8fr) minmax(190px, 1.1fr); }
 .identity-table-shell,
 .permission-table-shell { overflow-x: auto; }
 .identity-table-shell > .table-identities { min-width: 900px; }
@@ -371,6 +372,11 @@ button, a { transition: background-color .16s ease, border-color .16s ease, colo
 .identity-filter-grid { display: grid; grid-template-columns: 1.4fr .65fr .9fr 1fr .7fr auto; align-items: end; gap: 10px; margin-bottom: 14px; }
 .security-findings-table-shell { overflow-x: auto; }
 .security-findings-table-shell > .table-security-findings { min-width: 900px; }
+.digital-asset-current-state-table-shell { overflow-x: auto; }
+.digital-asset-current-state-table-shell > .table-digital-asset-current-state { min-width: 860px; }
+.table-digital-asset-current-state > span { display: flex; min-width: 0; flex-direction: column; gap: 4px; overflow-wrap: anywhere; }
+.table-digital-asset-current-state small { color: var(--color-text-muted); font-size: 10px; line-height: 1.35; }
+.digital-asset-current-state-stack { display: grid; gap: 14px; }
 .table-policy-events { grid-template-columns: .9fr 1.1fr 1.2fr 1.2fr .8fr 1.1fr; }
 .table-recovery > span,
 .table-security-findings > span,
