@@ -1,8 +1,9 @@
 import { Activity, AlertTriangle, Clock3, ListRestart, ShieldX, Workflow } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AiEvaluationPanel } from '../../features/ai-evaluation';
 import { useOperationsSummary } from '../../features/operations-monitoring';
 import { RecoveryOperationsPanel } from '../../features/recovery-operations';
+import { ReviewQueuePanel } from '../../features/review-queue';
 import { normalizeApiError } from '../../shared/api/apiError';
 import { ErrorState, MetricCard, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
 import { useExecutionPack } from '../../shared/prototype';
@@ -15,6 +16,7 @@ function secondsLabel(value: number | null | undefined) {
 
 export function AnalysisPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { selectedPack } = useExecutionPack();
   const summary = useOperationsSummary(60);
   const metricState = summary.isLoading ? 'loading' : summary.isError ? 'error' : 'value';
@@ -33,7 +35,7 @@ export function AnalysisPage() {
         scope={selectedPack.scope}
         descriptor={selectedPack.descriptor}
         objective={selectedPack.objective}
-        dataScope="전체 권한 허용 Workload · Pack 필터 미지원"
+        dataScope="전체 권한 허용 Workload · Review Queue는 Pack 기준 조회"
       />
 
       {selectedPack.key === 'ai' ? <AiEvaluationPanel /> : null}
@@ -50,6 +52,12 @@ export function AnalysisPage() {
       {summary.isError ? (
         <ErrorState title="운영 Summary를 불러오지 못했습니다" description={normalizeApiError(summary.error).message} onRetry={() => summary.refetch()} />
       ) : null}
+
+      <ReviewQueuePanel
+        executionPack={selectedPack.key === 'digital-asset' ? 'DIGITAL_ASSET' : 'AI'}
+        onOpenTrace={(executionId) => navigate(`/audit?executionId=${encodeURIComponent(executionId)}`)}
+        onOpenRecovery={(recoveryId) => setSearchParams({ recoveryId }, { replace: true })}
+      />
 
       <RecoveryOperationsPanel
         initialRecoveryId={searchParams.get('recoveryId') ?? ''}
