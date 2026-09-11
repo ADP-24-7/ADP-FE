@@ -48,7 +48,7 @@ describe('App', () => {
     render(<App />);
 
     const operator = await screen.findByRole('button', { name: '현재 운영자 권한' });
-    expect(operator).toHaveTextContent('운영자 · 승인 권한');
+    expect(operator).toHaveTextContent('승인 권한');
     expect(operator).not.toHaveTextContent('PRIVILEGED_OPERATOR');
     await user.click(operator);
 

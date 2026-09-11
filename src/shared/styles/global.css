@@ -197,7 +197,7 @@ button, a { transition: background-color .16s ease, border-color .16s ease, colo
 .approval-summary-strip > span:last-child { border-right: 0; }
 .approval-summary-strip small { color: var(--color-muted); font-size: 10px; }
 .approval-summary-strip strong { color: var(--color-ink); font-size: 21px; }
-.approval-tabs { margin: 14px 0; }
+.approval-tabs { flex-wrap: wrap; margin: 14px 0; overflow: visible; }
 .approval-priority-note { display: flex; align-items: center; gap: 8px; margin: -4px 0 12px; border-left: 3px solid var(--color-warning); background: var(--color-warning-soft); color: var(--color-warning); padding: 9px 11px; font-size: 11px; }
 .approval-priority-note strong { margin-right: 4px; color: var(--color-ink); }
 .approval-work-table-shell { overflow-x: auto; }

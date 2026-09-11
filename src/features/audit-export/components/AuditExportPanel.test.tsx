@@ -35,7 +35,7 @@ describe('AuditExportPanel', () => {
   it('uses a fixed approval rationale instead of allowing the approver to edit the request', async () => {
     let submitted: Record<string, unknown> = {};
     const pendingJob = { ...job(), requesterId: 'auditor-local' };
-    window.localStorage.setItem('adp.audit-export.exec-contract', pendingJob.exportId);
+    window.localStorage.setItem('adp.audit-export.operator-local.exec-contract', pendingJob.exportId);
     server.use(
       http.get('/api/v1/audit-exports/:exportId', () => HttpResponse.json({ job: pendingJob, events: [] })),
       http.post('/api/v1/audit-exports/:exportId/approval', async ({ request }) => {
@@ -56,7 +56,7 @@ describe('AuditExportPanel', () => {
   it('asks for an explicit reason only when rejecting a request', async () => {
     let submitted: Record<string, unknown> = {};
     const pendingJob = { ...job(), requesterId: 'auditor-local' };
-    window.localStorage.setItem('adp.audit-export.exec-contract', pendingJob.exportId);
+    window.localStorage.setItem('adp.audit-export.operator-local.exec-contract', pendingJob.exportId);
     server.use(
       http.get('/api/v1/audit-exports/:exportId', () => HttpResponse.json({ job: pendingJob, events: [] })),
       http.post('/api/v1/audit-exports/:exportId/approval', async ({ request }) => {

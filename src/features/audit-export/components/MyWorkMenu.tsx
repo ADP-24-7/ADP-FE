@@ -8,14 +8,14 @@ export function MyWorkMenu() {
   const navigate = useNavigate();
   const auth = useAuthContext();
   const [open, setOpen] = useState(false);
-  const eligible = Boolean(auth.data?.roles.some((role) => role === 'AUDITOR' || role === 'PRIVILEGED_OPERATOR'));
+  const eligible = Boolean(auth.data?.roles.some((role) => role === 'OPERATOR' || role === 'AUDITOR' || role === 'PRIVILEGED_OPERATOR'));
   const summary = useAuditExportWorkSummary(eligible);
   if (!eligible) return null;
 
   const total = summary.data
     ? summary.data.personal.pendingApproval + summary.data.personal.readyToDownload + summary.data.approvals.pending
     : 0;
-  const go = (view: 'MY_REQUESTS' | 'APPROVAL_QUEUE') => {
+  const go = (view: 'MY_REQUESTS' | 'MY_HISTORY' | 'APPROVAL_QUEUE') => {
     setOpen(false);
     navigate(`/policies?section=approvals&view=${view}`);
   };
@@ -38,6 +38,9 @@ export function MyWorkMenu() {
       </button>
       <button type="button" role="menuitem" onClick={() => go('MY_REQUESTS')}>
         <span><Download size={15} />다운로드 가능</span><b>{summary.data?.personal.readyToDownload ?? '—'}</b>
+      </button>
+      <button type="button" role="menuitem" onClick={() => go('MY_HISTORY')}>
+        <span><FileClock size={15} />내 요청 이력</span><b>{summary.data ? summary.data.personal.downloaded + summary.data.personal.rejected + summary.data.personal.failedOrExpired : '—'}</b>
       </button>
       {summary.data?.approvalAvailable ? <button type="button" role="menuitem" onClick={() => go('APPROVAL_QUEUE')}>
         <span><ListChecks size={15} />승인 필요</span><b>{summary.data.approvals.pending}</b>

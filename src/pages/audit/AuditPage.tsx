@@ -215,11 +215,11 @@ export function AuditPage() {
         >
           {submittedExecutionId ? (
             <div className="audit-evidence-stack">
-              <AuditExportPanel key={submittedExecutionId} executionId={submittedExecutionId} />
               {evidence.isLoading ? <LoadingPanel label="감사 증적을 불러오는 중입니다" /> : evidence.isError ? (
-                <ErrorState description="상세 실행 증적은 승인 권한이 있는 운영자만 조회할 수 있습니다." onRetry={() => evidence.refetch()} compact />
+                <ErrorState description="현재 계정의 기관 및 Workload 범위에서 상세 실행 증적을 조회할 수 없습니다." onRetry={() => evidence.refetch()} compact />
               ) : evidence.data ? (
                 <>
+                  <AuditExportPanel key={submittedExecutionId} executionId={submittedExecutionId} />
                   <div
                     ref={policyDecisionEvidenceRef}
                     id="policy-decision-evidence"

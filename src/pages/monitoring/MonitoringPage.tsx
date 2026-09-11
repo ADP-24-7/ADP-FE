@@ -23,10 +23,11 @@ export function MonitoringPage() {
   const events = usePolicyOperationEvents({ ...eventParams, executionPack: selectedPack.apiValue });
   const totalPages = events.data ? Math.ceil(events.data.total / events.data.size) : 0;
   const eventsRefreshing = events.isFetching && !events.isLoading;
-  const exportEligible = Boolean(auth.data?.roles.some((role) => role === 'AUDITOR' || role === 'PRIVILEGED_OPERATOR'));
+  const exportEligible = Boolean(auth.data?.roles.some((role) => role === 'OPERATOR' || role === 'AUDITOR' || role === 'PRIVILEGED_OPERATOR'));
   const exportPrivileged = Boolean(auth.data?.roles.includes('PRIVILEGED_OPERATOR'));
+  const exportAuditor = Boolean(auth.data?.roles.includes('AUDITOR'));
   const operationsView = exportPrivileged ? 'APPROVAL_QUEUE' : 'MY_REQUESTS';
-  const historyView = exportPrivileged ? 'HISTORY' : 'MY_REQUESTS';
+  const historyView = exportPrivileged ? 'DECISION_HISTORY' : exportAuditor ? 'AUDIT_HISTORY' : 'MY_HISTORY';
   const exportWork = useAuditExportWorkSummary(exportEligible);
 
   useEffect(() => {

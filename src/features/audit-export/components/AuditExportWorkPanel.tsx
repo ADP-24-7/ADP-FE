@@ -1,11 +1,11 @@
-import { AlertTriangle, Check, ChevronDown, ChevronUp, Download, FileClock, X } from 'lucide-react';
+import { AlertTriangle, Check, ChevronDown, ChevronUp, Download, FileClock, RotateCcw, X } from 'lucide-react';
 import { Fragment, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuthContext } from '../../auth';
 import { normalizeApiError } from '../../../shared/api/apiError';
 import { EmptyState, ErrorState, LoadingPanel, SectionCard, StatusBadge } from '../../../shared/components';
 import {
-  useAuditExport, useAuditExportWork, useAuditExportWorkSummary,
+  useAuditExport, useAuditExportWork, useAuditExportWorkSummary, useCreateAuditExport,
   useDecideAuditExport, useDownloadAuditExport,
 } from '../hooks/useAuditExport';
 import type { AuditExportJob, AuditExportStatus, AuditExportWorkView } from '../model/types';
@@ -17,8 +17,19 @@ const STATUS_LABELS: Record<AuditExportStatus, string> = {
   REJECTED: '반려', FAILED: '실패', EXPIRED: '만료', REVOKED: '폐기됨',
 };
 const VIEWS: Array<[AuditExportWorkView, string]> = [
-  ['MY_REQUESTS', '내 요청'], ['APPROVAL_QUEUE', '승인할 요청'], ['HISTORY', '전체 이력'],
+  ['MY_REQUESTS', '내 요청'],
+  ['MY_HISTORY', '내 요청 이력'],
+  ['APPROVAL_QUEUE', '승인할 요청'],
+  ['DECISION_HISTORY', '내 처리 이력'],
+  ['AUDIT_HISTORY', '기관 감사 이력'],
 ];
+
+function canAccessView(view: AuditExportWorkView | null, requester: boolean, privileged: boolean, auditor: boolean) {
+  if (!view) return false;
+  if (view === 'MY_REQUESTS' || view === 'MY_HISTORY') return requester;
+  if (view === 'APPROVAL_QUEUE' || view === 'DECISION_HISTORY') return privileged;
+  return auditor;
+}
 
 function displayStatus(job: AuditExportJob) {
   return job.status === 'READY' && job.downloadedAt ? '다운로드 완료' : STATUS_LABELS[job.status];
@@ -59,13 +70,14 @@ type ApprovalWorkRowProps = {
   onReject: (exportId: string, reason: string) => Promise<void>;
   onRevoke: (exportId: string, reason: string) => Promise<void>;
   onDownload: (job: AuditExportJob) => Promise<void>;
+  onRerequest: (job: AuditExportJob, reason: string) => Promise<void>;
 };
 
 function ApprovalWorkRow({
-  job, view, privileged, expanded, deciding, downloading, onToggle, onApprove, onReject, onRevoke, onDownload,
+  job, view, privileged, expanded, deciding, downloading, onToggle, onApprove, onReject, onRevoke, onDownload, onRerequest,
 }: ApprovalWorkRowProps) {
   const detail = useAuditExport(job.exportId, expanded);
-  const [decisionMode, setDecisionMode] = useState<'REJECT' | 'REVOKE' | null>(null);
+  const [decisionMode, setDecisionMode] = useState<'REJECT' | 'REVOKE' | 'REREQUEST' | null>(null);
   const [decisionReason, setDecisionReason] = useState('');
   const actionLabel = view === 'APPROVAL_QUEUE' && job.status === 'REQUESTED' ? '검토' : '상세';
   const waiting = view === 'APPROVAL_QUEUE' && job.status === 'REQUESTED' ? waitingTime(job.createdAt) : null;
@@ -121,10 +133,11 @@ function ApprovalWorkRow({
         <div className="approval-detail-actions">
           {view === 'APPROVAL_QUEUE' && job.status === 'REQUESTED' ? <><div className="approval-standard"><span>승인 기준</span><strong>{APPROVAL_REASON}</strong><small>승인 시 요청 내용은 변경되지 않습니다.</small></div><button className="button button-primary" type="button" disabled={deciding} onClick={() => onApprove(job.exportId)}><Check size={14} />승인</button><button className="button button-danger" type="button" disabled={deciding} onClick={() => { setDecisionMode((value) => value === 'REJECT' ? null : 'REJECT'); setDecisionReason(''); }}><X size={14} />반려</button></> : null}
           {view === 'MY_REQUESTS' && job.status === 'READY' && !job.downloadedAt ? <button className="button button-primary" type="button" disabled={downloading} onClick={() => onDownload(job)}><Download size={14} />다운로드</button> : null}
+          {view === 'MY_HISTORY' ? <button className="button button-secondary" type="button" disabled={deciding} onClick={() => { setDecisionMode((value) => value === 'REREQUEST' ? null : 'REREQUEST'); setDecisionReason(job.requestReason); }}><RotateCcw size={14} />다시 요청</button> : null}
           {canRevoke ? <button className="button button-danger" type="button" disabled={deciding} onClick={() => { setDecisionMode((value) => value === 'REVOKE' ? null : 'REVOKE'); setDecisionReason(''); }}><X size={14} />폐기</button> : null}
           <button className="icon-button" title="상세 닫기" type="button" onClick={toggle}><X size={14} /></button>
         </div>
-        {decisionMode ? <div className="approval-rejection-form"><label className="field"><span>{decisionMode === 'REVOKE' ? '폐기 사유' : '반려 사유'}</span><textarea value={decisionReason} maxLength={500} rows={3} placeholder={decisionMode === 'REVOKE' ? '승인 또는 반출을 중단해야 하는 근거를 입력하세요' : '요청자가 보완해야 할 내용을 구체적으로 입력하세요'} onChange={(event) => setDecisionReason(event.target.value)} /></label><button className="button button-danger" type="button" disabled={!decisionReason.trim() || deciding} onClick={() => decisionMode === 'REVOKE' ? onRevoke(job.exportId, decisionReason.trim()) : onReject(job.exportId, decisionReason.trim())}>{decisionMode === 'REVOKE' ? '폐기 확정' : '반려 확정'}</button></div> : null}
+        {decisionMode ? <div className="approval-rejection-form"><label className="field"><span>{decisionMode === 'REVOKE' ? '폐기 사유' : decisionMode === 'REJECT' ? '반려 사유' : '새 요청 목적'}</span><textarea value={decisionReason} maxLength={500} rows={3} placeholder={decisionMode === 'REVOKE' ? '승인 또는 반출을 중단해야 하는 근거를 입력하세요' : decisionMode === 'REJECT' ? '요청자가 보완해야 할 내용을 구체적으로 입력하세요' : '현재 업무 목적에 맞게 반출 목적을 확인하거나 수정하세요'} onChange={(event) => setDecisionReason(event.target.value)} /></label><button className={`button ${decisionMode === 'REREQUEST' ? 'button-primary' : 'button-danger'}`} type="button" disabled={!decisionReason.trim() || deciding} onClick={() => decisionMode === 'REVOKE' ? onRevoke(job.exportId, decisionReason.trim()) : decisionMode === 'REJECT' ? onReject(job.exportId, decisionReason.trim()) : onRerequest(job, decisionReason.trim())}>{decisionMode === 'REVOKE' ? '폐기 확정' : decisionMode === 'REJECT' ? '반려 확정' : '새 요청 제출'}</button></div> : null}
       </> : null}
     </div> : null}
   </Fragment>;
@@ -135,27 +148,33 @@ export function AuditExportWorkPanel() {
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedView = searchParams.get('view') as AuditExportWorkView | null;
   const privileged = Boolean(auth.data?.roles.includes('PRIVILEGED_OPERATOR'));
+  const auditor = Boolean(auth.data?.roles.includes('AUDITOR'));
+  const operator = Boolean(auth.data?.roles.includes('OPERATOR'));
+  const exportEligible = operator || privileged || auditor;
+  const allowedViews = VIEWS.filter(([key]) => canAccessView(key, exportEligible, privileged, auditor));
+  const requestedViewAllowed = canAccessView(requestedView, exportEligible, privileged, auditor);
   const [view, setView] = useState<AuditExportWorkView>(
-    requestedView === 'APPROVAL_QUEUE' || requestedView === 'HISTORY' ? requestedView : 'MY_REQUESTS',
+    requestedViewAllowed && requestedView ? requestedView : 'MY_REQUESTS',
   );
   const [page, setPage] = useState(0);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
-  const summary = useAuditExportWorkSummary();
-  const work = useAuditExportWork(view, page, PAGE_SIZE, view === 'MY_REQUESTS' || privileged);
+  const summary = useAuditExportWorkSummary(exportEligible);
+  const work = useAuditExportWork(view, page, PAGE_SIZE, exportEligible && canAccessView(view, exportEligible, privileged, auditor));
   const decide = useDecideAuditExport();
   const download = useDownloadAuditExport();
+  const create = useCreateAuditExport();
   const pages = work.data ? Math.ceil(work.data.totalElements / work.data.size) : 0;
 
   useEffect(() => {
-    const nextView = requestedView === 'APPROVAL_QUEUE' || requestedView === 'HISTORY'
-      ? (privileged ? requestedView : 'MY_REQUESTS')
+    const nextView = canAccessView(requestedView, exportEligible, privileged, auditor) && requestedView
+      ? requestedView
       : 'MY_REQUESTS';
     if (view !== nextView) {
       setView(nextView);
       setPage(0);
       closeDetails();
     }
-  }, [privileged, requestedView, view]);
+  }, [auditor, exportEligible, privileged, requestedView, view]);
 
   useEffect(() => {
     if (pages > 0 && page >= pages) setPage(pages - 1);
@@ -210,7 +229,21 @@ export function AuditExportWorkPanel() {
     await work.refetch();
   }
 
-  return <SectionCard title="Requests & Approvals" description="내 감사 증적 반출 요청을 추적하고 권한이 있는 요청만 검토합니다." actions={<FileClock size={17} />}>
+  async function rerequestJob(job: AuditExportJob, reason: string) {
+    await create.mutateAsync({
+      executionId: job.executionId,
+      reportType: 'EXECUTION_EVIDENCE',
+      format: job.format,
+      reason,
+      idempotencyKey: `audit-export-rerequest-${crypto.randomUUID()}`,
+    });
+    setExpandedIds((current) => new Set([...current].filter((id) => id !== job.exportId)));
+    selectView('MY_REQUESTS');
+  }
+
+  if (!exportEligible) return null;
+
+  return <SectionCard title="요청 및 승인" description="내 감사 증적 반출 요청을 추적하고 권한이 있는 요청만 검토합니다." actions={<FileClock size={17} />}>
     <div className="approval-summary-strip">
       <span><small>내 승인 대기</small><strong>{summary.data?.personal.pendingApproval ?? '—'}</strong></span>
       <span><small>다운로드 가능</small><strong>{summary.data?.personal.readyToDownload ?? '—'}</strong></span>
@@ -218,13 +251,13 @@ export function AuditExportWorkPanel() {
       {privileged ? <span><small>24시간 이상 대기</small><strong>{summary.data?.approvals.waitingOver24Hours ?? '—'}</strong></span> : null}
     </div>
     <div className="segmented-control approval-tabs" role="tablist" aria-label="승인 업무 구분">
-      {VIEWS.filter(([key]) => key === 'MY_REQUESTS' || privileged).map(([key, label]) => <button key={key} type="button" role="tab" aria-selected={view === key} className={view === key ? 'active' : ''} onClick={() => selectView(key)}>{label}</button>)}
+      {allowedViews.map(([key, label]) => <button key={key} type="button" role="tab" aria-selected={view === key} className={view === key ? 'active' : ''} onClick={() => selectView(key)}>{label}</button>)}
     </div>
     {view === 'APPROVAL_QUEUE' ? <div className="approval-priority-note"><AlertTriangle size={15} /><span><strong>우선 처리</strong> 24시간을 초과한 요청부터 오래된 접수 순으로 표시합니다.</span></div> : null}
 
     <div className="table-shell approval-work-table-shell">
       <div className="table-head table-approval-work"><span>상태</span><span>요청</span><span>요청자 / 처리자</span><span>요청일 / 처리일</span><span>작업</span></div>
-      {work.isLoading ? <LoadingPanel label="승인 업무를 불러오는 중입니다" /> : work.isError ? <ErrorState description={normalizeApiError(work.error).message} onRetry={() => work.refetch()} /> : work.data?.items.length ? work.data.items.map((job) => <ApprovalWorkRow key={job.exportId} job={job} view={view} privileged={privileged} expanded={expandedIds.has(job.exportId)} deciding={decide.isPending} downloading={download.isPending} onToggle={toggleJob} onApprove={approveJob} onReject={rejectJob} onRevoke={revokeJob} onDownload={downloadJob} />) : <EmptyState title="표시할 승인 업무가 없습니다" description="현재 계정과 권한 범위에 해당하는 감사 증적 요청이 없습니다." />}
+      {work.isLoading ? <LoadingPanel label="승인 업무를 불러오는 중입니다" /> : work.isError ? <ErrorState description={normalizeApiError(work.error).message} onRetry={() => work.refetch()} /> : work.data?.items.length ? work.data.items.map((job) => <ApprovalWorkRow key={job.exportId} job={job} view={view} privileged={privileged} expanded={expandedIds.has(job.exportId)} deciding={decide.isPending || create.isPending} downloading={download.isPending} onToggle={toggleJob} onApprove={approveJob} onReject={rejectJob} onRevoke={revokeJob} onDownload={downloadJob} onRerequest={rerequestJob} />) : <EmptyState title="표시할 승인 업무가 없습니다" description="현재 계정과 권한 범위에 해당하는 감사 증적 요청이 없습니다." />}
     </div>
     <div className="pagination-row"><span>{work.data ? `${work.data.totalElements}건 · 페이지당 ${PAGE_SIZE}건` : '조회 대기'}</span><div className="numbered-pagination">
       <button className="button button-secondary" type="button" disabled={page === 0} onClick={() => { setPage((value) => value - 1); closeDetails(); }}>이전</button>

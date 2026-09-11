@@ -49,7 +49,12 @@ export type AuditExportEvent = {
 
 export type AuditExportDetail = { job: AuditExportJob; events: AuditExportEvent[] };
 
-export type AuditExportWorkView = 'MY_REQUESTS' | 'APPROVAL_QUEUE' | 'HISTORY';
+export type AuditExportWorkView =
+  | 'MY_REQUESTS'
+  | 'MY_HISTORY'
+  | 'APPROVAL_QUEUE'
+  | 'DECISION_HISTORY'
+  | 'AUDIT_HISTORY';
 
 export type AuditExportWorkPage = {
   items: AuditExportJob[];

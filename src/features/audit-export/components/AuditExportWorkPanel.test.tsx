@@ -57,7 +57,7 @@ describe('AuditExportWorkPanel', () => {
     expect(decision).toMatchObject({ action: 'APPROVE', reason: '요청 범위 및 반출 목적 확인' });
   });
 
-  it('opens history details inline and limits navigation to ten jobs per page', async () => {
+  it('opens handled decision history details inline and limits navigation to ten jobs per page', async () => {
     const jobs = Array.from({ length: 10 }, (_, index) => ({
       ...pending,
       exportId: `exp-history-${index}`,
@@ -81,7 +81,7 @@ describe('AuditExportWorkPanel', () => {
     const user = userEvent.setup();
     render(<MemoryRouter><QueryClientProvider client={queryClient}><AuditExportWorkPanel /></QueryClientProvider></MemoryRouter>);
 
-    await user.click(await screen.findByRole('tab', { name: '전체 이력' }));
+    await user.click(await screen.findByRole('tab', { name: '내 처리 이력' }));
     const detailRows = await screen.findAllByRole('button', { name: 'CSV 감사 증적 상세' });
     expect(detailRows).toHaveLength(10);
     await user.click(detailRows[0]);
@@ -129,5 +129,51 @@ describe('AuditExportWorkPanel', () => {
     await user.click(confirm);
 
     expect(decision).toEqual({ action: 'REVOKE', reason: '승인 대상 오류' });
+  });
+
+  it('shows auditor-owned history separately and creates a new request instead of reviving an expired job', async () => {
+    let created: Record<string, unknown> = {};
+    const expired = { ...pending, exportId: 'exp-expired', status: 'EXPIRED', requestReason: '정기 감사 제출' };
+    server.use(
+      http.get('/api/auth/me', () => HttpResponse.json({
+        principalId: 'auditor-local', principalType: 'USER', displayName: 'Local Auditor',
+        institutionId: 'institution_local', roles: ['AUDITOR'], workloadIds: ['*'],
+        subjectAuthorizationRequired: false,
+      })),
+      http.get('/api/v1/audit-exports/work-summary', () => HttpResponse.json({
+        ...workSummary, principalId: 'auditor-local', approvalAvailable: false,
+      })),
+      http.get('/api/v1/audit-exports', ({ request }) => {
+        const view = new URL(request.url).searchParams.get('view');
+        return HttpResponse.json({ items: view === 'MY_HISTORY' ? [expired] : [], page: 0, size: 10, totalElements: view === 'MY_HISTORY' ? 1 : 0 });
+      }),
+      http.get('/api/v1/audit-exports/:exportId', () => HttpResponse.json({ job: expired, events: [] })),
+      http.post('/api/v1/audit-exports', async ({ request }) => {
+        created = await request.json() as Record<string, unknown>;
+        return HttpResponse.json({ ...pending, exportId: 'exp-new', requestReason: created.reason });
+      }),
+    );
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+    const user = userEvent.setup();
+    render(<MemoryRouter><QueryClientProvider client={queryClient}><AuditExportWorkPanel /></QueryClientProvider></MemoryRouter>);
+
+    expect(await screen.findByRole('tab', { name: '내 요청 이력' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '기관 감사 이력' })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: '승인할 요청' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: '내 처리 이력' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: '내 요청 이력' }));
+    await user.click(await screen.findByRole('button', { name: 'CSV 감사 증적 상세' }));
+    await user.click(await screen.findByRole('button', { name: '다시 요청' }));
+    const reason = screen.getByRole('textbox', { name: '새 요청 목적' });
+    await user.clear(reason);
+    await user.type(reason, '갱신된 감사 제출');
+    await user.click(screen.getByRole('button', { name: '새 요청 제출' }));
+
+    expect(created).toMatchObject({
+      executionId: 'exec-pending', format: 'CSV', reason: '갱신된 감사 제출',
+      reportType: 'EXECUTION_EVIDENCE',
+    });
+    expect(created.idempotencyKey).toMatch(/^audit-export-rerequest-/);
   });
 });
