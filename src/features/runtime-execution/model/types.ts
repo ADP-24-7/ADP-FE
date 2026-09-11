@@ -117,11 +117,37 @@ export type RuntimeExecutionEvidence = {
   providerResponseDigest?: string | null;
   responseGuardStatus?: string | null;
   responseGuardReasonCodes: string[];
+  responseFindingTypes: string[];
   controlledDeliveryStatus?: string | null;
   controlledDeliveryResponseDigest?: string | null;
   controlledDeliveryReasonCode?: string | null;
   controlledDeliveredAt?: string | null;
-  aiModel?: Record<string, unknown> | null;
+  aiModel?: AiModelExecutionEvidence | null;
+};
+
+export type AiModelExecutionEvidence = {
+  profileId: string;
+  providerModelId: string;
+  providerModelVersion: string;
+  evaluationRunId: string;
+  evalCaseId: string;
+  evaluationContractDigest: string;
+  expectedInputDigest: string;
+  actualInputDigest: string;
+  datasetId: string;
+  datasetVersion: string;
+  datasetDigest: string;
+  policySnapshotDigest: string;
+  fullResponseLatencyMillis?: number | null;
+  attemptElapsedMillis?: number | null;
+  inputTokens?: number | null;
+  outputTokens?: number | null;
+  totalTokens?: number | null;
+  tokenUsageStatus: string;
+  providerStatus: string;
+  errorCategory?: string | null;
+  providerHttpStatus?: number | null;
+  evidenceStatus: string;
 };
 
 export type RuntimeExecutionTraceStage = {
@@ -130,11 +156,32 @@ export type RuntimeExecutionTraceStage = {
   observedAt?: string;
 };
 
+export type RuntimeStageTiming = {
+  stage: 'AUTHORIZATION' | 'RETRIEVAL' | 'POLICY' | 'TRANSFORM' | 'OUTBOUND_GUARD' | 'PROVIDER' | 'RESPONSE_GUARD' | 'DELIVERY';
+  startedAt: string;
+  endedAt: string;
+  durationMillis: number;
+};
+
 export type RuntimeExecutionTrace = {
   executionId: string;
   traceId: string;
   status: RuntimeExecutionStatus;
+  workloadId: string;
+  purposeCode: string;
+  subjectRefDigest?: string | null;
+  authorizationDecision: 'ALLOWED' | 'DENIED';
+  authorizationReason: string;
+  policyVersion?: string | null;
+  policyDecision?: PolicyAction | null;
+  policyReasonCodes: string[];
+  finalAction?: FinalAction | null;
+  regulatoryRequirementRefs: string[];
+  regulatoryEvidenceRefs: string[];
+  createdAt: string;
+  updatedAt: string;
   stages: RuntimeExecutionTraceStage[];
+  stageTimings: RuntimeStageTiming[];
   digitalAssetRuntimeSnapshot?: DigitalAssetRuntimeSnapshot | null;
   digitalAssetPreExecutionGuard?: DigitalAssetPreExecutionGuard | null;
   digitalAssetPostExecutionEvidence?: DigitalAssetPostExecutionEvidence | null;

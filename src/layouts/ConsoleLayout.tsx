@@ -65,6 +65,9 @@ export function ConsoleLayout() {
   const auth = useAuthContext();
   const logout = useLogout();
   const activeNavItem = navItems.find((item) => location.pathname.startsWith(item.to));
+  const navLabel = (item: typeof navItems[number]) => (
+    item.to === '/analysis' && selectedPackKey === 'ai' ? 'AI Admin' : item.label
+  );
 
   useEffect(() => {
     if (!location.hash) return;
@@ -109,11 +112,11 @@ export function ConsoleLayout() {
             <NavLink
               key={item.to}
               to={item.to}
-              title={item.label}
+              title={navLabel(item)}
               className={({ isActive }) => (isActive ? 'console-nav-link active' : 'console-nav-link')}
             >
               <span className="console-nav-icon" aria-hidden="true"><item.icon size={18} /></span>
-              <span className="console-nav-label">{item.label}</span>
+              <span className="console-nav-label">{navLabel(item)}</span>
             </NavLink>
           ))}
         </nav>
@@ -124,7 +127,7 @@ export function ConsoleLayout() {
         <header className="console-topbar">
           <div className="console-topbar-copy">
             <strong>Financial Privacy Gateway</strong>
-            <span>{activeNavItem?.label ?? 'Policy Decision → Finding → Trace → Recovery'}</span>
+            <span>{activeNavItem ? navLabel(activeNavItem) : 'Policy Decision → Finding → Trace → Recovery'}</span>
           </div>
           <div className="topbar-actions">
             {env.dataProvenance === 'SYNTHETIC' ? (

@@ -1,31 +1,119 @@
 import { http, HttpResponse } from 'msw';
 
-const runId = 'ai-eval-baseline-2026-09-07';
+const runId = 'ai-eval-da-provenance-2026-09-10-r2';
+const executions = [
+  ['exec_05a60a08-f3ff-44b6-8db0-248dbd264ff7', 'nvidia-nemotron-3.5-lightning-30b-a3b'],
+  ['exec_d567d9b6-1502-4427-820f-ec6f4063445e', 'meta-muse-glimmer-30b'],
+  ['exec_1b42d562-762e-4a8c-b47e-8a42a0c30ed2', 'google-gemma-4-31b-it'],
+] as const;
 
 export const aiEvaluationHandlers = [
-  http.get('/api/admin/ai/evaluation-runs/:evaluationRunId/readiness', () => HttpResponse.json({
-    evaluation_run_id: runId,
-    evaluation_run_version: '1.0.0',
-    status: 'READY',
-    bundle_available: true,
-    expected_execution_count: 3,
-    stored_execution_count: 3,
-    observed_execution_count: 3,
-    complete_evidence_count: 3,
-    missing_execution_count: 0,
-    unexpected_execution_count: 0,
-    case_models: [{
-      eval_case_id: 'customer-summary-ko-001',
-      profile_id: 'model-profile-1',
-      execution_id: 'execution-1',
-      runtime_status: 'COMPLETED',
-      provider_status: 'COMPLETED',
-      evidence_status: 'COMPLETE',
-    }],
+  http.get('/api/admin/ai/evaluation-runs/:evaluationRunId/calibration-evidence', ({ params }) => HttpResponse.json({
+    manifest: {
+      schema_version: 'adp-ai-calibration-evidence/v1', content_digest: `sha256:${'a'.repeat(64)}`,
+      evaluation_run_id: params.evaluationRunId, evaluation_run_version: '1.0.0', execution_count: 3,
+      generated_at: '2026-09-11T00:00:00Z', execution_from: '2026-09-11T00:00:00Z',
+      execution_cutoff_at: '2026-09-11T00:05:00Z',
+    },
+    calibration_ready: true,
+    readiness_reason_codes: [],
+    executions: executions.map(([execution_id, model_profile_id]) => ({
+      execution_id, eval_case_id: 'customer-summary-da-10832-001', model_profile_id,
+      response_guard_status: 'REJECTED', controlled_delivery_status: 'WITHHELD',
+      reason_codes: ['RESPONSE_SENSITIVE_DATA_DETECTED'], detector_version: 'ai-response-regex-v2',
+      finding_count: 1, observed_finding_count: 1, missing_reflection_metadata_count: 0,
+      finding_groups: [{ finding_type: 'RAW_VALUE_REFLECTION', source_data_class: 'BUSINESS_METADATA',
+        transform_strategy: 'KEEP', field_treatment: 'KEEP_EXACT_PROTECTED', count: 1 }],
+    })),
   })),
+  http.get('/api/admin/ai/evaluation-runs/:evaluationRunId/transform-governance-profile', ({ params }) => HttpResponse.json({
+    evaluation_run_id: params.evaluationRunId,
+    workload_id: 'customer_summary',
+    workload_name: 'Synthetic customer account and recent-transaction summary',
+    business_domain: 'BANKING_CUSTOMER_SUPPORT',
+    purpose_code: 'CUSTOMER_SUPPORT',
+    purpose_description: 'Produce an internal, human-reviewed factual summary',
+    subject_scope: 'ONE_AUTHORIZED_SYNTHETIC_CUSTOMER',
+    action_type: 'GENERATE_INTERNAL_SUPPORT_SUMMARY',
+    requester_role: 'AUTHORIZED_CUSTOMER_SUPPORT_OPERATOR_OR_EVALUATION_HARNESS',
+    e2_handoff_digest: 'sha256:899cf31a920c1363cfb21b9c7d6f3204819222935bcbb9008a01ccbf9a8ba73e',
+    requirement_version: '1.1.1',
+    e2_validation_status: 'E2_POLICY_REQUIREMENT_VALIDATED',
+    provider_governance_status: 'PROVIDER_GOVERNANCE_BLOCKED',
+    external_execution_status: 'PENDING_EXTERNAL_EXECUTION',
+    provider_call_authorized: false,
+    field_controls: [
+      ['input.prompt', 'BUSINESS_INSTRUCTION', 'REQUIRED_EXACT', 'KEEP', 'KEEP', true],
+      ['customer.customer_id', 'SYNTHETIC_CUSTOMER_IDENTIFIER', 'RELATION_PRESERVE', 'VAULT_TOKEN', 'APPROVED_CANDIDATE_REQUIRED', true],
+      ['customer.segment', 'SYNTHETIC_BUSINESS_METADATA', 'REQUIRED_EXACT', 'KEEP', 'KEEP', true],
+      ['account.account_id', 'SYNTHETIC_ACCOUNT_IDENTIFIER', 'RELATION_PRESERVE', 'VAULT_TOKEN', 'APPROVED_CANDIDATE_REQUIRED', true],
+      ['account.account_type', 'SYNTHETIC_FINANCIAL_METADATA', 'REQUIRED_EXACT', 'KEEP', 'KEEP', true],
+      ['account.balance', 'SYNTHETIC_FINANCIAL_AMOUNT', 'REQUIRED_EXACT', 'GENERALIZE', 'KEEP', false],
+      ['transaction.transaction_id', 'SYNTHETIC_TRANSACTION_IDENTIFIER', 'RELATION_PRESERVE', 'HMAC_PSEUDO', 'APPROVED_CANDIDATE_REQUIRED', true],
+      ['transaction.posted_at', 'SYNTHETIC_TEMPORAL_METADATA', 'REQUIRED_EXACT', 'KEEP', 'KEEP', true],
+      ['transaction.merchant_category', 'SYNTHETIC_BUSINESS_METADATA', 'REQUIRED_EXACT', 'KEEP', 'KEEP', true],
+      ['transaction.amount', 'SYNTHETIC_FINANCIAL_AMOUNT', 'REQUIRED_EXACT', 'GENERALIZE', 'KEEP', false],
+      ...['customer.customer_name', 'customer.first_name', 'customer.last_name', 'customer.date_of_birth',
+        'customer.address', 'customer.phone_number', 'customer.email', 'customer.resident_registration_number',
+        'account.account_number', 'transaction.description'].map((field) =>
+        [field, 'SENSITIVE_OR_UNNECESSARY', 'REMOVE', 'REMOVE', 'REMOVE', true]),
+    ].map(([field_name, classification, field_requirement, current_runtime_method, required_transform_method, match]) => ({
+      field_name, classification, business_need: 'Frozen E2 workload need', field_requirement,
+      transform_intents: ['DATA_MINIMIZATION'], utility_requirements: ['RUNTIME_COMPATIBILITY'],
+      candidate_transform_methods: field_requirement === 'RELATION_PRESERVE'
+        ? ['MASK', 'HMAC_PSEUDO', 'VAULT_TOKEN'] : [required_transform_method],
+      prohibited_transform_methods: field_requirement === 'RELATION_PRESERVE'
+        ? ['KEEP', 'GENERALIZE', 'REMOVE'] : ['GENERALIZE'],
+      current_runtime_method, required_transform_method, current_runtime_requirement_match: match,
+      external_release_allowed: field_requirement !== 'REMOVE', applicability: 'CONDITIONAL_SYNTHETIC_ONLY',
+      requirement_status: 'E2_REQUIREMENT_FROZEN', evidence_ref: `E2_TO_E3_TRANSFORM_REQUIREMENTS.json#${field_name}`,
+    })),
+    requirement_enforcement_gaps: ['account.balance', 'transaction.amount'].map((field_name) => ({
+      field_name, current_runtime_method: 'GENERALIZE', required_transform_method: 'KEEP',
+      reason: 'Current Runtime selection differs from the frozen E2 REQUIRED_EXACT requirement',
+      required_action: 'Activate the approved E2 KEEP requirement through the normal Runtime policy lifecycle',
+    })),
+  })),
+  http.get('/api/admin/ai/evaluation-runs/:evaluationRunId/readiness', ({ params }) => {
+    if (params.evaluationRunId === 'ai-experiment-02-financial-regulatory-v5') {
+      return HttpResponse.json({
+        evaluation_run_id: params.evaluationRunId,
+        evaluation_run_version: '1.1.1',
+        status: 'INCOMPLETE',
+        bundle_available: false,
+        expected_execution_count: 9,
+        stored_execution_count: 0,
+        observed_execution_count: 0,
+        complete_evidence_count: 0,
+        missing_execution_count: 9,
+        unexpected_execution_count: 0,
+        case_models: [],
+      });
+    }
+    return HttpResponse.json({
+      evaluation_run_id: runId,
+      evaluation_run_version: '1.0.0',
+      status: 'READY',
+      bundle_available: true,
+      expected_execution_count: 3,
+      stored_execution_count: 3,
+      observed_execution_count: 3,
+      complete_evidence_count: 3,
+      missing_execution_count: 0,
+      unexpected_execution_count: 0,
+      case_models: executions.map(([executionId, profileId]) => ({
+        eval_case_id: 'customer-summary-da-10832-001',
+        profile_id: profileId,
+        execution_id: executionId,
+        runtime_status: 'BLOCKED',
+        provider_status: 'ACKNOWLEDGED',
+        evidence_status: 'COMPLETE',
+      })),
+    });
+  }),
   http.get('/api/admin/ai/evaluation-runs/:evaluationRunId/bundle', () => HttpResponse.json({
     manifest: {
-      schema_version: 'adp-ai-evaluation-bundle/v1',
+      schema_version: 'adp-ai-evaluation-bundle/v2',
       bundle_id: 'bundle-1',
       bundle_version: '1.0.0',
       content_digest: `sha256:${'b'.repeat(64)}`,
@@ -48,7 +136,19 @@ export const aiEvaluationHandlers = [
       policy_snapshot_digest: `sha256:${'e'.repeat(64)}`,
       models: [],
     },
-    case_results: [],
+    case_results: executions.map(([executionId, modelProfileId]) => ({
+      execution_id: executionId,
+      eval_case_id: 'customer-summary-da-10832-001',
+      model_profile_id: modelProfileId,
+      runtime_status: 'BLOCKED',
+      final_action: 'TRANSFORM',
+      response_guard_status: 'REJECTED',
+      controlled_delivery_status: 'WITHHELD',
+      provider_status: 'ACKNOWLEDGED',
+      evidence_status: 'COMPLETE',
+      expected_input_digest: 'input-digest',
+      actual_input_digest: 'input-digest',
+    })),
     runtime_metrics: [],
     failure_summary: { evaluated_execution_count: 3, failed: 0, sent_unknown: 0, not_attempted: 0, by_error_category: {} },
     trace_index: [],
