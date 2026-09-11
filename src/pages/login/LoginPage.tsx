@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { LockKeyhole, ShieldCheck } from 'lucide-react';
 import { normalizeApiError } from '../../shared/api/apiError';
+import { env } from '../../shared/config/env';
 import { useAuthContext, useLogin } from '../../features/auth';
 
 const demoAccounts = [
@@ -41,6 +42,11 @@ export function LoginPage() {
         <div className="login-brand">
           <span className="login-brand-icon"><ShieldCheck size={23} /></span>
           <div><span>FPG</span><strong>Governance Console</strong></div>
+          {env.dataProvenance === 'SYNTHETIC' ? (
+            <span className="data-provenance-badge" title="실제 고객 데이터가 아닌 합성 데이터 환경입니다.">
+              합성 데이터
+            </span>
+          ) : null}
         </div>
         <header>
           <LockKeyhole size={20} aria-hidden="true" />

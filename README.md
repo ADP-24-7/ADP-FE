@@ -69,6 +69,8 @@ cp .env.example .env.local
 | `VITE_API_MODE` | 기본값 `real`; 테스트 fixture 검증 시에만 `mock` 사용 |
 | `VITE_APP_ENV` | `local`, `dev`, `staging`, `prod` |
 | `VITE_LOCAL_BFF_ENABLED` | 로컬 Vite credential proxy 활성화 여부 |
+| `VITE_RUNTIME_PROFILE` | 통합 실행 Profile: `local`, `demo`, `production-like` |
+| `VITE_DATA_PROVENANCE` | 데이터 출처 표시: `LOCAL_DEVELOPMENT`, `SYNTHETIC`, `NONE` |
 | `ADP_LOCAL_RUNTIME_API_KEY` | Vite 서버 전용 로컬 Runtime API Key. 브라우저 번들에 포함되지 않음 |
 
 일반 `npm run dev`는 MSW browser worker를 시작하지 않습니다. 로컬 화면은 Vite proxy를 통해 실제 BE에 연결합니다.
