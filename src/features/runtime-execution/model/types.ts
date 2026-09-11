@@ -157,10 +157,12 @@ export type RuntimeExecutionTraceStage = {
 };
 
 export type RuntimeStageTiming = {
-  stage: 'AUTHORIZATION' | 'RETRIEVAL' | 'POLICY' | 'TRANSFORM' | 'OUTBOUND_GUARD' | 'PROVIDER' | 'RESPONSE_GUARD' | 'DELIVERY';
+  stage: 'AUTHORIZATION' | 'PROVIDER_GOVERNANCE' | 'RETRIEVAL' | 'POLICY' | 'TRANSFORM' | 'OUTBOUND_GUARD' | 'PROVIDER' | 'RESPONSE_GUARD' | 'DELIVERY';
   startedAt: string;
   endedAt: string;
   durationMillis: number;
+  decision?: 'PASS' | 'BLOCK' | string | null;
+  reasonCodes?: string[];
 };
 
 export type RuntimeExecutionTrace = {
