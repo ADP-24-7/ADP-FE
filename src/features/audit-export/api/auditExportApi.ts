@@ -1,5 +1,8 @@
 import { httpClient } from '../../../shared/api/httpClient';
-import type { AuditExportDetail, AuditExportJob, CreateAuditExportRequest } from '../model/types';
+import type {
+  AuditExportDetail, AuditExportJob, AuditExportStatus, AuditExportWorkPage,
+  AuditExportWorkSummary, AuditExportWorkView, CreateAuditExportRequest,
+} from '../model/types';
 
 export async function createAuditExport(request: CreateAuditExportRequest) {
   const response = await httpClient.post<AuditExportJob>('/api/v1/audit-exports', request);
@@ -8,6 +11,23 @@ export async function createAuditExport(request: CreateAuditExportRequest) {
 
 export async function getAuditExport(exportId: string) {
   const response = await httpClient.get<AuditExportDetail>(`/api/v1/audit-exports/${encodeURIComponent(exportId)}`);
+  return response.data;
+}
+
+export async function getAuditExportWork(
+  view: AuditExportWorkView,
+  page = 0,
+  size = 20,
+  status?: AuditExportStatus,
+) {
+  const response = await httpClient.get<AuditExportWorkPage>('/api/v1/audit-exports', {
+    params: { view, page, size, status },
+  });
+  return response.data;
+}
+
+export async function getAuditExportWorkSummary() {
+  const response = await httpClient.get<AuditExportWorkSummary>('/api/v1/audit-exports/work-summary');
   return response.data;
 }
 

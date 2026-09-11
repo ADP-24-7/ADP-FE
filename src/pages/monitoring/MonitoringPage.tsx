@@ -8,9 +8,12 @@ import { normalizeApiError } from '../../shared/api/apiError';
 import { EmptyState, ErrorState, LoadingPanel, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../shared/config/pagination';
 import { useExecutionPack } from '../../shared/prototype';
+import { useAuthContext } from '../../features/auth';
+import { useAuditExportWorkSummary } from '../../features/audit-export';
 
 export function MonitoringPage() {
   const navigate = useNavigate();
+  const auth = useAuthContext();
   const { selectedPack } = useExecutionPack();
   const [workloadId, setWorkloadId] = useState('');
   const [category, setCategory] = useState<PolicyEventCategory | ''>('');
@@ -20,6 +23,12 @@ export function MonitoringPage() {
   const events = usePolicyOperationEvents({ ...eventParams, executionPack: selectedPack.apiValue });
   const totalPages = events.data ? Math.ceil(events.data.total / events.data.size) : 0;
   const eventsRefreshing = events.isFetching && !events.isLoading;
+  const exportEligible = Boolean(auth.data?.roles.some((role) => role === 'OPERATOR' || role === 'AUDITOR' || role === 'PRIVILEGED_OPERATOR'));
+  const exportPrivileged = Boolean(auth.data?.roles.includes('PRIVILEGED_OPERATOR'));
+  const exportAuditor = Boolean(auth.data?.roles.includes('AUDITOR'));
+  const operationsView = exportPrivileged ? 'APPROVAL_QUEUE' : 'MY_REQUESTS';
+  const historyView = exportPrivileged ? 'DECISION_HISTORY' : exportAuditor ? 'AUDIT_HISTORY' : 'MY_HISTORY';
+  const exportWork = useAuditExportWorkSummary(exportEligible);
 
   useEffect(() => {
     setEventParams((current) => ({ ...current, page: 0 }));
@@ -60,6 +69,19 @@ export function MonitoringPage() {
         objective={selectedPack.objective}
         dataScope="보안 탐지 · 정책 이력"
       />
+
+      {exportWork.data?.operationsAvailable ? <SectionCard
+        title="Governance Operations"
+        description="승인 지연과 감사 증적 생성 상태를 확인합니다. 실제 처리는 승인 업무 화면에서 수행합니다."
+        actions={<button className="button button-secondary" type="button" onClick={() => navigate(`/policies?section=approvals&view=${operationsView}`)}>승인 업무 보기</button>}
+      >
+        <div className="governance-operation-grid">
+          <button type="button" onClick={() => navigate(`/policies?section=approvals&view=${operationsView}`)}><span>승인 대기</span><strong>{exportWork.data?.operations.pendingApproval ?? '—'}</strong><small>최장 {exportWork.data?.operations.oldestPendingAgeSeconds == null ? '대기 없음' : `${Math.floor(exportWork.data.operations.oldestPendingAgeSeconds / 3600)}시간`}</small></button>
+          <button type="button" onClick={() => navigate(`/policies?section=approvals&view=${historyView}`)}><span>24시간 승인</span><strong>{exportWork.data?.operations.approvedLast24Hours ?? '—'}</strong><small>반려 {exportWork.data?.operations.rejectedLast24Hours ?? '—'}건</small></button>
+          <button type="button" onClick={() => navigate(`/policies?section=approvals&view=${historyView}`)}><span>생성 중</span><strong>{exportWork.data?.operations.generating ?? '—'}</strong><small>다운로드 가능 {exportWork.data?.operations.ready ?? '—'}건</small></button>
+          <button type="button" onClick={() => navigate(`/policies?section=approvals&view=${historyView}`)}><span>실패 · 만료</span><strong>{(exportWork.data?.operations.failed ?? 0) + (exportWork.data?.operations.expired ?? 0)}</strong><small>최근 운영 상태</small></button>
+        </div>
+      </SectionCard> : null}
 
       <div id="security-findings" className="anchored-section"><SecurityFindingPanel
         key={selectedPack.key}

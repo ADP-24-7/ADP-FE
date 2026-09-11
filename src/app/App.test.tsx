@@ -31,6 +31,7 @@ describe('App', () => {
     expect(screen.queryByText('DATA SOURCE')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Policy.*No Data/i })).not.toBeInTheDocument();
     expect(screen.queryByText('Policy 없음')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /My Work/ })).toBeInTheDocument();
   });
 
   it('does not restore a persisted pack that the runtime selector does not support', async () => {
@@ -47,7 +48,7 @@ describe('App', () => {
     render(<App />);
 
     const operator = await screen.findByRole('button', { name: '현재 운영자 권한' });
-    expect(operator).toHaveTextContent('운영자 · 승인 권한');
+    expect(operator).toHaveTextContent('승인 권한');
     expect(operator).not.toHaveTextContent('PRIVILEGED_OPERATOR');
     await user.click(operator);
 

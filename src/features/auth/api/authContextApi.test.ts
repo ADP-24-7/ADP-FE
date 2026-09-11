@@ -6,11 +6,11 @@ describe('authContextApi', () => {
     const context = await getAuthContext();
 
     expect(context).toMatchObject({
-      principalId: 'operator-local',
+      principalId: 'privileged-operator-local',
       principalType: 'USER',
-      displayName: 'Local Operator',
+      displayName: 'Local Privileged Operator',
       institutionId: 'institution_local',
-      roles: ['OPERATOR', 'PRIVILEGED_OPERATOR'],
+      roles: ['PRIVILEGED_OPERATOR'],
       workloadIds: ['*'],
     });
   });

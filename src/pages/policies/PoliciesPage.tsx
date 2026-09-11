@@ -6,6 +6,7 @@ import { PolicyArtifactCreatePanel, PolicyGovernancePanel, PolicyOperationsBrows
 import { EmptyState, KeyValues, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
 import { useExecutionPack } from '../../shared/prototype';
 import { ReferenceEvidencePanel } from '../../features/reference-evidence';
+import { AuditExportWorkPanel } from '../../features/audit-export';
 
 const lifecycle = [
   ['DRAFT', 'Policy Owner'],
@@ -37,6 +38,8 @@ export function PoliciesPage() {
       />
 
       <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} objective={selectedPack.objective} />
+
+      <div id="approvals" className="anchored-section"><AuditExportWorkPanel /></div>
 
       {selectedPack.key === 'digital-asset' ? (
         <DigitalAssetArtifactPanel

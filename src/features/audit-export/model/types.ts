@@ -23,6 +23,9 @@ export type AuditExportJob = {
   approverId?: string | null;
   requestReason: string;
   approvalReason?: string | null;
+  revokedBy?: string | null;
+  revokedAt?: string | null;
+  revocationReason?: string | null;
   rowCount?: number | null;
   contentDigest?: string | null;
   contentSize?: number | null;
@@ -44,10 +47,51 @@ export type AuditExportEvent = {
   fromStatus?: AuditExportStatus | null;
   toStatus: AuditExportStatus;
   reasonCode: string;
+  reasonText?: string | null;
   occurredAt: string;
 };
 
 export type AuditExportDetail = { job: AuditExportJob; events: AuditExportEvent[] };
+
+export type AuditExportWorkView =
+  | 'MY_REQUESTS'
+  | 'MY_HISTORY'
+  | 'APPROVAL_QUEUE'
+  | 'DECISION_HISTORY'
+  | 'AUDIT_HISTORY';
+
+export type AuditExportWorkPage = {
+  items: AuditExportJob[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type AuditExportWorkSummary = {
+  principalId: string;
+  approvalAvailable: boolean;
+  operationsAvailable: boolean;
+  personal: {
+    pendingApproval: number;
+    approvedOrGenerating: number;
+    readyToDownload: number;
+    downloaded: number;
+    rejected: number;
+    failedOrExpired: number;
+  };
+  approvals: { pending: number; waitingOver24Hours: number };
+  operations: {
+    pendingApproval: number;
+    oldestPendingAgeSeconds: number | null;
+    approvedLast24Hours: number;
+    rejectedLast24Hours: number;
+    generating: number;
+    ready: number;
+    failed: number;
+    expired: number;
+  };
+  generatedAt: string;
+};
 
 export type CreateAuditExportRequest = {
   executionId: string;

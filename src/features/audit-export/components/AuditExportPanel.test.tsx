@@ -32,6 +32,48 @@ function renderPanel() {
 describe('AuditExportPanel', () => {
   beforeEach(() => window.localStorage.clear());
 
+  it('uses a fixed approval rationale instead of allowing the approver to edit the request', async () => {
+    let submitted: Record<string, unknown> = {};
+    const pendingJob = { ...job(), requesterId: 'auditor-local' };
+    window.localStorage.setItem('adp.audit-export.operator-local.exec-contract', pendingJob.exportId);
+    server.use(
+      http.get('/api/v1/audit-exports/:exportId', () => HttpResponse.json({ job: pendingJob, events: [] })),
+      http.post('/api/v1/audit-exports/:exportId/approval', async ({ request }) => {
+        submitted = await request.json() as Record<string, unknown>;
+        return HttpResponse.json({ ...pendingJob, status: 'APPROVED' });
+      }),
+    );
+    const user = userEvent.setup();
+    renderPanel();
+
+    expect(await screen.findByText('요청 범위 및 반출 목적 확인')).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: /승인|처리|검토 사유/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '승인' }));
+
+    expect(submitted).toEqual({ action: 'APPROVE', reason: '요청 범위 및 반출 목적 확인' });
+  });
+
+  it('asks for an explicit reason only when rejecting a request', async () => {
+    let submitted: Record<string, unknown> = {};
+    const pendingJob = { ...job(), requesterId: 'auditor-local' };
+    window.localStorage.setItem('adp.audit-export.operator-local.exec-contract', pendingJob.exportId);
+    server.use(
+      http.get('/api/v1/audit-exports/:exportId', () => HttpResponse.json({ job: pendingJob, events: [] })),
+      http.post('/api/v1/audit-exports/:exportId/approval', async ({ request }) => {
+        submitted = await request.json() as Record<string, unknown>;
+        return HttpResponse.json({ ...pendingJob, status: 'REJECTED' });
+      }),
+    );
+    const user = userEvent.setup();
+    renderPanel();
+
+    await user.click(await screen.findByRole('button', { name: '반려' }));
+    await user.type(screen.getByRole('textbox', { name: '반려 사유' }), '대상 실행 범위를 다시 확인해 주세요');
+    await user.click(screen.getByRole('button', { name: '반려 확정' }));
+
+    expect(submitted).toEqual({ action: 'REJECT', reason: '대상 실행 범위를 다시 확인해 주세요' });
+  });
+
   it('requests only the selected execution and server-owned export template', async () => {
     let submitted: Record<string, unknown> = {};
     server.use(

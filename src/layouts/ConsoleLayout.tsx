@@ -19,7 +19,7 @@ import {
 import { executionPacks, useExecutionPack } from '../shared/prototype';
 import { useAuthContext, useLogout } from '../features/auth';
 import type { AuthRole } from '../features/auth';
-import { env } from '../shared/config/env';
+import { MyWorkMenu } from '../features/audit-export';
 
 const navItems = [
   { to: '/overview', label: '통합 관제', icon: LayoutDashboard },
@@ -130,11 +130,6 @@ export function ConsoleLayout() {
             <span>{activeNavItem ? navLabel(activeNavItem) : 'Policy Decision → Finding → Trace → Recovery'}</span>
           </div>
           <div className="topbar-actions">
-            {env.dataProvenance === 'SYNTHETIC' ? (
-              <span className="data-provenance-badge" title="실제 고객 데이터가 아닌 합성 데이터 환경입니다.">
-                합성 데이터
-              </span>
-            ) : null}
             <div className="runtime-domain-toggle" role="tablist" aria-label="화면 Viewing Context">
               {runtimeDomainPacks.map((pack) => (
                 <button
@@ -153,6 +148,7 @@ export function ConsoleLayout() {
                 </button>
               ))}
             </div>
+            <MyWorkMenu />
             <div className="dropdown">
               <button
                 className="operator-context"
