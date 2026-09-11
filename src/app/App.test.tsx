@@ -143,7 +143,7 @@ describe('App', () => {
 
     await user.click(screen.getByRole('link', { name: /AI Admin/ }));
     expect(await screen.findByRole('heading', { name: 'AI Admin' })).toBeInTheDocument();
-    expect(await screen.findByText('E2 Field Control')).toBeInTheDocument();
+    expect(await screen.findByText('E2 / E3 Field Control')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Recovery Incident' })).not.toBeInTheDocument();
   });
 
