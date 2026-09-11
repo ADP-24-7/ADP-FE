@@ -1,6 +1,35 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createAuditExport, decideAuditExport, downloadAuditExport, getAuditExport } from '../api/auditExportApi';
-import type { CreateAuditExportRequest } from '../model/types';
+import {
+  createAuditExport, decideAuditExport, downloadAuditExport, getAuditExport,
+  getAuditExportWork, getAuditExportWorkSummary,
+} from '../api/auditExportApi';
+import type { AuditExportWorkView, CreateAuditExportRequest } from '../model/types';
+
+export const auditExportWorkKeys = {
+  all: ['audit-export-work'] as const,
+  summary: () => [...auditExportWorkKeys.all, 'summary'] as const,
+  list: (view: AuditExportWorkView, page: number, size: number) =>
+    [...auditExportWorkKeys.all, 'list', view, page, size] as const,
+};
+
+export function useAuditExportWorkSummary(enabled = true) {
+  return useQuery({
+    queryKey: auditExportWorkKeys.summary(),
+    queryFn: getAuditExportWorkSummary,
+    enabled,
+    retry: false,
+    refetchInterval: 30_000,
+  });
+}
+
+export function useAuditExportWork(view: AuditExportWorkView, page = 0, size = 20, enabled = true) {
+  return useQuery({
+    queryKey: auditExportWorkKeys.list(view, page, size),
+    queryFn: () => getAuditExportWork(view, page, size),
+    enabled,
+    retry: false,
+  });
+}
 
 export function useAuditExport(exportId: string) {
   return useQuery({
@@ -19,7 +48,10 @@ export function useCreateAuditExport() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (request: CreateAuditExportRequest) => createAuditExport(request),
-    onSuccess: (job) => queryClient.setQueryData(['audit-export', job.exportId], { job, events: [] }),
+    onSuccess: (job) => {
+      queryClient.setQueryData(['audit-export', job.exportId], { job, events: [] });
+      queryClient.invalidateQueries({ queryKey: auditExportWorkKeys.all });
+    },
   });
 }
 
@@ -28,10 +60,17 @@ export function useDecideAuditExport() {
   return useMutation({
     mutationFn: ({ exportId, action, reason }: { exportId: string; action: 'APPROVE' | 'REJECT' | 'REVOKE'; reason: string }) =>
       decideAuditExport(exportId, action, reason),
-    onSuccess: (_job, variables) => queryClient.invalidateQueries({ queryKey: ['audit-export', variables.exportId] }),
+    onSuccess: (_job, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['audit-export', variables.exportId] });
+      queryClient.invalidateQueries({ queryKey: auditExportWorkKeys.all });
+    },
   });
 }
 
 export function useDownloadAuditExport() {
-  return useMutation({ mutationFn: downloadAuditExport });
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: downloadAuditExport,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: auditExportWorkKeys.all }),
+  });
 }

@@ -12,9 +12,11 @@ import { reviewQueueHandlers } from '../../features/review-queue/mocks/handlers'
 import { securityFindingHandlers } from '../../features/security-findings/mocks/handlers';
 import { runtimeExecutionHandlers } from '../../features/runtime-execution/mocks/handlers';
 import { workloadHandlers } from '../../features/workloads/mocks/handlers';
+import { auditExportHandlers } from '../../features/audit-export/mocks/handlers';
 
 export const handlers = [
   ...authHandlers,
+  ...auditExportHandlers,
   ...adminIdentityHandlers,
   ...aiEvaluationHandlers,
   ...auditTraceHandlers,

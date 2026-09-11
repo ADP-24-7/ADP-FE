@@ -20,6 +20,7 @@ import { executionPacks, useExecutionPack } from '../shared/prototype';
 import { useAuthContext, useLogout } from '../features/auth';
 import type { AuthRole } from '../features/auth';
 import { env } from '../shared/config/env';
+import { MyWorkMenu } from '../features/audit-export';
 
 const navItems = [
   { to: '/overview', label: '통합 관제', icon: LayoutDashboard },
@@ -153,6 +154,7 @@ export function ConsoleLayout() {
                 </button>
               ))}
             </div>
+            <MyWorkMenu />
             <div className="dropdown">
               <button
                 className="operator-context"

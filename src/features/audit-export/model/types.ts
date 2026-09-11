@@ -49,6 +49,40 @@ export type AuditExportEvent = {
 
 export type AuditExportDetail = { job: AuditExportJob; events: AuditExportEvent[] };
 
+export type AuditExportWorkView = 'MY_REQUESTS' | 'APPROVAL_QUEUE' | 'HISTORY';
+
+export type AuditExportWorkPage = {
+  items: AuditExportJob[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type AuditExportWorkSummary = {
+  principalId: string;
+  approvalAvailable: boolean;
+  personal: {
+    pendingApproval: number;
+    approvedOrGenerating: number;
+    readyToDownload: number;
+    downloaded: number;
+    rejected: number;
+    failedOrExpired: number;
+  };
+  approvals: { pending: number; waitingOver24Hours: number };
+  operations: {
+    pendingApproval: number;
+    oldestPendingAgeSeconds: number | null;
+    approvedLast24Hours: number;
+    rejectedLast24Hours: number;
+    generating: number;
+    ready: number;
+    failed: number;
+    expired: number;
+  };
+  generatedAt: string;
+};
+
 export type CreateAuditExportRequest = {
   executionId: string;
   reportType: 'EXECUTION_EVIDENCE';
