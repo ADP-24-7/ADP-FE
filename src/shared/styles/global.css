@@ -207,12 +207,27 @@ button, a { transition: background-color .16s ease, border-color .16s ease, colo
 .table-approval-work small { color: var(--color-soft); font-size: 10px; }
 .table-approval-work code { color: var(--color-muted); font-size: 9px; }
 .approval-row-actions { align-items: flex-start; }
-.approval-review-panel { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(280px, 1.2fr) auto; align-items: end; gap: 14px; border: 1px solid #cad5ff; border-radius: 8px; margin-top: 14px; background: #f7f9ff; padding: 15px; }
-.approval-review-panel > div:first-child { display: grid; gap: 4px; }
-.approval-review-panel > div:first-child strong { color: var(--color-ink); font-size: 13px; }
-.approval-review-panel > div:first-child span { color: var(--color-text); font-size: 11px; }
-.approval-review-panel > div:first-child small { color: var(--color-muted); font-size: 10px; }
-.approval-review-panel > div:last-child { display: flex; gap: 7px; }
+.approval-row-actions .button { align-items: center; justify-content: space-between; min-width: 78px; }
+.approval-inline-detail { display: grid; min-width: 920px; gap: 14px; border-top: 1px solid #bac8fa; border-bottom: 1px solid #bac8fa; background: #f7f9ff; padding: 18px; }
+.approval-detail-purpose { display: grid; gap: 5px; border-left: 3px solid var(--color-primary); padding-left: 12px; }
+.approval-detail-purpose > span, .approval-standard > span { color: var(--color-primary); font-size: 10px; font-weight: 850; }
+.approval-detail-purpose > strong, .approval-standard > strong { color: var(--color-ink); font-size: 13px; }
+.approval-detail-purpose p, .approval-standard small { margin: 0; color: var(--color-muted); font-size: 11px; line-height: 1.5; }
+.approval-detail-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; margin: 0; overflow: hidden; border: 1px solid var(--color-border); border-radius: 7px; background: var(--color-border); }
+.approval-detail-grid > div { display: grid; min-width: 0; gap: 5px; background: #fff; padding: 11px 12px; }
+.approval-detail-grid dt { color: var(--color-muted); font-size: 10px; font-weight: 750; }
+.approval-detail-grid dd { min-width: 0; margin: 0; color: var(--color-ink); font-size: 11px; overflow-wrap: anywhere; }
+.approval-detail-grid code { word-break: break-all; white-space: normal; }
+.approval-event-history { display: grid; gap: 7px; }
+.approval-event-history > strong { color: var(--color-ink); font-size: 11px; }
+.approval-event-history > div { display: grid; grid-template-columns: .8fr 1.25fr 1fr 1.2fr; gap: 9px; border-top: 1px solid var(--color-border); padding-top: 7px; color: var(--color-text); font-size: 10px; }
+.approval-event-history small, .approval-event-history time { color: var(--color-muted); }
+.approval-detail-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.approval-standard { display: grid; flex: 1; gap: 3px; margin-right: auto; }
+.approval-rejection-form { display: grid; grid-template-columns: minmax(280px, 1fr) auto; align-items: end; gap: 10px; border-top: 1px solid var(--color-border); padding-top: 12px; }
+.numbered-pagination { align-items: center; }
+.page-button { width: 34px; height: 34px; border: 1px solid var(--color-border); border-radius: 6px; background: #fff; color: var(--color-muted); font-size: 11px; font-weight: 750; cursor: pointer; }
+.page-button:hover, .page-button.active { border-color: var(--color-primary); background: var(--color-primary-soft); color: var(--color-primary); }
 .governance-operation-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .governance-operation-grid button { display: grid; gap: 7px; min-height: 112px; border: 1px solid var(--color-border); border-radius: 8px; background: #fbfcff; color: var(--color-text); padding: 15px; text-align: left; }
 .governance-operation-grid button:hover { border-color: #aebcda; background: #f6f8ff; }
@@ -791,7 +806,7 @@ button, a { transition: background-color .16s ease, border-color .16s ease, colo
   .reference-evidence-filter { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .reference-evidence-filter .search-filter-actions { grid-column: 1 / -1; }
   .governance-operation-grid, .approval-summary-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .approval-review-panel { grid-template-columns: 1fr; align-items: stretch; }
+  .approval-detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 780px) {
