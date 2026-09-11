@@ -34,6 +34,83 @@ function visiblePages(total: number, current: number) {
   return Array.from({ length: count }, (_, index) => start + index);
 }
 
+type ApprovalWorkRowProps = {
+  job: AuditExportJob;
+  view: AuditExportWorkView;
+  expanded: boolean;
+  deciding: boolean;
+  downloading: boolean;
+  onToggle: (exportId: string) => void;
+  onApprove: (exportId: string) => Promise<void>;
+  onReject: (exportId: string, reason: string) => Promise<void>;
+  onDownload: (job: AuditExportJob) => Promise<void>;
+};
+
+function ApprovalWorkRow({
+  job, view, expanded, deciding, downloading, onToggle, onApprove, onReject, onDownload,
+}: ApprovalWorkRowProps) {
+  const detail = useAuditExport(job.exportId, expanded);
+  const [rejecting, setRejecting] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const actionLabel = view === 'APPROVAL_QUEUE' && job.status === 'REQUESTED' ? '검토' : '상세';
+
+  function toggle() {
+    onToggle(job.exportId);
+    if (expanded) {
+      setRejecting(false);
+      setRejectionReason('');
+    }
+  }
+
+  return <Fragment>
+    <div
+      className={`table-row table-approval-work approval-clickable-row${expanded ? ' active' : ''}`}
+      role="button"
+      tabIndex={0}
+      aria-expanded={expanded}
+      aria-label={`${job.format} 감사 증적 ${actionLabel}`}
+      onClick={toggle}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          toggle();
+        }
+      }}
+    >
+      <span><StatusBadge tone={job.status === 'READY' ? 'success' : job.status === 'REJECTED' || job.status === 'FAILED' ? 'danger' : 'warning'}>{displayStatus(job)}</StatusBadge></span>
+      <span><strong>{job.format} 감사 증적</strong><small>{job.workloadId} · {job.executionPack}</small><code>{job.exportId}</code></span>
+      <span><strong>{job.requesterId}</strong><small>{job.approverId ?? '처리자 미지정'}</small></span>
+      <span>{formatDate(job.createdAt)}<small>{job.approvedAt ? formatDate(job.approvedAt) : '처리 대기'}</small></span>
+      <span className="approval-row-actions"><strong>{actionLabel}</strong>{expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</span>
+    </div>
+    {expanded ? <div className="approval-inline-detail">
+      {detail.isLoading ? <LoadingPanel label="요청 상세를 불러오는 중입니다" /> : detail.isError ? <ErrorState compact description={normalizeApiError(detail.error).message} onRetry={() => detail.refetch()} /> : detail.data ? <>
+        <div className="approval-detail-purpose"><span>요청 목적</span><strong>{detail.data.job.requestReason}</strong><p>선택한 실행의 정책 판단, 변환, 외부 전송, 복구 메타데이터와 Digest를 포함합니다. 민감 원문은 포함하지 않습니다.</p></div>
+        <dl className="approval-detail-grid">
+          <div><dt>대상 실행</dt><dd><code>{detail.data.job.executionId}</code></dd></div>
+          <div><dt>업무 범위</dt><dd>{detail.data.job.workloadId} · {detail.data.job.executionPack}</dd></div>
+          <div><dt>반출 형식</dt><dd>{detail.data.job.reportType} · {detail.data.job.format}</dd></div>
+          <div><dt>무결성 기준</dt><dd><code>{detail.data.job.scopeDigest}</code></dd></div>
+          <div><dt>요청자</dt><dd>{detail.data.job.requesterId}</dd></div>
+          <div><dt>요청 시각</dt><dd>{formatDate(detail.data.job.createdAt)}</dd></div>
+          {detail.data.job.approverId ? <div><dt>처리자</dt><dd>{detail.data.job.approverId}</dd></div> : null}
+          {detail.data.job.approvalReason ? <div><dt>처리 근거</dt><dd>{detail.data.job.approvalReason}</dd></div> : null}
+          {detail.data.job.contentDigest ? <div><dt>결과 Digest</dt><dd><code>{detail.data.job.contentDigest}</code></dd></div> : null}
+          {detail.data.job.rowCount != null ? <div><dt>생성 결과</dt><dd>{detail.data.job.rowCount}행 · {detail.data.job.contentSize ?? 0} bytes</dd></div> : null}
+          {detail.data.job.failureCode ? <div><dt>실패 코드</dt><dd>{detail.data.job.failureCode}</dd></div> : null}
+        </dl>
+        {detail.data.events.length ? <div className="approval-event-history"><strong>처리 이력</strong>{detail.data.events.map((event) => <div key={event.eventId}><span>{event.action}</span><small>{event.fromStatus ?? 'START'} → {event.toStatus}</small><small>{event.actorId}</small><time>{formatDate(event.occurredAt)}</time></div>)}</div> : null}
+        <div className="approval-detail-actions">
+          {view === 'APPROVAL_QUEUE' && job.status === 'REQUESTED' ? <><div className="approval-standard"><span>승인 기준</span><strong>{APPROVAL_REASON}</strong><small>승인 시 요청 내용은 변경되지 않습니다.</small></div><button className="button button-primary" type="button" disabled={deciding} onClick={() => onApprove(job.exportId)}><Check size={14} />승인</button><button className="button button-danger" type="button" disabled={deciding} onClick={() => setRejecting((value) => !value)}><X size={14} />반려</button></> : null}
+          {view === 'MY_REQUESTS' && job.status === 'READY' && !job.downloadedAt ? <button className="button button-primary" type="button" disabled={downloading} onClick={() => onDownload(job)}><Download size={14} />다운로드</button> : null}
+          <button className="icon-button" title="상세 닫기" type="button" onClick={toggle}><X size={14} /></button>
+        </div>
+        {rejecting ? <div className="approval-rejection-form"><label className="field"><span>반려 사유</span><textarea value={rejectionReason} maxLength={500} rows={3} placeholder="요청자가 보완해야 할 내용을 구체적으로 입력하세요" onChange={(event) => setRejectionReason(event.target.value)} /></label><button className="button button-danger" type="button" disabled={!rejectionReason.trim() || deciding} onClick={() => onReject(job.exportId, rejectionReason.trim())}>반려 확정</button></div> : null}
+      </> : null}
+    </div> : null}
+  </Fragment>;
+}
+
 export function AuditExportWorkPanel() {
   const auth = useAuthContext();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -43,12 +120,9 @@ export function AuditExportWorkPanel() {
     requestedView === 'APPROVAL_QUEUE' || requestedView === 'HISTORY' ? requestedView : 'MY_REQUESTS',
   );
   const [page, setPage] = useState(0);
-  const [selectedId, setSelectedId] = useState('');
-  const [rejecting, setRejecting] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState('');
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
   const summary = useAuditExportWorkSummary();
   const work = useAuditExportWork(view, page, PAGE_SIZE, view === 'MY_REQUESTS' || privileged);
-  const detail = useAuditExport(selectedId);
   const decide = useDecideAuditExport();
   const download = useDownloadAuditExport();
   const pages = work.data ? Math.ceil(work.data.totalElements / work.data.size) : 0;
@@ -60,7 +134,7 @@ export function AuditExportWorkPanel() {
     if (view !== nextView) {
       setView(nextView);
       setPage(0);
-      closeDetail();
+      closeDetails();
     }
   }, [privileged, requestedView, view]);
 
@@ -68,37 +142,35 @@ export function AuditExportWorkPanel() {
     if (pages > 0 && page >= pages) setPage(pages - 1);
   }, [page, pages]);
 
-  function closeDetail() {
-    setSelectedId('');
-    setRejecting(false);
-    setRejectionReason('');
+  function closeDetails() {
+    setExpandedIds(new Set());
   }
 
   function selectView(next: AuditExportWorkView) {
     setView(next);
     setPage(0);
-    closeDetail();
+    closeDetails();
     setSearchParams({ section: 'approvals', view: next });
   }
 
-  function selectJob(job: AuditExportJob) {
-    if (selectedId === job.exportId) closeDetail();
-    else {
-      setSelectedId(job.exportId);
-      setRejecting(false);
-      setRejectionReason('');
-    }
+  function toggleJob(exportId: string) {
+    setExpandedIds((current) => {
+      const next = new Set(current);
+      if (next.has(exportId)) next.delete(exportId);
+      else next.add(exportId);
+      return next;
+    });
   }
 
-  async function approveSelected() {
-    await decide.mutateAsync({ exportId: selectedId, action: 'APPROVE', reason: APPROVAL_REASON });
-    closeDetail();
+  async function approveJob(exportId: string) {
+    await decide.mutateAsync({ exportId, action: 'APPROVE', reason: APPROVAL_REASON });
+    setExpandedIds((current) => new Set([...current].filter((id) => id !== exportId)));
     await work.refetch();
   }
 
-  async function rejectSelected() {
-    await decide.mutateAsync({ exportId: selectedId, action: 'REJECT', reason: rejectionReason.trim() });
-    closeDetail();
+  async function rejectJob(exportId: string, reason: string) {
+    await decide.mutateAsync({ exportId, action: 'REJECT', reason });
+    setExpandedIds((current) => new Set([...current].filter((id) => id !== exportId)));
     await work.refetch();
   }
 
@@ -111,7 +183,6 @@ export function AuditExportWorkPanel() {
     anchor.click();
     URL.revokeObjectURL(url);
     await work.refetch();
-    if (selectedId === job.exportId) await detail.refetch();
   }
 
   return <SectionCard title="Requests & Approvals" description="내 감사 증적 반출 요청을 추적하고 권한이 있는 요청만 검토합니다." actions={<FileClock size={17} />}>
@@ -127,45 +198,12 @@ export function AuditExportWorkPanel() {
 
     <div className="table-shell approval-work-table-shell">
       <div className="table-head table-approval-work"><span>상태</span><span>요청</span><span>요청자 / 처리자</span><span>요청일 / 처리일</span><span>작업</span></div>
-      {work.isLoading ? <LoadingPanel label="승인 업무를 불러오는 중입니다" /> : work.isError ? <ErrorState description={normalizeApiError(work.error).message} onRetry={() => work.refetch()} /> : work.data?.items.length ? work.data.items.map((job) => <Fragment key={job.exportId}>
-        <div className={`table-row table-approval-work${selectedId === job.exportId ? ' active' : ''}`}>
-          <span><StatusBadge tone={job.status === 'READY' ? 'success' : job.status === 'REJECTED' || job.status === 'FAILED' ? 'danger' : 'warning'}>{displayStatus(job)}</StatusBadge></span>
-          <span><strong>{job.format} 감사 증적</strong><small>{job.workloadId} · {job.executionPack}</small><code>{job.exportId}</code></span>
-          <span><strong>{job.requesterId}</strong><small>{job.approverId ?? '처리자 미지정'}</small></span>
-          <span>{formatDate(job.createdAt)}<small>{job.approvedAt ? formatDate(job.approvedAt) : '처리 대기'}</small></span>
-          <span className="approval-row-actions"><button className="button button-secondary" type="button" aria-expanded={selectedId === job.exportId} onClick={() => selectJob(job)}>{view === 'APPROVAL_QUEUE' && job.status === 'REQUESTED' ? '검토' : '상세'}{selectedId === job.exportId ? <ChevronUp size={14} /> : <ChevronDown size={14} />}</button></span>
-        </div>
-        {selectedId === job.exportId ? <div className="approval-inline-detail">
-          {detail.isLoading ? <LoadingPanel label="요청 상세를 불러오는 중입니다" /> : detail.isError ? <ErrorState compact description={normalizeApiError(detail.error).message} onRetry={() => detail.refetch()} /> : detail.data ? <>
-            <div className="approval-detail-purpose"><span>요청 목적</span><strong>{detail.data.job.requestReason}</strong><p>선택한 실행의 정책 판단, 변환, 외부 전송, 복구 메타데이터와 Digest를 포함합니다. 민감 원문은 포함하지 않습니다.</p></div>
-            <dl className="approval-detail-grid">
-              <div><dt>대상 실행</dt><dd><code>{detail.data.job.executionId}</code></dd></div>
-              <div><dt>업무 범위</dt><dd>{detail.data.job.workloadId} · {detail.data.job.executionPack}</dd></div>
-              <div><dt>반출 형식</dt><dd>{detail.data.job.reportType} · {detail.data.job.format}</dd></div>
-              <div><dt>무결성 기준</dt><dd><code>{detail.data.job.scopeDigest}</code></dd></div>
-              <div><dt>요청자</dt><dd>{detail.data.job.requesterId}</dd></div>
-              <div><dt>요청 시각</dt><dd>{formatDate(detail.data.job.createdAt)}</dd></div>
-              {detail.data.job.approverId ? <div><dt>처리자</dt><dd>{detail.data.job.approverId}</dd></div> : null}
-              {detail.data.job.approvalReason ? <div><dt>처리 근거</dt><dd>{detail.data.job.approvalReason}</dd></div> : null}
-              {detail.data.job.contentDigest ? <div><dt>결과 Digest</dt><dd><code>{detail.data.job.contentDigest}</code></dd></div> : null}
-              {detail.data.job.rowCount != null ? <div><dt>생성 결과</dt><dd>{detail.data.job.rowCount}행 · {detail.data.job.contentSize ?? 0} bytes</dd></div> : null}
-              {detail.data.job.failureCode ? <div><dt>실패 코드</dt><dd>{detail.data.job.failureCode}</dd></div> : null}
-            </dl>
-            {detail.data.events.length ? <div className="approval-event-history"><strong>처리 이력</strong>{detail.data.events.map((event) => <div key={event.eventId}><span>{event.action}</span><small>{event.fromStatus ?? 'START'} → {event.toStatus}</small><small>{event.actorId}</small><time>{formatDate(event.occurredAt)}</time></div>)}</div> : null}
-            <div className="approval-detail-actions">
-              {view === 'APPROVAL_QUEUE' && job.status === 'REQUESTED' ? <><div className="approval-standard"><span>승인 기준</span><strong>{APPROVAL_REASON}</strong><small>승인 시 요청 내용은 변경되지 않습니다.</small></div><button className="button button-primary" type="button" disabled={decide.isPending} onClick={approveSelected}><Check size={14} />승인</button><button className="button button-danger" type="button" disabled={decide.isPending} onClick={() => setRejecting((value) => !value)}><X size={14} />반려</button></> : null}
-              {view === 'MY_REQUESTS' && job.status === 'READY' && !job.downloadedAt ? <button className="button button-primary" type="button" onClick={() => downloadJob(job)}><Download size={14} />다운로드</button> : null}
-              <button className="icon-button" title="상세 닫기" type="button" onClick={closeDetail}><X size={14} /></button>
-            </div>
-            {rejecting ? <div className="approval-rejection-form"><label className="field"><span>반려 사유</span><textarea value={rejectionReason} maxLength={500} rows={3} placeholder="요청자가 보완해야 할 내용을 구체적으로 입력하세요" onChange={(event) => setRejectionReason(event.target.value)} /></label><button className="button button-danger" type="button" disabled={!rejectionReason.trim() || decide.isPending} onClick={rejectSelected}>반려 확정</button></div> : null}
-          </> : null}
-        </div> : null}
-      </Fragment>) : <EmptyState title="표시할 승인 업무가 없습니다" description="현재 계정과 권한 범위에 해당하는 감사 증적 요청이 없습니다." />}
+      {work.isLoading ? <LoadingPanel label="승인 업무를 불러오는 중입니다" /> : work.isError ? <ErrorState description={normalizeApiError(work.error).message} onRetry={() => work.refetch()} /> : work.data?.items.length ? work.data.items.map((job) => <ApprovalWorkRow key={job.exportId} job={job} view={view} expanded={expandedIds.has(job.exportId)} deciding={decide.isPending} downloading={download.isPending} onToggle={toggleJob} onApprove={approveJob} onReject={rejectJob} onDownload={downloadJob} />) : <EmptyState title="표시할 승인 업무가 없습니다" description="현재 계정과 권한 범위에 해당하는 감사 증적 요청이 없습니다." />}
     </div>
     <div className="pagination-row"><span>{work.data ? `${work.data.totalElements}건 · 페이지당 ${PAGE_SIZE}건` : '조회 대기'}</span><div className="numbered-pagination">
-      <button className="button button-secondary" type="button" disabled={page === 0} onClick={() => { setPage((value) => value - 1); closeDetail(); }}>이전</button>
-      {visiblePages(pages, page).map((pageIndex) => <button key={pageIndex} className={`page-button${page === pageIndex ? ' active' : ''}`} type="button" aria-label={`${pageIndex + 1}페이지`} aria-current={page === pageIndex ? 'page' : undefined} onClick={() => { setPage(pageIndex); closeDetail(); }}>{pageIndex + 1}</button>)}
-      <button className="button button-secondary" type="button" disabled={!pages || page + 1 >= pages} onClick={() => { setPage((value) => value + 1); closeDetail(); }}>다음</button>
+      <button className="button button-secondary" type="button" disabled={page === 0} onClick={() => { setPage((value) => value - 1); closeDetails(); }}>이전</button>
+      {visiblePages(pages, page).map((pageIndex) => <button key={pageIndex} className={`page-button${page === pageIndex ? ' active' : ''}`} type="button" aria-label={`${pageIndex + 1}페이지`} aria-current={page === pageIndex ? 'page' : undefined} onClick={() => { setPage(pageIndex); closeDetails(); }}>{pageIndex + 1}</button>)}
+      <button className="button button-secondary" type="button" disabled={!pages || page + 1 >= pages} onClick={() => { setPage((value) => value + 1); closeDetails(); }}>다음</button>
     </div></div>
   </SectionCard>;
 }

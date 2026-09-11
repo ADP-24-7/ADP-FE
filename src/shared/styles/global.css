@@ -206,8 +206,12 @@ button, a { transition: background-color .16s ease, border-color .16s ease, colo
 .table-approval-work strong { color: var(--color-ink); font-size: 11px; }
 .table-approval-work small { color: var(--color-soft); font-size: 10px; }
 .table-approval-work code { color: var(--color-muted); font-size: 9px; }
-.approval-row-actions { align-items: flex-start; }
-.approval-row-actions .button { align-items: center; justify-content: space-between; min-width: 78px; }
+.approval-clickable-row { cursor: pointer; transition: background-color .15s ease, box-shadow .15s ease; }
+.approval-clickable-row:hover { background: #f7f9ff; }
+.approval-clickable-row:focus-visible { position: relative; z-index: 1; outline: 2px solid var(--color-primary); outline-offset: -2px; }
+.approval-clickable-row.active { background: #f1f5ff; box-shadow: inset 3px 0 0 var(--color-primary); }
+.approval-row-actions { flex-direction: row !important; align-items: center !important; justify-content: space-between; color: var(--color-primary); }
+.approval-row-actions strong { color: var(--color-primary); }
 .approval-inline-detail { display: grid; min-width: 920px; gap: 14px; border-top: 1px solid #bac8fa; border-bottom: 1px solid #bac8fa; background: #f7f9ff; padding: 18px; }
 .approval-detail-purpose { display: grid; gap: 5px; border-left: 3px solid var(--color-primary); padding-left: 12px; }
 .approval-detail-purpose > span, .approval-standard > span { color: var(--color-primary); font-size: 10px; font-weight: 850; }

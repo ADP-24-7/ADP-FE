@@ -46,7 +46,7 @@ describe('AuditExportWorkPanel', () => {
     render(<MemoryRouter><QueryClientProvider client={queryClient}><AuditExportWorkPanel /></QueryClientProvider></MemoryRouter>);
 
     await user.click(await screen.findByRole('tab', { name: '승인할 요청' }));
-    await user.click(await screen.findByRole('button', { name: '검토' }));
+    await user.click(await screen.findByRole('button', { name: 'CSV 감사 증적 검토' }));
     expect(screen.getByText('금융 감사 제출')).toBeInTheDocument();
     expect(screen.getByText(/정책 판단, 변환, 외부 전송, 복구 메타데이터/)).toBeInTheDocument();
     expect(screen.queryByRole('textbox', { name: '처리 사유' })).not.toBeInTheDocument();
@@ -80,13 +80,15 @@ describe('AuditExportWorkPanel', () => {
     render(<MemoryRouter><QueryClientProvider client={queryClient}><AuditExportWorkPanel /></QueryClientProvider></MemoryRouter>);
 
     await user.click(await screen.findByRole('tab', { name: '전체 이력' }));
-    const detailButtons = await screen.findAllByRole('button', { name: /상세/ });
-    expect(detailButtons).toHaveLength(10);
-    await user.click(detailButtons[0]);
-    expect(detailButtons[0]).toHaveAttribute('aria-expanded', 'true');
-    expect(await screen.findByText('요청 목적')).toBeInTheDocument();
-    expect(await screen.findByText('업무 범위 불일치')).toBeInTheDocument();
-    expect(screen.getByText('REQUESTED → REJECTED')).toBeInTheDocument();
+    const detailRows = await screen.findAllByRole('button', { name: 'CSV 감사 증적 상세' });
+    expect(detailRows).toHaveLength(10);
+    await user.click(detailRows[0]);
+    await user.click(detailRows[1]);
+    expect(detailRows[0]).toHaveAttribute('aria-expanded', 'true');
+    expect(detailRows[1]).toHaveAttribute('aria-expanded', 'true');
+    expect(await screen.findAllByText('요청 목적')).toHaveLength(2);
+    expect(await screen.findAllByText('업무 범위 불일치')).toHaveLength(2);
+    expect(screen.getAllByText('REQUESTED → REJECTED')).toHaveLength(2);
     expect(screen.getByText('11건 · 페이지당 10건')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '2페이지' }));
     expect(await screen.findByText('exp-history-10')).toBeInTheDocument();

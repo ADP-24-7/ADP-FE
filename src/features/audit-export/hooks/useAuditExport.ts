@@ -31,11 +31,11 @@ export function useAuditExportWork(view: AuditExportWorkView, page = 0, size = 2
   });
 }
 
-export function useAuditExport(exportId: string) {
+export function useAuditExport(exportId: string, enabled = true) {
   return useQuery({
     queryKey: ['audit-export', exportId],
     queryFn: () => getAuditExport(exportId),
-    enabled: exportId.length > 0,
+    enabled: enabled && exportId.length > 0,
     retry: false,
     refetchInterval: (query) => {
       const status = query.state.data?.job.status;
@@ -71,6 +71,9 @@ export function useDownloadAuditExport() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: downloadAuditExport,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: auditExportWorkKeys.all }),
+    onSuccess: (_result, exportId) => {
+      queryClient.invalidateQueries({ queryKey: ['audit-export', exportId] });
+      queryClient.invalidateQueries({ queryKey: auditExportWorkKeys.all });
+    },
   });
 }
