@@ -95,4 +95,39 @@ describe('AuditExportWorkPanel', () => {
     await user.click(screen.getByRole('button', { name: '2페이지' }));
     expect(await screen.findByText('exp-history-10')).toBeInTheDocument();
   });
+
+  it('requires a reason before a privileged operator can revoke a downloadable export', async () => {
+    let decision: Record<string, unknown> = {};
+    const ready = {
+      ...pending,
+      exportId: 'exp-ready',
+      status: 'READY',
+      rowCount: 1,
+      contentDigest: 'a'.repeat(64),
+      contentSize: 128,
+      expiresAt: '2026-09-12T03:00:00Z',
+    };
+    server.use(
+      http.get('/api/v1/audit-exports/work-summary', () => HttpResponse.json(workSummary)),
+      http.get('/api/v1/audit-exports', () => HttpResponse.json({ items: [ready], page: 0, size: 10, totalElements: 1 })),
+      http.get('/api/v1/audit-exports/:exportId', () => HttpResponse.json({ job: ready, events: [] })),
+      http.post('/api/v1/audit-exports/:exportId/approval', async ({ request }) => {
+        decision = await request.json() as Record<string, unknown>;
+        return HttpResponse.json({ ...ready, status: 'REVOKED', approvalReason: '승인 대상 오류' });
+      }),
+    );
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+    const user = userEvent.setup();
+    render(<MemoryRouter><QueryClientProvider client={queryClient}><AuditExportWorkPanel /></QueryClientProvider></MemoryRouter>);
+
+    await user.click(await screen.findByRole('button', { name: 'CSV 감사 증적 상세' }));
+    expect(await screen.findByText('다운로드 만료')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '폐기' }));
+    const confirm = screen.getByRole('button', { name: '폐기 확정' });
+    expect(confirm).toBeDisabled();
+    await user.type(screen.getByRole('textbox', { name: '폐기 사유' }), '승인 대상 오류');
+    await user.click(confirm);
+
+    expect(decision).toEqual({ action: 'REVOKE', reason: '승인 대상 오류' });
+  });
 });
