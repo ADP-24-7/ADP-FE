@@ -131,6 +131,9 @@ export function AiEvaluationPanel() {
             <KeyValues items={[
               ['E2 handoff', governance.data.e2HandoffDigest],
               ['Requirement version', governance.data.requirementVersion],
+              ['E3 profile', `${governance.data.e3ProfileVersion} / ${governance.data.e3ProfileDigest}`],
+              ['E3 validation', governance.data.e3ValidationStatus],
+              ['Activation', governance.data.activationStatus],
               ['Provider governance', governance.data.providerGovernanceStatus],
               ['External execution', governance.data.externalExecutionStatus],
               ['Provider authorized', governance.data.providerCallAuthorized ? 'YES' : 'NO'],
@@ -139,19 +142,40 @@ export function AiEvaluationPanel() {
           </div>
         </SectionCard>
 
-        <SectionCard title="E2 Field Control" description="E2가 확정한 Field Requirement와 Transform·Utility 조건, 현재 Runtime 일치 여부를 표시합니다." actions={<StatusBadge tone="neutral">{governance.data.fieldControls.length} FIELDS</StatusBadge>}>
+        <SectionCard title="Provider Governance / External Execution" description="BE가 동결 계약으로 판정한 Provider·Model·Region·Retention·Reuse 결과입니다." actions={<StatusBadge tone={statusTone(governance.data.providerGovernance.governanceDecision)}>{governance.data.providerGovernance.governanceDecision}</StatusBadge>}>
+          <div className="content-grid content-grid-two ai-evidence-grid">
+            <KeyValues items={[
+              ['Provider', governance.data.providerGovernance.providerConnectionProfileId],
+              ['Models', governance.data.providerGovernance.modelProfileIds.join(', ')],
+              ['Region', `${governance.data.providerGovernance.requestedRegion} → ${governance.data.providerGovernance.resolvedRegion}`],
+              ['Region decision', `${governance.data.providerGovernance.regionDecision} / ${governance.data.providerGovernance.regionReasonCode ?? 'NONE'}`],
+              ['Retention', `${governance.data.providerGovernance.approvedRetentionMode} / ${governance.data.providerGovernance.providerConfiguredRetentionMode}`],
+              ['Retention decision', `${governance.data.providerGovernance.retentionDecision} / ${governance.data.providerGovernance.retentionReasonCode ?? 'NONE'}`],
+            ]} />
+            <KeyValues items={[
+              ['Reuse', governance.data.providerGovernance.providerReusePurposes.join(', ')],
+              ['Reuse decision', `${governance.data.providerGovernance.reuseDecision} / ${governance.data.providerGovernance.reuseReasonCode ?? 'NONE'}`],
+              ['Policy version', governance.data.providerGovernance.contractVersion],
+              ['Digest', governance.data.providerGovernance.contractDigest],
+              ['Activation', governance.data.providerGovernance.activationStatus],
+              ['Reasons', governance.data.providerGovernance.reasonCodes.join(', ') || 'NONE'],
+            ]} />
+          </div>
+        </SectionCard>
+
+        <SectionCard title="E2 / E3 Field Control" description="E2 Requirement와 E3의 독립 gate 결과, 현재 Runtime 활성화 차이를 표시합니다." actions={<StatusBadge tone="neutral">{governance.data.fieldControls.length} FIELDS</StatusBadge>}>
           <div className="ai-execution-table-shell">
             <div className="table-head table-ai-field-controls">
-              <span>Field / Classification</span><span>Requirement / Intent</span><span>Runtime → Required</span><span>Candidates</span><span>Prohibited</span><span>Applicability</span><span>Utility</span><span>Release</span>
+              <span>Field / Classification</span><span>Requirement / Intent</span><span>Runtime → Validated</span><span>E3 Validation</span><span>Rejected</span><span>Applicability</span><span>Evidence</span><span>Release</span>
             </div>
             {governance.data.fieldControls.map((field) => <div className="table-row table-ai-field-controls" key={field.fieldName}>
               <span><strong>{field.fieldName}</strong><small>{field.classification}</small><small>{field.businessNeed}</small></span>
               <span><strong>{field.fieldRequirement}</strong><small>{field.transformIntents.join(' + ')}</small></span>
-              <span><strong>{field.currentRuntimeMethod} → {field.requiredTransformMethod}</strong><StatusBadge tone={field.currentRuntimeRequirementMatch ? 'success' : 'warning'}>{field.currentRuntimeRequirementMatch ? 'MATCH' : 'REVISION REQUIRED'}</StatusBadge></span>
-              <span>{field.candidateTransformMethods.join(', ')}</span>
+              <span><strong>{field.currentRuntimeMethod} → {field.validatedMethod}</strong><StatusBadge tone={field.currentRuntimeRequirementMatch ? 'success' : 'warning'}>{field.currentRuntimeRequirementMatch ? 'MATCH' : 'NOT ACTIVATED'}</StatusBadge></span>
+              <span><strong>P {field.privacyResult} / U {field.utilityResult}</strong><small>R {field.relationResult} / E {field.exactResult}</small><small>{field.runtimeCompatibility}</small></span>
               <span>{field.prohibitedTransformMethods.join(', ') || 'NONE'}</span>
               <StatusBadge tone={statusTone(field.applicability)}>{field.applicability}</StatusBadge>
-              <span>{field.utilityRequirements.join(', ')}</span>
+              <span title={field.destinationCompatibility}>{field.methodEvidenceIds.join(', ')}</span>
               <span><StatusBadge tone={field.externalReleaseAllowed ? 'warning' : 'neutral'}>{field.externalReleaseAllowed ? 'CONDITIONAL' : 'NO'}</StatusBadge><small title={field.evidenceRef}>{field.evidenceRef}</small></span>
             </div>)}
           </div>

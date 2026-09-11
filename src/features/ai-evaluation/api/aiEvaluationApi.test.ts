@@ -27,20 +27,25 @@ describe('aiEvaluationApi', () => {
       e2ValidationStatus: 'E2_POLICY_REQUIREMENT_VALIDATED',
       providerGovernanceStatus: 'PROVIDER_GOVERNANCE_BLOCKED',
       externalExecutionStatus: 'PENDING_EXTERNAL_EXECUTION',
+      activationStatus: 'ACTIVATED',
       providerCallAuthorized: false,
+      providerGovernance: {
+        governanceDecision: 'BLOCK',
+        regionReasonCode: 'PROVIDER_REGION_REQUIRED',
+        retentionReasonCode: 'RETENTION_UNVERIFIED',
+        reuseReasonCode: 'MODEL_TRAINING_NOT_ALLOWED',
+        contractVersion: 'e2-provider-governance/1.2.0',
+      },
       fieldControls: expect.arrayContaining([
         expect.objectContaining({
           fieldName: 'transaction.amount',
           fieldRequirement: 'REQUIRED_EXACT',
-          currentRuntimeMethod: 'GENERALIZE',
+          currentRuntimeMethod: 'KEEP',
           requiredTransformMethod: 'KEEP',
-          currentRuntimeRequirementMatch: false,
+          currentRuntimeRequirementMatch: true,
         }),
       ]),
-      requirementEnforcementGaps: expect.arrayContaining([
-        expect.objectContaining({ fieldName: 'account.balance' }),
-        expect.objectContaining({ fieldName: 'transaction.amount' }),
-      ]),
+      requirementEnforcementGaps: [],
     });
   });
 
