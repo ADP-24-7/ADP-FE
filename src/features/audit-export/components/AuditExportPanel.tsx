@@ -101,7 +101,7 @@ export function AuditExportPanel({ executionId }: { executionId: string }) {
               <button type="button" className={format === value ? 'active' : ''} key={value} onClick={() => setFormat(value)}>{value}</button>
             ))}
           </div>
-          <label className="field"><span>반출 목적</span><input maxLength={500} value={reason} onChange={(event) => setReason(event.target.value)} /></label>
+          <label className="field"><span>반출 목적</span><input aria-label="반출 목적" maxLength={500} value={reason} onChange={(event) => setReason(event.target.value)} /><small>고객명, 계좌번호, 주민등록번호, API Key 등 민감정보는 입력하지 마세요.</small></label>
           <button className="button button-primary" type="button" disabled={!reason.trim() || create.isPending} onClick={requestExport}>
             <FileOutput size={15} />{create.isPending ? '요청 중' : '승인 요청'}
           </button>
@@ -116,7 +116,7 @@ export function AuditExportPanel({ executionId }: { executionId: string }) {
           <div className="audit-export-actions">
             <button className="button button-secondary" type="button" title="상태 새로고침" onClick={() => detail.refetch()} disabled={detail.isFetching}><RefreshCw size={15} /></button>
             {canApprove ? <div className="approval-standard audit-export-decision-reason"><span>승인 기준</span><strong>{APPROVAL_REASON}</strong><small>승인 시 요청 내용은 변경되지 않습니다.</small></div> : null}
-            {(canRevoke && revoking) || (canApprove && rejecting) ? <label className="field audit-export-decision-reason"><span>{revoking ? '폐기 사유' : '반려 사유'}</span><input maxLength={500} value={decisionReason} onChange={(event) => setDecisionReason(event.target.value)} placeholder={revoking ? '승인 또는 반출을 중단해야 하는 근거를 입력하세요' : '요청자가 보완해야 할 내용을 입력하세요'} /></label> : null}
+            {(canRevoke && revoking) || (canApprove && rejecting) ? <label className="field audit-export-decision-reason"><span>{revoking ? '폐기 사유' : '반려 사유'}</span><input aria-label={revoking ? '폐기 사유' : '반려 사유'} maxLength={500} value={decisionReason} onChange={(event) => setDecisionReason(event.target.value)} placeholder={revoking ? '승인 또는 반출을 중단해야 하는 근거를 입력하세요' : '요청자가 보완해야 할 내용을 입력하세요'} /><small>고객명, 계좌번호, 주민등록번호, API Key 등 민감정보는 입력하지 마세요.</small></label> : null}
             {canApprove ? <button className="button button-primary" type="button" disabled={decide.isPending} onClick={() => decideExport('APPROVE')}><Check size={15} />승인</button> : null}
             {canApprove && !rejecting ? <button className="button button-danger" type="button" disabled={decide.isPending} onClick={() => setRejecting(true)}><X size={15} />반려</button> : null}
             {canApprove && rejecting ? <button className="button button-danger" type="button" disabled={!decisionReason.trim() || decide.isPending} onClick={() => decideExport('REJECT')}><X size={15} />반려 확정</button> : null}

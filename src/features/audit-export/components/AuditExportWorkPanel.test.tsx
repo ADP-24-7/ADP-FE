@@ -16,7 +16,7 @@ const pending = {
   updatedAt: '2026-09-09T00:00:00Z',
 };
 const workSummary = {
-  principalId: 'privileged-operator-local', approvalAvailable: true,
+  principalId: 'privileged-operator-local', approvalAvailable: true, operationsAvailable: true,
   personal: { pendingApproval: 0, approvedOrGenerating: 0, readyToDownload: 0, downloaded: 0, rejected: 0, failedOrExpired: 0 },
   approvals: { pending: 1, waitingOver24Hours: 1 },
   operations: { pendingApproval: 1, oldestPendingAgeSeconds: 90000, approvedLast24Hours: 0, rejectedLast24Hours: 0, generating: 0, ready: 0, failed: 0, expired: 0 },

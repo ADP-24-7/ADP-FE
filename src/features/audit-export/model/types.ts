@@ -23,6 +23,9 @@ export type AuditExportJob = {
   approverId?: string | null;
   requestReason: string;
   approvalReason?: string | null;
+  revokedBy?: string | null;
+  revokedAt?: string | null;
+  revocationReason?: string | null;
   rowCount?: number | null;
   contentDigest?: string | null;
   contentSize?: number | null;
@@ -44,6 +47,7 @@ export type AuditExportEvent = {
   fromStatus?: AuditExportStatus | null;
   toStatus: AuditExportStatus;
   reasonCode: string;
+  reasonText?: string | null;
   occurredAt: string;
 };
 
@@ -66,6 +70,7 @@ export type AuditExportWorkPage = {
 export type AuditExportWorkSummary = {
   principalId: string;
   approvalAvailable: boolean;
+  operationsAvailable: boolean;
   personal: {
     pendingApproval: number;
     approvedOrGenerating: number;

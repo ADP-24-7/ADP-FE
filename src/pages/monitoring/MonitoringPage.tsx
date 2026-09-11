@@ -70,7 +70,7 @@ export function MonitoringPage() {
         dataScope="보안 탐지 · 정책 이력"
       />
 
-      {exportEligible ? <SectionCard
+      {exportWork.data?.operationsAvailable ? <SectionCard
         title="Governance Operations"
         description="승인 지연과 감사 증적 생성 상태를 확인합니다. 실제 처리는 승인 업무 화면에서 수행합니다."
         actions={<button className="button button-secondary" type="button" onClick={() => navigate(`/policies?section=approvals&view=${operationsView}`)}>승인 업무 보기</button>}
