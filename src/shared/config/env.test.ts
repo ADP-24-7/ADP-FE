@@ -51,4 +51,13 @@ describe('env parsing', () => {
     expect(config.runtimeProfile).toBe('demo');
     expect(config.dataProvenance).toBe('SYNTHETIC');
   });
+
+  it('rejects invalid integration profile and data provenance values', () => {
+    expect(() => parseEnv(createEnv({ VITE_RUNTIME_PROFILE: 'demmo' }))).toThrow(
+      'Invalid VITE_RUNTIME_PROFILE',
+    );
+    expect(() => parseEnv(createEnv({ VITE_DATA_PROVENANCE: 'CUSTOMER_DATA' }))).toThrow(
+      'Invalid VITE_DATA_PROVENANCE',
+    );
+  });
 });

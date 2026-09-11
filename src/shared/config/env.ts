@@ -30,12 +30,16 @@ export function readAppEnv(value: string | undefined): AppEnv {
 
 function readRuntimeProfile(value: string | undefined): RuntimeProfile {
   if (value === 'local' || value === 'demo' || value === 'production-like') return value;
-  return 'production-like';
+  if (value === undefined || value === '') return 'production-like';
+  throw new Error('Invalid VITE_RUNTIME_PROFILE. Expected "local", "demo", or "production-like".');
 }
 
 function readDataProvenance(value: string | undefined): DataProvenance {
   if (value === 'LOCAL_DEVELOPMENT' || value === 'SYNTHETIC' || value === 'NONE') return value;
-  return 'NONE';
+  if (value === undefined || value === '') return 'NONE';
+  throw new Error(
+    'Invalid VITE_DATA_PROVENANCE. Expected "LOCAL_DEVELOPMENT", "SYNTHETIC", or "NONE".',
+  );
 }
 
 export function parseEnv(rawEnv: ImportMetaEnv): AppConfig {
