@@ -1,4 +1,4 @@
-import { Check, ChevronDown, ChevronUp, Download, FileClock, X } from 'lucide-react';
+import { AlertTriangle, Check, ChevronDown, ChevronUp, Download, FileClock, X } from 'lucide-react';
 import { Fragment, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuthContext } from '../../auth';
@@ -34,6 +34,15 @@ function visiblePages(total: number, current: number) {
   return Array.from({ length: count }, (_, index) => start + index);
 }
 
+function waitingTime(createdAt: string) {
+  const elapsedMillis = Date.now() - new Date(createdAt).getTime();
+  if (!Number.isFinite(elapsedMillis) || elapsedMillis < 0) return null;
+  const hours = Math.floor(elapsedMillis / 3_600_000);
+  if (hours >= 24) return { overdue: true, label: `24시간 초과 · ${hours}시간 대기` };
+  if (hours < 1) return { overdue: false, label: '1시간 미만 대기' };
+  return { overdue: false, label: `${hours}시간 대기` };
+}
+
 type ApprovalWorkRowProps = {
   job: AuditExportJob;
   view: AuditExportWorkView;
@@ -53,6 +62,7 @@ function ApprovalWorkRow({
   const [rejecting, setRejecting] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const actionLabel = view === 'APPROVAL_QUEUE' && job.status === 'REQUESTED' ? '검토' : '상세';
+  const waiting = view === 'APPROVAL_QUEUE' && job.status === 'REQUESTED' ? waitingTime(job.createdAt) : null;
 
   function toggle() {
     onToggle(job.exportId);
@@ -77,7 +87,7 @@ function ApprovalWorkRow({
         }
       }}
     >
-      <span><StatusBadge tone={job.status === 'READY' ? 'success' : job.status === 'REJECTED' || job.status === 'FAILED' ? 'danger' : 'warning'}>{displayStatus(job)}</StatusBadge></span>
+      <span><StatusBadge tone={job.status === 'READY' ? 'success' : job.status === 'REJECTED' || job.status === 'FAILED' ? 'danger' : 'warning'}>{displayStatus(job)}</StatusBadge>{waiting ? <small className={waiting.overdue ? 'approval-waiting overdue' : 'approval-waiting'}>{waiting.overdue ? <AlertTriangle size={12} /> : null}{waiting.label}</small> : null}</span>
       <span><strong>{job.format} 감사 증적</strong><small>{job.workloadId} · {job.executionPack}</small><code>{job.exportId}</code></span>
       <span><strong>{job.requesterId}</strong><small>{job.approverId ?? '처리자 미지정'}</small></span>
       <span>{formatDate(job.createdAt)}<small>{job.approvedAt ? formatDate(job.approvedAt) : '처리 대기'}</small></span>
@@ -195,6 +205,7 @@ export function AuditExportWorkPanel() {
     <div className="segmented-control approval-tabs" role="tablist" aria-label="승인 업무 구분">
       {VIEWS.filter(([key]) => key === 'MY_REQUESTS' || privileged).map(([key, label]) => <button key={key} type="button" role="tab" aria-selected={view === key} className={view === key ? 'active' : ''} onClick={() => selectView(key)}>{label}</button>)}
     </div>
+    {view === 'APPROVAL_QUEUE' ? <div className="approval-priority-note"><AlertTriangle size={15} /><span><strong>우선 처리</strong> 24시간을 초과한 요청부터 오래된 접수 순으로 표시합니다.</span></div> : null}
 
     <div className="table-shell approval-work-table-shell">
       <div className="table-head table-approval-work"><span>상태</span><span>요청</span><span>요청자 / 처리자</span><span>요청일 / 처리일</span><span>작업</span></div>

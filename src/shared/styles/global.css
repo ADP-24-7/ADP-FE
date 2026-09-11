@@ -200,12 +200,16 @@ button, a { transition: background-color .16s ease, border-color .16s ease, colo
 .approval-summary-strip small { color: var(--color-muted); font-size: 10px; }
 .approval-summary-strip strong { color: var(--color-ink); font-size: 21px; }
 .approval-tabs { margin: 14px 0; }
+.approval-priority-note { display: flex; align-items: center; gap: 8px; margin: -4px 0 12px; border-left: 3px solid var(--color-warning); background: var(--color-warning-soft); color: var(--color-warning); padding: 9px 11px; font-size: 11px; }
+.approval-priority-note strong { margin-right: 4px; color: var(--color-ink); }
 .approval-work-table-shell { overflow-x: auto; }
 .table-approval-work { grid-template-columns: .7fr minmax(220px, 1.5fr) 1fr 1.15fr .75fr; min-width: 920px; }
 .table-approval-work > span { display: flex; min-width: 0; flex-direction: column; gap: 4px; overflow-wrap: anywhere; }
 .table-approval-work strong { color: var(--color-ink); font-size: 11px; }
 .table-approval-work small { color: var(--color-soft); font-size: 10px; }
 .table-approval-work code { color: var(--color-muted); font-size: 9px; }
+.approval-waiting { display: inline-flex !important; flex-direction: row !important; align-items: center; gap: 4px !important; color: var(--color-muted) !important; font-weight: 750; }
+.approval-waiting.overdue { color: var(--color-danger) !important; }
 .approval-clickable-row { cursor: pointer; transition: background-color .15s ease, box-shadow .15s ease; }
 .approval-clickable-row:hover { background: #f7f9ff; }
 .approval-clickable-row:focus-visible { position: relative; z-index: 1; outline: 2px solid var(--color-primary); outline-offset: -2px; }

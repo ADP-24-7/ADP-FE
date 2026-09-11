@@ -11,9 +11,9 @@ const pending = {
   exportId: 'exp-pending', institutionId: 'institution_local', workloadId: 'customer_summary',
   executionPack: 'AI', executionId: 'exec-pending', reportType: 'EXECUTION_EVIDENCE', format: 'CSV',
   status: 'REQUESTED', scopeDigest: 'scope-digest', requesterId: 'auditor-local', approverId: null,
-  requestReason: '금융 감사 제출', approvalReason: null, createdAt: '2026-09-11T00:00:00Z',
+  requestReason: '금융 감사 제출', approvalReason: null, createdAt: '2026-09-09T00:00:00Z',
   approvedAt: null, generatedAt: null, expiresAt: null, downloadedAt: null,
-  updatedAt: '2026-09-11T00:00:00Z',
+  updatedAt: '2026-09-09T00:00:00Z',
 };
 const workSummary = {
   principalId: 'privileged-operator-local', approvalAvailable: true,
@@ -46,6 +46,8 @@ describe('AuditExportWorkPanel', () => {
     render(<MemoryRouter><QueryClientProvider client={queryClient}><AuditExportWorkPanel /></QueryClientProvider></MemoryRouter>);
 
     await user.click(await screen.findByRole('tab', { name: '승인할 요청' }));
+    expect(screen.getByText(/24시간을 초과한 요청부터 오래된 접수 순/)).toBeInTheDocument();
+    expect(screen.getByText(/24시간 초과 · .*시간 대기/)).toBeInTheDocument();
     await user.click(await screen.findByRole('button', { name: 'CSV 감사 증적 검토' }));
     expect(screen.getByText('금융 감사 제출')).toBeInTheDocument();
     expect(screen.getByText(/정책 판단, 변환, 외부 전송, 복구 메타데이터/)).toBeInTheDocument();
