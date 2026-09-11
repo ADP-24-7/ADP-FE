@@ -111,3 +111,83 @@ export type AiEvaluationBundle = {
     updatedAt: string;
   }>;
 };
+
+export type AiTransformGovernanceFieldControl = {
+  fieldName: string;
+  classification: string;
+  businessNeed: string;
+  fieldRequirement: string;
+  transformIntents: string[];
+  utilityRequirements: string[];
+  candidateTransformMethods: string[];
+  prohibitedTransformMethods: string[];
+  currentRuntimeMethod: string;
+  requiredTransformMethod: string;
+  currentRuntimeRequirementMatch: boolean;
+  externalReleaseAllowed: boolean;
+  applicability: string;
+  requirementStatus: string;
+  evidenceRef: string;
+};
+
+export type AiTransformGovernanceProfile = {
+  evaluationRunId: string;
+  workloadId: string;
+  workloadName: string;
+  businessDomain: string;
+  purposeCode: string;
+  purposeDescription: string;
+  subjectScope: string;
+  actionType: string;
+  requesterRole: string;
+  e2HandoffDigest: string;
+  requirementVersion: string;
+  e2ValidationStatus: string;
+  providerGovernanceStatus: string;
+  externalExecutionStatus: string;
+  providerCallAuthorized: boolean;
+  fieldControls: AiTransformGovernanceFieldControl[];
+  requirementEnforcementGaps: Array<{
+    fieldName: string;
+    currentRuntimeMethod: string;
+    requiredTransformMethod: string;
+    reason: string;
+    requiredAction: string;
+  }>;
+};
+
+export type AiCalibrationFindingGroup = {
+  findingType: string;
+  sourceDataClass?: string | null;
+  transformStrategy?: string | null;
+  fieldTreatment?: string | null;
+  count: number;
+};
+
+export type AiCalibrationEvidence = {
+  manifest: {
+    schemaVersion: 'adp-ai-calibration-evidence/v1';
+    contentDigest: string;
+    evaluationRunId: string;
+    evaluationRunVersion: string;
+    executionCount: number;
+    generatedAt: string;
+    executionFrom: string;
+    executionCutoffAt: string;
+  };
+  calibrationReady: boolean;
+  readinessReasonCodes: string[];
+  executions: Array<{
+    executionId: string;
+    evalCaseId: string;
+    modelProfileId: string;
+    responseGuardStatus: 'PASSED' | 'REJECTED' | 'NOT_EVALUATED';
+    controlledDeliveryStatus: 'DELIVERED' | 'WITHHELD';
+    reasonCodes: string[];
+    detectorVersion?: string | null;
+    findingCount: number;
+    observedFindingCount: number;
+    missingReflectionMetadataCount: number;
+    findingGroups: AiCalibrationFindingGroup[];
+  }>;
+};

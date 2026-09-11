@@ -1,34 +1,34 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { http, HttpResponse } from 'msw';
-import { describe, expect, it } from 'vitest';
-import { server } from '../../../app/mocks/server';
-import { AiEvaluationPanel } from './AiEvaluationPanel';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { render, screen } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 
-function renderPanel() {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  render(
-    <QueryClientProvider client={queryClient}>
-      <AiEvaluationPanel />
-    </QueryClientProvider>,
-  );
-}
+import { AiEvaluationPanel } from './AiEvaluationPanel'
 
 describe('AiEvaluationPanel', () => {
-  it('combines readiness and bundle failures into one user-facing status', async () => {
-    server.use(http.get('/api/admin/ai/evaluation-runs/:evaluationRunId/bundle', () => HttpResponse.json({
-      errorCode: 'EXECUTION_PACK_INPUT_REJECTED',
-      message: 'Execution pack input rejected',
-    }, { status: 422 })));
-    const user = userEvent.setup();
-    renderPanel();
+  it('shows frozen E2 governance while preserving unexecuted provider semantics', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+      },
+    })
 
-    await user.type(screen.getByRole('combobox', { name: 'Evaluation Run ID' }), 'ai-eval-baseline-2026-09-07');
-    await user.click(screen.getByRole('button', { name: '조회' }));
+    render(
+      <QueryClientProvider client={queryClient}>
+        <AiEvaluationPanel />
+      </QueryClientProvider>,
+    )
 
-    expect(await screen.findByText('평가 번들을 불러올 수 없습니다')).toBeInTheDocument();
-    expect(screen.getByText('조회 실패')).toBeInTheDocument();
-    expect(screen.queryByText('Execution pack input rejected')).not.toBeInTheDocument();
-  });
-});
+    expect(await screen.findByText('Workload / Regulatory Control Context')).toBeInTheDocument()
+    expect(await screen.findByText('E2 Field Control')).toBeInTheDocument()
+    expect(await screen.findByText('E2_POLICY_REQUIREMENT_VALIDATED')).toBeInTheDocument()
+    expect(await screen.findByText('PROVIDER_GOVERNANCE_BLOCKED')).toBeInTheDocument()
+    expect(await screen.findByText('PENDING_EXTERNAL_EXECUTION')).toBeInTheDocument()
+    expect(await screen.findByText('NOT_EXECUTED')).toBeInTheDocument()
+    expect((await screen.findAllByText('account.balance')).length).toBeGreaterThan(0)
+    expect((await screen.findAllByText('transaction.amount')).length).toBeGreaterThan(0)
+    expect((await screen.findAllByText('REVISION REQUIRED')).length).toBe(2)
+    expect(screen.queryByText('HTTP 200')).not.toBeInTheDocument()
+    expect(screen.queryByText('RAW_VALUE_REFLECTION')).not.toBeInTheDocument()
+    expect(screen.queryByText('AI Chat')).not.toBeInTheDocument()
+  })
+})

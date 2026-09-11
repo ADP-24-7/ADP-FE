@@ -23,7 +23,7 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { name: 'Security Overview' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /정책 · 승인/ })).toHaveAttribute('href', '/policies');
-    expect(screen.getByRole('link', { name: /Runtime · Recovery/ })).toHaveAttribute('href', '/analysis');
+    expect(screen.getByRole('link', { name: /AI Admin/ })).toHaveAttribute('href', '/analysis');
     expect(screen.queryByText('MOCK DATA')).not.toBeInTheDocument();
     expect(screen.queryByText('PROJECT_PROVISIONAL')).not.toBeInTheDocument();
     expect(screen.queryByText('NO MOCK DATA')).not.toBeInTheDocument();
@@ -136,21 +136,15 @@ describe('App', () => {
     expect(screen.getByLabelText('선택된 운영 영역')).toHaveTextContent('조회 범위보안 탐지 · 정책 이력');
   });
 
-  it('opens the exact recovery incident selected from the review queue', async () => {
+  it('shows the AI governance controller without recovery execution controls', async () => {
     const user = userEvent.setup();
     window.localStorage.setItem('adp.selectedExecutionPack', 'ai');
     render(<App />);
 
-    await user.click(screen.getByRole('link', { name: /Runtime · Recovery/ }));
-    expect(await screen.findByRole('heading', { name: 'Runtime · Recovery' })).toBeInTheDocument();
-    expect(await screen.findByRole('heading', { name: 'Review Queue' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Recovery Incident' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /exec-review-contract/ }));
-    await user.click(await screen.findByRole('button', { name: 'Recovery Incident' }));
-
-    expect(window.location.search).toBe('?recoveryId=recovery-contract');
-    expect(await screen.findByText('Recovery ID')).toBeInTheDocument();
-    expect(screen.getAllByText('recovery-contract').length).toBeGreaterThan(0);
+    await user.click(screen.getByRole('link', { name: /AI Admin/ }));
+    expect(await screen.findByRole('heading', { name: 'AI Admin' })).toBeInTheDocument();
+    expect(await screen.findByText('E2 Field Control')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Recovery Incident' })).not.toBeInTheDocument();
   });
 
   it('shows zero operational signals without inferring attention', async () => {
@@ -337,6 +331,7 @@ describe('App', () => {
 
   it('scrolls and focuses the operations section selected from overview', async () => {
     const user = userEvent.setup();
+    window.localStorage.setItem('adp.selectedExecutionPack', 'digital-asset');
     render(<App />);
 
     await user.click(screen.getByRole('link', { name: '통합 관제' }));

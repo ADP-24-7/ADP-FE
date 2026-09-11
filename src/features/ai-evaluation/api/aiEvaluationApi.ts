@@ -1,5 +1,5 @@
 import { httpClient } from '../../../shared/api/httpClient';
-import type { AiEvaluationBundle, AiEvaluationRunReadiness } from '../model/types';
+import type { AiCalibrationEvidence, AiEvaluationBundle, AiEvaluationRunReadiness, AiTransformGovernanceProfile } from '../model/types';
 
 type SnakeRecord = Record<string, unknown>;
 
@@ -31,4 +31,18 @@ export async function getAiEvaluationBundle(evaluationRunId: string) {
     `/api/admin/ai/evaluation-runs/${encodeURIComponent(evaluationRunId)}/bundle`,
   );
   return camelize(response.data) as AiEvaluationBundle;
+}
+
+export async function getAiTransformGovernanceProfile(evaluationRunId: string) {
+  const response = await httpClient.get<SnakeRecord>(
+    `/api/admin/ai/evaluation-runs/${encodeURIComponent(evaluationRunId)}/transform-governance-profile`,
+  );
+  return camelize(response.data) as AiTransformGovernanceProfile;
+}
+
+export async function getAiCalibrationEvidence(evaluationRunId: string) {
+  const response = await httpClient.get<SnakeRecord>(
+    `/api/admin/ai/evaluation-runs/${encodeURIComponent(evaluationRunId)}/calibration-evidence`,
+  );
+  return camelize(response.data) as AiCalibrationEvidence;
 }

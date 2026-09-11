@@ -43,6 +43,7 @@ const runtimeExecutionEvidenceFixture = {
   transformed: { fields: [], count: 0 },
   released: { fields: [], count: 0 },
   responseGuardReasonCodes: [],
+  responseFindingTypes: [],
 };
 
 export const runtimeExecutionDetailFixture: RuntimeExecutionDetail = {
@@ -71,6 +72,18 @@ export const runtimeExecutionTraceFixture: RuntimeExecutionTrace = {
   executionId: runtimeExecutionFixture.executionId,
   traceId: runtimeExecutionDetailFixture.traceId,
   status: 'COMPLETED',
+  workloadId: runtimeExecutionRequestFixture.workloadId,
+  purposeCode: runtimeExecutionRequestFixture.purposeCode,
+  authorizationDecision: 'ALLOWED',
+  authorizationReason: 'AUTHORIZATION_POLICY_ALLOWED',
+  policyVersion: 'be-runtime-policy/0.0.0',
+  policyDecision: 'TRANSFORM',
+  policyReasonCodes: [],
+  finalAction: 'TRANSFORM',
+  regulatoryRequirementRefs: [],
+  regulatoryEvidenceRefs: [],
+  createdAt: runtimeExecutionDetailFixture.createdAt,
+  updatedAt: runtimeExecutionDetailFixture.updatedAt,
   stages: [
     { stage: 'RECEIVED', status: 'COMPLETED', observedAt: '2026-08-31T00:00:00Z' },
     { stage: 'AUTHORIZATION', status: 'COMPLETED', observedAt: '2026-08-31T00:00:01Z' },
@@ -85,6 +98,7 @@ export const runtimeExecutionTraceFixture: RuntimeExecutionTrace = {
     { stage: 'RESPONSE_GUARD', status: 'COMPLETED', observedAt: '2026-08-31T00:00:01Z' },
     { stage: 'CONTROLLED_DELIVERY', status: 'DELIVERED', observedAt: '2026-08-31T00:00:01Z' },
   ],
+  stageTimings: [],
   evidence: runtimeExecutionEvidenceFixture,
 };
 
