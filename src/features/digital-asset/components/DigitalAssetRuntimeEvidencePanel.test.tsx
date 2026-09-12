@@ -15,6 +15,11 @@ const evidence: ExecutionEvidencePack = {
   purposeCode: 'DIGITAL_ASSET_PURCHASE',
   runtimeStatus: 'COMPLETED',
   authorizationStatus: 'PASSED',
+  idempotency: {
+    existingExecutionReused: true,
+    replayCount: 1,
+    additionalExternalEffectCount: 0,
+  },
   policy: { policyVersion: 'policy/1.0.0', snapshotDigest: 'snapshot-digest', finalAction: 'ALLOW' },
   data: {},
   egress: {
@@ -40,7 +45,10 @@ describe('DigitalAssetRuntimeEvidencePanel', () => {
     expect(screen.getByText('EXECUTED · connector-da-contract')).toBeInTheDocument();
     expect(screen.getByText('VERIFIED · SUCCESS · FINALIZED')).toBeInTheDocument();
     expect(screen.getByText('NOT EXPOSED BY PRIVACY-SAFE READ API')).toBeInTheDocument();
-    expect(screen.getByText('NOT AVAILABLE FROM BE READ API')).toBeInTheDocument();
+    expect(screen.getByText('Existing Execution Reused')).toBeInTheDocument();
+    expect(screen.getByText('Additional External Effect')).toBeInTheDocument();
+    expect(screen.getByText('YES')).toBeInTheDocument();
+    expect(screen.getByText('0')).toBeInTheDocument();
     expect(screen.queryByText('0x1234567890abcdef')).not.toBeInTheDocument();
   });
 });

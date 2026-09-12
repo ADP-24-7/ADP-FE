@@ -42,7 +42,9 @@ export function DigitalAssetRuntimeEvidencePanel({ evidence, trace }: DigitalAss
         ['Evidence Status', view.evidenceStatus],
         ['Reconciliation', view.reconciliationStatus],
         ['Final State', view.finalState],
-        ['Duplicate Replay', view.duplicateReplay],
+        ['Existing Execution Reused', view.existingExecutionReused],
+        ['Replay Count', view.replayCount],
+        ['Additional External Effect', view.additionalExternalEffect],
         ['Timestamp', view.timestamp],
       ]} />
 

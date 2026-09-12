@@ -275,6 +275,9 @@ describe('App', () => {
     expect(screen.getByText(/TOKEN_TRANSFER/)).toBeInTheDocument();
     expect(screen.getByText('dest_mock_asset_platform_v1')).toBeInTheDocument();
     expect(screen.getByLabelText('Digital Asset pre-execution controls')).toHaveTextContent('TRACE_BINDING');
+    expect(screen.getByText('Existing Execution Reused')).toBeInTheDocument();
+    expect(screen.getByText('Additional External Effect')).toBeInTheDocument();
+    expect(screen.getByText('YES')).toBeInTheDocument();
   });
 
   it('clears the selected audit detail when search conditions change', async () => {

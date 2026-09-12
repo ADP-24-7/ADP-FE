@@ -19,7 +19,9 @@ export type DigitalAssetAdminRuntimeView = {
   evidenceStatus: string;
   reconciliationStatus: string;
   finalState: string;
-  duplicateReplay: string;
+  existingExecutionReused: string;
+  replayCount: string;
+  additionalExternalEffect: string;
   timestamp: string;
 };
 
@@ -74,9 +76,11 @@ export function buildDigitalAssetAdminRuntimeView(
       ? `${recoveryStatus} · ${present(retryDisposition)} · ${present(evidence.recovery.lastObservedExternalStatus)}`
       : 'NOT REQUIRED',
     finalState: trace.status,
-    duplicateReplay: evidence.audit.reasonCode === 'IDEMPOTENCY_KEY_REUSED'
-      ? 'REPLAYED · IDEMPOTENCY_KEY_REUSED'
+    existingExecutionReused: evidence.idempotency
+      ? evidence.idempotency.existingExecutionReused ? 'YES' : 'NO'
       : NOT_AVAILABLE,
+    replayCount: present(evidence.idempotency?.replayCount),
+    additionalExternalEffect: present(evidence.idempotency?.additionalExternalEffectCount),
     timestamp: `${new Date(evidence.createdAt).toLocaleString('ko-KR')} → ${new Date(evidence.updatedAt).toLocaleString('ko-KR')}`,
   };
 }

@@ -36,6 +36,11 @@ export const auditTraceHandlers = [
     purposeCode: 'CUSTOMER_SUPPORT',
     runtimeStatus: 'COMPLETED',
     authorizationStatus: 'PASSED',
+    idempotency: {
+      existingExecutionReused: params.executionId === 'exec_da_snapshot_contract',
+      replayCount: params.executionId === 'exec_da_snapshot_contract' ? 1 : 0,
+      additionalExternalEffectCount: 0,
+    },
     policy: { finalAction: 'TRANSFORM' },
     data: { inputDigest: 'input-digest' },
     egress: {
