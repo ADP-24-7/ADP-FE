@@ -258,6 +258,25 @@ describe('App', () => {
     await waitFor(() => expect(document.activeElement).toBe(focusedSection));
   });
 
+  it('joins Digital Asset operations evidence with the BE runtime trace', async () => {
+    window.localStorage.setItem('adp.selectedExecutionPack', 'digital-asset');
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <ExecutionPackProvider>
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={['/audit?executionId=exec_da_snapshot_contract']}>
+            <AuditPage />
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ExecutionPackProvider>,
+    );
+
+    expect(await screen.findByRole('heading', { name: 'Digital Asset Runtime Evidence' })).toBeInTheDocument();
+    expect(screen.getByText(/TOKEN_TRANSFER/)).toBeInTheDocument();
+    expect(screen.getByText('dest_mock_asset_platform_v1')).toBeInTheDocument();
+    expect(screen.getByLabelText('Digital Asset pre-execution controls')).toHaveTextContent('TRACE_BINDING');
+  });
+
   it('clears the selected audit detail when search conditions change', async () => {
     const user = userEvent.setup();
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });

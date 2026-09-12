@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useSearchParams as useRouterSearchParams } from 'react-router-dom';
 import { FileCheck2, LockKeyhole, RotateCcw, Search } from 'lucide-react';
-import { useAuditExecutions, useExecutionEvidence } from '../../features/audit-trace';
+import { useAuditExecutions, useExecutionEvidence, useExecutionRuntimeTrace } from '../../features/audit-trace';
 import { AuditExportPanel } from '../../features/audit-export';
+import { DigitalAssetRuntimeEvidencePanel } from '../../features/digital-asset';
 import type { AuditSearchParams } from '../../features/audit-trace';
 import { normalizeApiError } from '../../shared/api/apiError';
 import { EmptyState, ErrorState, KeyValues, LoadingPanel, PackContextSummary, PageHeader, SearchAssistInput, SectionCard, StatusBadge } from '../../shared/components';
@@ -29,6 +30,7 @@ export function AuditPage() {
   const [searchParams, setSearchParams] = useState<AuditSearchParams>({ executionPack: selectedPack.apiValue, page: 0, size: DEFAULT_TABLE_PAGE_SIZE });
   const audit = useAuditExecutions(searchParams);
   const evidence = useExecutionEvidence(submittedExecutionId);
+  const runtimeTrace = useExecutionRuntimeTrace(submittedExecutionId, selectedPack.key === 'digital-asset');
   const activePackRef = useRef(selectedPack.apiValue);
   const policyDecisionEvidenceRef = useRef<HTMLDivElement>(null);
   const postExecutionEvidenceRef = useRef<HTMLDivElement>(null);
@@ -220,6 +222,12 @@ export function AuditPage() {
               ) : evidence.data ? (
                 <>
                   <AuditExportPanel key={submittedExecutionId} executionId={submittedExecutionId} />
+                  {selectedPack.key === 'digital-asset' ? (
+                    runtimeTrace.isLoading ? <LoadingPanel label="Digital Asset Runtime Trace를 불러오는 중입니다" />
+                      : runtimeTrace.isError ? <ErrorState description="BE Runtime Trace를 조회할 수 없어 Digital Asset 상세를 표시하지 않습니다." onRetry={() => runtimeTrace.refetch()} compact />
+                        : runtimeTrace.data ? <DigitalAssetRuntimeEvidencePanel evidence={evidence.data} trace={runtimeTrace.data} />
+                          : null
+                  ) : null}
                   <div
                     ref={policyDecisionEvidenceRef}
                     id="policy-decision-evidence"
