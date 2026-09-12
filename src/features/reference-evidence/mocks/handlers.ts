@@ -21,6 +21,8 @@ export const regulatoryEvidenceLineageFixture = {
   workloadId: 'customer_summary',
   purposeCode: 'CUSTOMER_SUPPORT',
   reviewStatus: 'CONNECTED',
+  requirementRefs: ['PIPA-LAWFUL-PURPOSE', 'PIPA-MINIMIZATION'],
+  controlRefs: ['PURPOSE_BINDING_POLICY', 'MINIMUM_FIELD_CONTRACT'],
   boundAt: '2026-09-12T00:00:00Z',
 };
 

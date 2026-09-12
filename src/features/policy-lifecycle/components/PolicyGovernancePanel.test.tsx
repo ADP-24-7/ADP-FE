@@ -50,6 +50,8 @@ describe('PolicyGovernancePanel', () => {
     expect(await screen.findByText('개인정보 보호법')).toBeInTheDocument();
     expect(screen.getByText('REF-REG-PIPA-2026-09-11')).toBeInTheDocument();
     expect(screen.getByText('제15조; 제16조; 제28조의8; 제29조')).toBeInTheDocument();
+    expect(screen.getByText(/PIPA-LAWFUL-PURPOSE/)).toBeInTheDocument();
+    expect(screen.getByText(/PURPOSE_BINDING_POLICY/)).toBeInTheDocument();
     expect(screen.getByText('2026-09-11')).toBeInTheDocument();
     expect(screen.getByText('candidate-policy-contract')).toBeInTheDocument();
   });
@@ -74,6 +76,8 @@ describe('PolicyGovernancePanel', () => {
           workloadId: 'tokenized_asset_purchase',
           purposeCode: 'DIGITAL_ASSET_PURCHASE',
           reviewStatus: 'CONNECTED',
+          requirementRefs: ['DA-01-EXECUTION-EVIDENCE'],
+          controlRefs: ['AUTHORITATIVE_EXECUTION_EVIDENCE'],
           boundAt: '2026-09-12T00:00:00Z',
         }])
       )),

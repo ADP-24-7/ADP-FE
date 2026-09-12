@@ -57,6 +57,8 @@ export type ReferenceEvidencePolicyLineage = {
   workloadId: string;
   purposeCode: string;
   reviewStatus: 'CONNECTED' | 'PENDING_REVIEW' | 'MISSING';
+  requirementRefs: string[];
+  controlRefs: string[];
   boundAt: string;
 };
 

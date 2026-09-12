@@ -195,7 +195,7 @@ export function PolicyGovernancePanel({ policy }: PolicyGovernancePanelProps) {
           <div className="table-head table-reference-evidence"><span>근거 법령 / 조문</span><span>Evidence</span><span>Policy</span><span>Lifecycle</span><span>Effective Date</span></div>
           {regulatoryLineage.data.map((item) => (
             <div className="table-row table-reference-evidence" role="row" key={`${item.regulatoryEvidenceId}:${item.sourceVersion}`}>
-              <span><strong>{item.lawName}</strong><small>{item.applicableArticles}</small></span>
+              <span><strong>{item.lawName}</strong><small>{item.applicableArticles}</small><small>Requirement: {item.requirementRefs.join(' · ')}</small><small>Control: {item.controlRefs.join(' · ')}</small></span>
               <span><code>{item.regulatoryEvidenceId}</code><small>{item.officialSource} · {item.sourceVersion}</small></span>
               <span><strong>{item.policyArtifactId}</strong><small>{item.policyVersion}</small></span>
               <span><StatusBadge tone={item.reviewStatus === 'CONNECTED' ? 'success' : 'warning'}>{item.reviewStatus}</StatusBadge><small>{item.lifecycleState} · {item.executionPack}</small></span>
