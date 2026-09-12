@@ -46,6 +46,11 @@ export type ExecutionEvidencePack = {
   purposeCode: string;
   runtimeStatus: string;
   authorizationStatus: string;
+  idempotency?: {
+    existingExecutionReused: boolean;
+    replayCount: number;
+    additionalExternalEffectCount: number;
+  };
   policy: {
     approvalReference?: string | null;
     approvalVersion?: string | null;

@@ -15,6 +15,11 @@ const baseEvidence: ExecutionEvidencePack = {
   purposeCode: 'DIGITAL_ASSET_PURCHASE',
   runtimeStatus: 'COMPLETED',
   authorizationStatus: 'PASSED',
+  idempotency: {
+    existingExecutionReused: false,
+    replayCount: 0,
+    additionalExternalEffectCount: 0,
+  },
   policy: { policyVersion: 'policy/1.0.0', snapshotDigest: 'snapshot-digest', finalAction: 'ALLOW' },
   data: {},
   egress: {
@@ -102,12 +107,28 @@ describe('buildDigitalAssetAdminRuntimeView', () => {
     expect(view.finalState).toBe('EXTERNALLY_RECONCILED');
   });
 
-  it('only reports DUPLICATE_REQUEST replay when the read evidence provides the reason', () => {
-    expect(buildDigitalAssetAdminRuntimeView(baseEvidence, trace()).duplicateReplay)
-      .toBe('NOT AVAILABLE FROM BE READ API');
-    expect(buildDigitalAssetAdminRuntimeView(
-      evidence({ audit: { ...baseEvidence.audit, reasonCode: 'IDEMPOTENCY_KEY_REUSED' } }),
+  it('maps DUPLICATE_REQUEST only from explicit BE idempotency evidence', () => {
+    const view = buildDigitalAssetAdminRuntimeView(
+      evidence({
+        idempotency: {
+          existingExecutionReused: true,
+          replayCount: 1,
+          additionalExternalEffectCount: 0,
+        },
+      }),
       trace(),
-    ).duplicateReplay).toBe('REPLAYED · IDEMPOTENCY_KEY_REUSED');
+    );
+    expect(view.existingExecutionReused).toBe('YES');
+    expect(view.replayCount).toBe('1');
+    expect(view.additionalExternalEffect).toBe('0');
+  });
+
+  it('does not infer DUPLICATE_REQUEST when BE idempotency evidence is absent', () => {
+    const view = buildDigitalAssetAdminRuntimeView(
+      evidence({ idempotency: undefined, audit: { ...baseEvidence.audit, reasonCode: 'IDEMPOTENCY_KEY_REUSED' } }),
+      trace(),
+    );
+    expect(view.existingExecutionReused).toBe('NOT AVAILABLE FROM BE READ API');
+    expect(view.additionalExternalEffect).toBe('NOT AVAILABLE FROM BE READ API');
   });
 });
