@@ -12,6 +12,7 @@ import {
 } from '../hooks/usePolicyLifecycle';
 import type { PolicyLifecycleRecord, PolicyLifecycleStage } from '../model/types';
 import { useAuthContext } from '../../auth';
+import { usePolicyRegulatoryEvidence } from '../../reference-evidence';
 
 const nextTransitions: Partial<Record<PolicyLifecycleStage, { targetStage: PolicyLifecycleStage; reasonCode: string; label: string }>> = {
   DRAFT: { targetStage: 'VALIDATED', reasonCode: 'VALIDATION_PASSED', label: '검증 완료' },
@@ -44,6 +45,7 @@ export function PolicyGovernancePanel({ policy }: PolicyGovernancePanelProps) {
   const approval = useApprovePolicyLifecycle();
   const activation = useActivatePolicyLifecycle();
   const rollback = useRollbackPolicyLifecycle();
+  const regulatoryLineage = usePolicyRegulatoryEvidence(policy.artifactId, policy.artifactVersion);
   const nextTransition = nextTransitions[policy.lifecycleStage];
   const selectionError = currentSelection.isError ? normalizeApiError(currentSelection.error) : null;
   const hasNoCurrentSelection = selectionError?.errorCode === 'POLICY_CURRENT_SELECTION_NOT_FOUND';
@@ -180,6 +182,30 @@ export function PolicyGovernancePanel({ policy }: PolicyGovernancePanelProps) {
         <p><strong>{auth.data?.principalId ?? '권한 확인 중'}</strong><span>{operatorReason} {privilegedReason}</span></p>
         <StatusBadge tone={canRunPrivilegedCommand ? 'success' : 'warning'}>{canRunPrivilegedCommand ? 'ACTION ELIGIBLE' : 'READ ONLY'}</StatusBadge>
       </div>
+      <div className="governance-section-heading">
+        <span><History size={17} />Regulatory Evidence Lineage</span>
+        <small>Official Source → Evidence → Policy Version → Lifecycle</small>
+      </div>
+      {regulatoryLineage.isLoading ? (
+        <LoadingPanel label="규제 Evidence lineage를 조회하는 중입니다" />
+      ) : regulatoryLineage.isError ? (
+        <ErrorState description={normalizeApiError(regulatoryLineage.error).message} onRetry={() => regulatoryLineage.refetch()} />
+      ) : regulatoryLineage.data?.length ? (
+        <div className="table-shell reference-evidence-table-shell" role="table" aria-label="Regulatory Evidence Lineage">
+          <div className="table-head table-reference-evidence"><span>근거 법령 / 조문</span><span>Evidence</span><span>Policy</span><span>Lifecycle</span><span>Effective Date</span></div>
+          {regulatoryLineage.data.map((item) => (
+            <div className="table-row table-reference-evidence" role="row" key={`${item.regulatoryEvidenceId}:${item.sourceVersion}`}>
+              <span><strong>{item.lawName}</strong><small>{item.applicableArticles}</small></span>
+              <span><code>{item.regulatoryEvidenceId}</code><small>{item.officialSource} · {item.sourceVersion}</small></span>
+              <span><strong>{item.policyArtifactId}</strong><small>{item.policyVersion}</small></span>
+              <span><StatusBadge tone={item.reviewStatus === 'CONNECTED' ? 'success' : 'warning'}>{item.reviewStatus}</StatusBadge><small>{item.lifecycleState} · {item.executionPack}</small></span>
+              <span><strong>{item.effectiveDate ?? '—'}</strong><small title={item.sourceDigest}>{item.sourceDigest}</small></span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <EmptyState compact title="연결된 Regulatory Evidence 없음" description="이 Policy Version에 명시적으로 결속된 규제 Evidence가 없습니다." endpoint="GET /api/admin/reference-evidence/policy-artifacts/{artifactId}/versions/{version}" />
+      )}
       <div className="governance-grid">
         <div className="governance-column">
           <div className="governance-section-heading">

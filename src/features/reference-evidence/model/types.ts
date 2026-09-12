@@ -40,3 +40,23 @@ export type ReferenceEvidenceSearch = {
   offset?: number;
 };
 
+export type ReferenceEvidencePolicyLineage = {
+  regulatoryEvidenceId: string;
+  sourceVersion: string;
+  sourceDigest: string;
+  lawName: string;
+  authority: string;
+  officialSource: string;
+  sourceUrl: string | null;
+  applicableArticles: string;
+  effectiveDate: string | null;
+  policyArtifactId: string;
+  policyVersion: string;
+  lifecycleState: string;
+  executionPack: 'COMMON' | 'AI' | 'DIGITAL_ASSET';
+  workloadId: string;
+  purposeCode: string;
+  reviewStatus: 'CONNECTED' | 'PENDING_REVIEW' | 'MISSING';
+  boundAt: string;
+};
+

@@ -43,6 +43,49 @@ function renderPanel() {
 }
 
 describe('PolicyGovernancePanel', () => {
+  it('projects immutable regulatory evidence with the policy lifecycle state', async () => {
+    renderPanel();
+
+    expect(await screen.findByText('Regulatory Evidence Lineage')).toBeInTheDocument();
+    expect(await screen.findByText('개인정보 보호법')).toBeInTheDocument();
+    expect(screen.getByText('REF-REG-PIPA-2026-09-11')).toBeInTheDocument();
+    expect(screen.getByText('제15조; 제16조; 제28조의8; 제29조')).toBeInTheDocument();
+    expect(screen.getByText('2026-09-11')).toBeInTheDocument();
+    expect(screen.getByText('candidate-policy-contract')).toBeInTheDocument();
+  });
+
+  it('preserves the Digital Asset evidence identity without merging admin domains', async () => {
+    server.use(
+      http.get('/api/admin/reference-evidence/policy-artifacts/:artifactId/versions/:artifactVersion', () => (
+        HttpResponse.json([{
+          regulatoryEvidenceId: 'REF-REG-VA-UPA-2024',
+          sourceVersion: '20372-2024-07-19',
+          sourceDigest: `sha256:${'c'.repeat(64)}`,
+          lawName: '가상자산 이용자 보호 등에 관한 법률',
+          authority: '금융위원회',
+          officialSource: '국가법령정보센터',
+          sourceUrl: 'https://www.law.go.kr/LSW/lsLinkCommonInfo.do?lsJoLnkSeq=1024562527',
+          applicableArticles: '제2조; 제6조; 제7조; 제9조',
+          effectiveDate: '2024-07-19',
+          policyArtifactId: 'candidate-policy-contract',
+          policyVersion: '2.0.0',
+          lifecycleState: 'ACTIVE',
+          executionPack: 'DIGITAL_ASSET',
+          workloadId: 'tokenized_asset_purchase',
+          purposeCode: 'DIGITAL_ASSET_PURCHASE',
+          reviewStatus: 'CONNECTED',
+          boundAt: '2026-09-12T00:00:00Z',
+        }])
+      )),
+    );
+    renderPanel();
+
+    expect(await screen.findByText('가상자산 이용자 보호 등에 관한 법률')).toBeInTheDocument();
+    expect(screen.getByText('REF-REG-VA-UPA-2024')).toBeInTheDocument();
+    expect(screen.getByText(/DIGITAL_ASSET/)).toBeInTheDocument();
+    expect(screen.getByText('CONNECTED')).toBeInTheDocument();
+  });
+
   it('blocks approval when the current session evidence is DIFF', async () => {
     const user = userEvent.setup();
     server.use(
