@@ -6,6 +6,8 @@ export {
   ingestDigitalAssetArtifact,
 } from './api/digitalAssetArtifactApi';
 export { DigitalAssetArtifactPanel } from './components/DigitalAssetArtifactPanel';
+export { DigitalAssetRuntimeEvidencePanel } from './components/DigitalAssetRuntimeEvidencePanel';
+export { buildDigitalAssetAdminRuntimeView } from './model/adminRuntimeView';
 export {
   useActivateDigitalAssetArtifact,
   useDigitalAssetArtifact,

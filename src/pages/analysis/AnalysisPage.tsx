@@ -18,7 +18,7 @@ export function AnalysisPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { selectedPack } = useExecutionPack();
-  const summary = useOperationsSummary(60);
+  const summary = useOperationsSummary(60, selectedPack.apiValue);
   const metricState = summary.isLoading ? 'loading' : summary.isError ? 'error' : 'value';
 
   if (selectedPack.key === 'ai') {
