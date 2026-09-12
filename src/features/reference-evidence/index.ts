@@ -1,4 +1,5 @@
 export { ReferenceEvidencePanel } from './components/ReferenceEvidencePanel';
-export { getReferenceEvidence, getReferenceEvidenceDetail } from './api/referenceEvidenceApi';
-export type { ReferenceEvidence, ReferenceEvidencePage, ReferenceEvidenceSearch, ReferenceEvidenceType } from './model/types';
+export { getPolicyRegulatoryEvidence, getReferenceEvidence, getReferenceEvidenceDetail } from './api/referenceEvidenceApi';
+export { usePolicyRegulatoryEvidence } from './hooks/useReferenceEvidence';
+export type { ReferenceEvidence, ReferenceEvidencePage, ReferenceEvidencePolicyLineage, ReferenceEvidenceSearch, ReferenceEvidenceType } from './model/types';
 
