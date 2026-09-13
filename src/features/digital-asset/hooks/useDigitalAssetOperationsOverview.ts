@@ -11,6 +11,7 @@ export function useDigitalAssetOperationsOverview(
   return useQuery({
     queryKey: ['digital-asset-operations-overview', from, to, executionQuery, executionStatus, executionPage],
     queryFn: () => getDigitalAssetOperationsOverview(from, to, executionQuery, executionStatus, executionPage),
+    placeholderData: (previous) => previous,
     retry: false,
     refetchInterval: 30_000,
   });
