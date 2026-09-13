@@ -1,19 +1,19 @@
 import { useEffect, useRef } from 'react';
 import * as echarts from 'echarts/core';
-import { BarChart, HeatmapChart, LineChart, SankeyChart } from 'echarts/charts';
+import { BarChart, HeatmapChart, LineChart, SankeyChart, ScatterChart } from 'echarts/charts';
 import { GridComponent, LegendComponent, TooltipComponent, VisualMapComponent } from 'echarts/components';
 import { SVGRenderer } from 'echarts/renderers';
 import type { ComposeOption } from 'echarts/core';
-import type { BarSeriesOption, HeatmapSeriesOption, LineSeriesOption, SankeySeriesOption } from 'echarts/charts';
+import type { BarSeriesOption, HeatmapSeriesOption, LineSeriesOption, SankeySeriesOption, ScatterSeriesOption } from 'echarts/charts';
 import type { GridComponentOption, LegendComponentOption, TooltipComponentOption, VisualMapComponentOption } from 'echarts/components';
 
 echarts.use([
-  BarChart, HeatmapChart, LineChart, SankeyChart,
+  BarChart, HeatmapChart, LineChart, SankeyChart, ScatterChart,
   GridComponent, LegendComponent, TooltipComponent, VisualMapComponent, SVGRenderer,
 ]);
 
 export type DashboardChartOption = ComposeOption<
-  BarSeriesOption | HeatmapSeriesOption | LineSeriesOption | SankeySeriesOption |
+  BarSeriesOption | HeatmapSeriesOption | LineSeriesOption | SankeySeriesOption | ScatterSeriesOption |
   GridComponentOption | LegendComponentOption | TooltipComponentOption | VisualMapComponentOption
 >;
 
