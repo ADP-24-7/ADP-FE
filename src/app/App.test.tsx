@@ -16,12 +16,13 @@ import { router } from './router';
 describe('App', () => {
   beforeEach(() => {
     window.history.replaceState({}, '', '/overview');
+    window.localStorage.setItem('adp.selectedExecutionPack', 'ai');
   });
 
   it('renders the real API console without mock environment labels', async () => {
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: 'Security Overview' })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'Overview' })).toHaveAttribute('href', '/overview');
     expect(screen.getByRole('link', { name: /정책 · 승인/ })).toHaveAttribute('href', '/policies');
     expect(screen.getByRole('link', { name: /AI Admin/ })).toHaveAttribute('href', '/analysis');
     expect(screen.queryByText('MOCK DATA')).not.toBeInTheDocument();
@@ -34,12 +35,23 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: /My Work/ })).toBeInTheDocument();
   });
 
+  it('calculates the protection rate only from backend-designated data classes', async () => {
+    render(<App />);
+
+    const heading = await screen.findByRole('heading', { name: '보호 대상 필드 변환율' });
+    const panel = heading.closest('article');
+
+    expect(panel).toHaveTextContent('84.4%');
+    expect(panel).toHaveTextContent('변환 228 / 보호 대상 270 필드');
+    expect(screen.queryByText(/Butterfly/)).not.toBeInTheDocument();
+  });
+
   it('does not restore a persisted pack that the runtime selector does not support', async () => {
     window.localStorage.setItem('adp.selectedExecutionPack', 'saas');
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: 'Security Overview' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'AI Operations Overview' }, { timeout: 3_000 })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /AI · Agent/ })).toHaveClass('active');
   });
 
@@ -65,14 +77,14 @@ describe('App', () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole('link', { name: '통합 관제' }));
-    await screen.findByRole('heading', { name: 'Security Overview' });
+    await user.click(screen.getByRole('link', { name: 'Overview' }));
+    await screen.findByRole('heading', { name: 'AI Operations Overview' });
     await user.click(screen.getByRole('tab', { name: /Digital Asset/ }));
 
     expect(window.location.pathname).toBe('/overview');
     expect(screen.getByRole('tab', { name: /Digital Asset/ })).toHaveClass('active');
     expect(await screen.findByRole('heading', { name: 'Digital Asset Overview' })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Security Overview' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'AI Operations Overview' })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('link', { name: /정책 · 승인/ }));
 
@@ -88,8 +100,8 @@ describe('App', () => {
     window.localStorage.setItem('adp.selectedExecutionPack', 'ai');
     render(<App />);
 
-    await user.click(await screen.findByRole('link', { name: '통합 관제' }));
-    await screen.findByRole('heading', { name: 'Security Overview' });
+    await user.click(await screen.findByRole('link', { name: 'Overview' }));
+    await screen.findByRole('heading', { name: 'AI Operations Overview' });
     await user.click(screen.getByRole('tab', { name: /Digital Asset/ }));
     await user.click(screen.getByRole('link', { name: 'Gateway Lab' }));
 
@@ -150,33 +162,7 @@ describe('App', () => {
     expect(screen.queryByRole('heading', { name: 'Recovery Incident' })).not.toBeInTheDocument();
   });
 
-  it('shows zero operational signals without inferring attention', async () => {
-    server.use(
-      http.get('/api/admin/operations/summary', () => HttpResponse.json({
-        schemaVersion: 'adp-operations-summary/v2',
-        windowMinutes: 60,
-        generatedAt: '2026-09-09T00:00:00Z',
-        scope: {
-          requestedExecutionPack: 'AI',
-          defaultSemantics: 'REQUESTED_EXECUTION_PACK',
-          packScopedSections: ['RUNTIME', 'RECOVERY', 'POLICY'],
-          allAuthorizedWorkloadSections: ['SECURITY'],
-        },
-        runtime: { total: 0, completed: 0, failed: 0, blocked: 0, reviewRequired: 0 },
-        recovery: {
-          backlog: 0,
-          oldestBacklogAgeSeconds: null,
-          manualReview: 0,
-          exhausted: 0,
-          completedOperations: 0,
-          averageOperationLatencyMillis: null,
-          staleOperations: 0,
-          oldestStaleOperationAgeSeconds: null,
-        },
-        policy: { currentSelections: 0, driftedSelections: 0, activations: 0, rollbacks: 0 },
-        security: { deniedAttempts: 0, institutionScopeMismatch: 0, authorizationPolicyDenied: 0 },
-      })),
-    );
+  it('shows AI operations without the legacy generic signal inference', async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
       <ExecutionPackProvider>
@@ -188,10 +174,10 @@ describe('App', () => {
       </ExecutionPackProvider>,
     );
 
-    expect(await screen.findByText('현재 0이 아닌 운영 신호가 없습니다')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'AI Operations Overview' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '우선 확인 항목' })).toBeInTheDocument();
     expect(screen.queryByText('Attention Required')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Recovery backlog/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Security denied attempts/ })).not.toBeInTheDocument();
+    expect(screen.queryByText('Current Operational Signals')).not.toBeInTheDocument();
   });
 
   it('does not expose disconnected policy controls as product actions', async () => {
@@ -359,7 +345,7 @@ describe('App', () => {
     window.localStorage.setItem('adp.selectedExecutionPack', 'digital-asset');
     render(<App />);
 
-    await user.click(screen.getByRole('link', { name: '통합 관제' }));
+    await user.click(screen.getByRole('link', { name: 'Overview' }));
     await screen.findByRole('heading', { name: 'Digital Asset Overview' });
     await user.click(await screen.findByRole('button', { name: /미확정 상태 조정/ }));
 
@@ -371,9 +357,9 @@ describe('App', () => {
   });
 
   it('clears protected state and preserves returnTo when a protected API reports session expiry', async () => {
-    server.use(http.get('/api/admin/operations/summary', () => new HttpResponse(null, { status: 401 })));
+    server.use(http.get('/api/admin/ai/overview', () => new HttpResponse(null, { status: 401 })));
     queryClient.setQueryData(['protected', 'audit'], { executionId: 'sensitive-execution' });
-    queryClient.removeQueries({ queryKey: ['operations-monitoring'] });
+    queryClient.removeQueries({ queryKey: ['ai-operations-overview'] });
     await router.navigate('/overview?scope=AI#signals', { replace: true });
 
     render(<App />);

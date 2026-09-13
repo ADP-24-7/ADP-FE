@@ -21,7 +21,7 @@ import type { AuthRole } from '../features/auth';
 import { MyWorkMenu } from '../features/audit-export';
 
 const navItems = [
-  { to: '/overview', label: '통합 관제', icon: LayoutDashboard },
+  { to: '/overview', label: 'Overview', icon: LayoutDashboard },
   { to: '/policies', label: '정책 · 승인', icon: SlidersHorizontal },
   { to: '/identities', label: 'Identity · 권한', icon: UsersRound },
   { to: '/data-access', label: 'Workload · Data', icon: DatabaseZap },

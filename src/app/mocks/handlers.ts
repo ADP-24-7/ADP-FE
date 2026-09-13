@@ -1,4 +1,5 @@
 import { aiEvaluationHandlers } from '../../features/ai-evaluation/mocks/handlers';
+import { aiOperationsHandlers } from '../../features/ai-operations/mocks/handlers';
 import { authHandlers } from '../../features/auth/mocks/handlers';
 import { adminIdentityHandlers } from '../../features/admin-identities/mocks/handlers';
 import { auditTraceHandlers } from '../../features/audit-trace/mocks/handlers';
@@ -15,6 +16,7 @@ import { workloadHandlers } from '../../features/workloads/mocks/handlers';
 import { auditExportHandlers } from '../../features/audit-export/mocks/handlers';
 
 export const handlers = [
+  ...aiOperationsHandlers,
   ...authHandlers,
   ...auditExportHandlers,
   ...adminIdentityHandlers,
