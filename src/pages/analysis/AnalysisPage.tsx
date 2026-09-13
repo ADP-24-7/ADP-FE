@@ -1,5 +1,6 @@
 import { Activity, AlertTriangle, Clock3, ListRestart, ShieldX, Workflow } from 'lucide-react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { AiEvaluationPanel } from '../../features/ai-evaluation';
 import { useOperationsSummary } from '../../features/operations-monitoring';
 import { RecoveryOperationsPanel } from '../../features/recovery-operations';
@@ -17,9 +18,16 @@ function secondsLabel(value: number | null | undefined) {
 export function AnalysisPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { selectedPack } = useExecutionPack();
   const summary = useOperationsSummary(60, selectedPack.apiValue);
   const metricState = summary.isLoading ? 'loading' : summary.isError ? 'error' : 'value';
+  const [operationsView, setOperationsView] = useState<'review' | 'recovery' | 'safeguards'>(() => window.location.hash === '#review-queue' ? 'review' : 'recovery');
+
+  useEffect(() => {
+    if (location.hash === '#review-queue') setOperationsView('review');
+    if (location.hash === '#recovery-incidents') setOperationsView('recovery');
+  }, [location.hash]);
 
   if (selectedPack.key === 'ai') {
     return (
@@ -60,28 +68,34 @@ export function AnalysisPage() {
       />
 
       <div className="metric-grid metric-grid-six">
-        <MetricCard label="Runtime Total" value={summary.data?.runtime.total} description="최근 60분 실행" state={metricState} icon={Activity} tone="blue" />
-        <MetricCard label="Runtime Failed" value={summary.data?.runtime.failed} description="FAILED terminal" state={metricState} icon={ShieldX} tone="red" />
-        <MetricCard label="Recovery Backlog" value={summary.data?.recovery.backlog} description="자동 처리 대기" state={metricState} icon={Workflow} tone="purple" />
-        <MetricCard label="Manual Review" value={summary.data?.recovery.manualReview} description="운영자 검토 필요" state={metricState} icon={AlertTriangle} tone="amber" />
-        <MetricCard label="Stale Operations" value={summary.data?.recovery.staleOperations} description="임계시간 초과 명령" state={metricState} icon={ListRestart} tone="red" />
-        <MetricCard label="Oldest Backlog" value={secondsLabel(summary.data?.recovery.oldestBacklogAgeSeconds)} description="가장 오래된 대기" state={metricState} icon={Clock3} tone="amber" />
+        <MetricCard label="최근 실행" value={summary.data?.runtime.total} description="최근 60분 전체 실행" state={metricState} icon={Activity} tone="blue" />
+        <MetricCard label="실행 실패" value={summary.data?.runtime.failed} description="복구 전환이 필요한 실패" state={metricState} icon={ShieldX} tone="red" />
+        <MetricCard label="복구 대기" value={summary.data?.recovery.backlog} description="자동 상태 확인 대기" state={metricState} icon={Workflow} tone="purple" />
+        <MetricCard label="수동 검토" value={summary.data?.recovery.manualReview} description="운영자 판단 필요" state={metricState} icon={AlertTriangle} tone="amber" />
+        <MetricCard label="처리 지연" value={summary.data?.recovery.staleOperations} description="임계시간을 넘긴 명령" state={metricState} icon={ListRestart} tone="red" />
+        <MetricCard label="최장 대기" value={secondsLabel(summary.data?.recovery.oldestBacklogAgeSeconds)} description="가장 오래된 복구 대기" state={metricState} icon={Clock3} tone="amber" />
       </div>
 
       {summary.isError ? (
         <ErrorState title="운영 Summary를 불러오지 못했습니다" description={normalizeApiError(summary.error).message} onRetry={() => summary.refetch()} />
       ) : null}
 
-      <div id="review-queue" className="anchored-section">
+      <div className="admin-workspace-tabs" role="tablist" aria-label="Digital Asset 운영 업무">
+        <button type="button" role="tab" aria-selected={operationsView === 'review'} className={operationsView === 'review' ? 'active' : ''} onClick={() => setOperationsView('review')}>검토 대기</button>
+        <button type="button" role="tab" aria-selected={operationsView === 'recovery'} className={operationsView === 'recovery' ? 'active' : ''} onClick={() => setOperationsView('recovery')}>복구 처리</button>
+        <button type="button" role="tab" aria-selected={operationsView === 'safeguards'} className={operationsView === 'safeguards' ? 'active' : ''} onClick={() => setOperationsView('safeguards')}>안전 기준</button>
+      </div>
+
+      {operationsView === 'review' ? <div id="review-queue" className="anchored-section">
         <ReviewQueuePanel
           key={`review-${selectedPack.key}`}
           executionPack="DIGITAL_ASSET"
           onOpenTrace={(executionId, section) => navigate(`/audit?executionId=${encodeURIComponent(executionId)}&section=${section}`)}
-          onOpenRecovery={(recoveryId) => setSearchParams({ recoveryId }, { replace: true })}
+          onOpenRecovery={(recoveryId) => { setOperationsView('recovery'); setSearchParams({ recoveryId }, { replace: true }); }}
         />
-      </div>
+      </div> : null}
 
-      <div id="recovery-incidents" className="anchored-section">
+      {operationsView === 'recovery' ? <div id="recovery-incidents" className="anchored-section">
         <RecoveryOperationsPanel
           key={`recovery-${selectedPack.key}`}
           executionPack={selectedPack.apiValue}
@@ -91,9 +105,9 @@ export function AnalysisPage() {
             else setSearchParams({}, { replace: true });
           }}
         />
-      </div>
+      </div> : null}
 
-      <SectionCard title="Recovery 안전 경계" description="BE-9 worker와 수동 명령이 공유하는 fail-closed 처리 순서">
+      {operationsView === 'safeguards' ? <SectionCard title="복구 안전 기준" description="자동 Worker와 수동 명령이 공유하는 보수적 처리 순서">
         <div className="runtime-stage-grid">
           {[
             ['01', 'Claim + Lease', '중복 Worker 차단', 'PostgreSQL claim boundary'],
@@ -111,7 +125,7 @@ export function AnalysisPage() {
           ))}
         </div>
         <p className="helper-text">명령 실패 시 같은 논리 재시도는 같은 operationId를 유지합니다. 성공하거나 다른 명령을 선택할 때만 새 ID를 생성합니다.</p>
-      </SectionCard>
+      </SectionCard> : null}
     </section>
   );
 }

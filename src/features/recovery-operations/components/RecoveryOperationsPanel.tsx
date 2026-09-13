@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { normalizeApiError } from '../../../shared/api/apiError';
 import { EmptyState, ErrorState, KeyValues, LoadingPanel, SectionCard, StatusBadge } from '../../../shared/components';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../../shared/config/pagination';
+import { workloadDisplayName } from '../../../shared/config/adminLabels';
 import { useRecoveryCommand, useRecoveryIncident, useRecoveryIncidents } from '../hooks/useRecoveryOperations';
 import { getRecoveryCommandAvailability } from '../model/recoveryCommandPolicy';
 import type { RecoveryOperationType, RecoveryStatus } from '../model/types';
@@ -17,6 +18,11 @@ const recoveryStatuses: RecoveryStatus[] = [
   'MANUAL_REVIEW',
   'EXHAUSTED',
 ];
+
+const recoveryStatusLabels: Record<RecoveryStatus, string> = {
+  PENDING: '확인 대기', CLAIMED: '처리 중', RETRY_SCHEDULED: '재시도 예약',
+  RECONCILED: '상태 조정 완료', MANUAL_REVIEW: '수동 검토', EXHAUSTED: '자동 처리 종료',
+};
 
 const commandCopy: Record<RecoveryOperationType, { label: string; description: string }> = {
   RECONCILE: {
@@ -128,10 +134,10 @@ export function RecoveryOperationsPanel({ executionPack, initialRecoveryId = '',
   }
 
   return (
-    <>
+    <div className="recovery-workspace">
       <SectionCard
-        title="Recovery Incident"
-        description={`${executionPack} Pack과 현재 사용자에게 허용된 Institution·Workload 범위의 외부 실행 불명 상태를 조회합니다.`}
+        title="복구 대상 실행"
+        description="외부 처리 결과가 확정되지 않아 상태 확인이나 운영자 판단이 필요한 실행입니다."
         actions={(
           <div className="section-action-group">
             {isRefreshing ? <StatusBadge tone="warning">REFRESHING</StatusBadge> : null}
@@ -143,17 +149,17 @@ export function RecoveryOperationsPanel({ executionPack, initialRecoveryId = '',
       >
         <div className="recovery-toolbar">
           <label className="field">
-            <span>Recovery Status</span>
+            <span>복구 상태</span>
             <select value={status} onChange={(event) => changeStatus(event.target.value as RecoveryStatus | '')}>
               <option value="">전체 상태</option>
-              {recoveryStatuses.map((item) => <option key={item} value={item}>{item}</option>)}
+              {recoveryStatuses.map((item) => <option key={item} value={item}>{recoveryStatusLabels[item]}</option>)}
             </select>
           </label>
         </div>
 
         <div className={`table-shell recovery-table-shell${isRefreshing ? ' is-refreshing' : ''}`} aria-busy={isRefreshing}>
           <div className="table-head table-recovery">
-            <span>UPDATED</span><span>RECOVERY / EXECUTION</span><span>WORKLOAD</span><span>STATUS</span><span>ATTEMPT</span><span>DISPOSITION</span>
+            <span>최근 변경</span><span>복구·실행 ID</span><span>업무</span><span>복구 상태</span><span>시도</span><span>재처리 조건</span>
           </div>
           {incidents.isLoading ? <LoadingPanel label="Recovery Incident를 불러오는 중입니다" /> : incidents.isError ? (
             <ErrorState description={normalizeApiError(incidents.error).message} onRetry={() => incidents.refetch()} />
@@ -167,16 +173,16 @@ export function RecoveryOperationsPanel({ executionPack, initialRecoveryId = '',
             >
               <span>{new Date(item.updatedAt).toLocaleString('ko-KR')}</span>
               <span><code>{item.recoveryId}</code><small>{item.executionId}</small></span>
-              <span>{item.workloadId}<small>{item.executionPack ?? 'LEGACY'} · {item.purposeCode}</small></span>
-              <StatusBadge tone={statusTone(item.recoveryStatus)}>{item.recoveryStatus}</StatusBadge>
+              <span>{workloadDisplayName(item.workloadId)}<small>{item.executionPack ?? 'LEGACY'} · {item.purposeCode}</small></span>
+              <StatusBadge tone={statusTone(item.recoveryStatus)}>{recoveryStatusLabels[item.recoveryStatus]}</StatusBadge>
               <span>{item.attemptCount} / {item.maxAttempts}</span>
               <span>{item.retryDisposition}</span>
             </button>
           )) : (
             <EmptyState
               icon={Search}
-              title="Recovery Incident가 없습니다"
-              description={status ? `${status} 조건과 현재 권한 범위에 일치하는 Incident가 없습니다.` : '현재 권한 범위에 저장된 Recovery Incident가 없습니다.'}
+              title="복구 대상 실행이 없습니다"
+              description={status ? `${recoveryStatusLabels[status]} 조건과 현재 권한 범위에 일치하는 실행이 없습니다.` : '현재 권한 범위에 저장된 복구 대상 실행이 없습니다.'}
               endpoint="GET /api/admin/recovery/incidents"
             />
           )}
@@ -192,9 +198,9 @@ export function RecoveryOperationsPanel({ executionPack, initialRecoveryId = '',
       </SectionCard>
 
       <div className="content-grid content-grid-wide-left recovery-detail-grid">
-        <SectionCard title="Incident Detail" description="Provider correlation 원문을 제외한 상태와 Digest Evidence">
+        <SectionCard title="복구 상세" description="외부 상태와 처리 이력을 원문 없이 확인합니다.">
           {!selectedRecoveryId ? (
-            <EmptyState icon={Search} title="Incident 선택 대기" description="위 목록에서 Recovery Incident를 선택하세요." />
+            <EmptyState icon={Search} title="복구 대상 선택 대기" description="왼쪽 목록에서 확인할 실행을 선택하세요." />
           ) : detail.isLoading ? <LoadingPanel label="Recovery 상세를 불러오는 중입니다" /> : detail.isError ? (
             <ErrorState description={normalizeApiError(detail.error).message} onRetry={() => detail.refetch()} />
           ) : detail.data ? (
@@ -227,7 +233,7 @@ export function RecoveryOperationsPanel({ executionPack, initialRecoveryId = '',
           ) : null}
         </SectionCard>
 
-        <SectionCard title="Recovery Command" description="모든 명령은 PRIVILEGED_OPERATOR와 operationId 멱등성을 BE가 검증합니다.">
+        <SectionCard title="복구 조치" description="현재 상태에서 안전하게 실행할 수 있는 조치만 활성화됩니다.">
           {!detail.data ? (
             <EmptyState icon={ShieldAlert} title="Incident 선택 필요" description="명령을 실행할 Recovery Incident를 먼저 선택하세요." />
           ) : !availableCommands.length ? (
@@ -295,6 +301,6 @@ export function RecoveryOperationsPanel({ executionPack, initialRecoveryId = '',
           )}
         </SectionCard>
       </div>
-    </>
+    </div>
   );
 }

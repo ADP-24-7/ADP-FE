@@ -24,7 +24,7 @@ describe('SecurityFindingPanel', () => {
     const { onOpenTrace } = renderPanel();
 
     await user.click(await screen.findByRole('button', { name: /exec-security-finding-contract/ }));
-    expect(await screen.findByText('Evidence Digest')).toBeInTheDocument();
+    expect(await screen.findByText('증적 Digest')).toBeInTheDocument();
     expect(screen.queryByText('010-1234-5678')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Decision Trace' }));

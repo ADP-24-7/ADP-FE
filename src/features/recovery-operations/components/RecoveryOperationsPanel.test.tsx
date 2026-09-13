@@ -51,7 +51,7 @@ describe('RecoveryOperationsPanel', () => {
   it('synchronizes the selected incident when the URL-owned recovery ID changes', async () => {
     const { rerenderRecoveryId } = renderPanel();
 
-    expect(screen.getByText('Incident 선택 대기')).toBeInTheDocument();
+    expect(screen.getByText('복구 대상 선택 대기')).toBeInTheDocument();
     rerenderRecoveryId('recovery-contract');
 
     expect(await screen.findByText('Recovery ID')).toBeInTheDocument();
@@ -154,12 +154,12 @@ describe('RecoveryOperationsPanel', () => {
 
     await user.click(await screen.findByRole('button', { name: /recovery-contract/ }));
     expect(await screen.findByText('Recovery ID')).toBeInTheDocument();
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Recovery Status' }), 'EXHAUSTED');
+    await user.selectOptions(screen.getByRole('combobox', { name: '복구 상태' }), 'EXHAUSTED');
 
-    expect(screen.getByText('Incident 선택 대기')).toBeInTheDocument();
+    expect(screen.getByText('복구 대상 선택 대기')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /recovery-contract/ })).toBeDisabled();
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
-    expect(await screen.findByText('Recovery Incident가 없습니다')).toBeInTheDocument();
+    expect(await screen.findByText('복구 대상 실행이 없습니다')).toBeInTheDocument();
   });
 
   it('keeps the selected incident while moving to another result page', async () => {

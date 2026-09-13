@@ -163,7 +163,7 @@ export function AuditExportWorkPanel() {
     requestedViewAllowed && requestedView ? requestedView : 'MY_REQUESTS',
   );
   const [page, setPage] = useState(0);
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
+  const [expandedId, setExpandedId] = useState('');
   const summary = useAuditExportWorkSummary(exportEligible);
   const work = useAuditExportWork(view, page, PAGE_SIZE, exportEligible && canAccessView(view, exportEligible, privileged, auditor));
   const decide = useDecideAuditExport();
@@ -187,7 +187,7 @@ export function AuditExportWorkPanel() {
   }, [page, pages]);
 
   function closeDetails() {
-    setExpandedIds(new Set());
+    setExpandedId('');
   }
 
   function selectView(next: AuditExportWorkView) {
@@ -198,29 +198,24 @@ export function AuditExportWorkPanel() {
   }
 
   function toggleJob(exportId: string) {
-    setExpandedIds((current) => {
-      const next = new Set(current);
-      if (next.has(exportId)) next.delete(exportId);
-      else next.add(exportId);
-      return next;
-    });
+    setExpandedId((current) => current === exportId ? '' : exportId);
   }
 
   async function approveJob(exportId: string) {
     await decide.mutateAsync({ exportId, action: 'APPROVE', reason: APPROVAL_REASON });
-    setExpandedIds((current) => new Set([...current].filter((id) => id !== exportId)));
+    setExpandedId('');
     await work.refetch();
   }
 
   async function rejectJob(exportId: string, reason: string) {
     await decide.mutateAsync({ exportId, action: 'REJECT', reason });
-    setExpandedIds((current) => new Set([...current].filter((id) => id !== exportId)));
+    setExpandedId('');
     await work.refetch();
   }
 
   async function revokeJob(exportId: string, reason: string) {
     await decide.mutateAsync({ exportId, action: 'REVOKE', reason });
-    setExpandedIds((current) => new Set([...current].filter((id) => id !== exportId)));
+    setExpandedId('');
     await work.refetch();
   }
 
@@ -243,7 +238,7 @@ export function AuditExportWorkPanel() {
       reason,
       idempotencyKey: `audit-export-rerequest-${crypto.randomUUID()}`,
     });
-    setExpandedIds((current) => new Set([...current].filter((id) => id !== job.exportId)));
+    setExpandedId('');
     selectView('MY_REQUESTS');
   }
 
@@ -263,7 +258,7 @@ export function AuditExportWorkPanel() {
 
     <div className="table-shell approval-work-table-shell">
       <div className="table-head table-approval-work"><span>상태</span><span>요청</span><span>요청자 / 처리자</span><span>요청일 / 처리일</span><span>작업</span></div>
-      {work.isLoading ? <LoadingPanel label="승인 업무를 불러오는 중입니다" /> : work.isError ? <ErrorState description={normalizeApiError(work.error).message} onRetry={() => work.refetch()} /> : work.data?.items.length ? work.data.items.map((job) => <ApprovalWorkRow key={job.exportId} job={job} view={view} privileged={privileged} expanded={expandedIds.has(job.exportId)} deciding={decide.isPending || create.isPending} downloading={download.isPending} onToggle={toggleJob} onApprove={approveJob} onReject={rejectJob} onRevoke={revokeJob} onDownload={downloadJob} onRerequest={rerequestJob} onInspectExecution={(executionId) => navigate(`/audit?executionId=${encodeURIComponent(executionId)}&section=decision`)} />) : <EmptyState title="표시할 승인 업무가 없습니다" description="현재 계정과 권한 범위에 해당하는 감사 증적 요청이 없습니다." />}
+      {work.isLoading ? <LoadingPanel label="승인 업무를 불러오는 중입니다" /> : work.isError ? <ErrorState description={normalizeApiError(work.error).message} onRetry={() => work.refetch()} /> : work.data?.items.length ? work.data.items.map((job) => <ApprovalWorkRow key={job.exportId} job={job} view={view} privileged={privileged} expanded={expandedId === job.exportId} deciding={decide.isPending || create.isPending} downloading={download.isPending} onToggle={toggleJob} onApprove={approveJob} onReject={rejectJob} onRevoke={revokeJob} onDownload={downloadJob} onRerequest={rerequestJob} onInspectExecution={(executionId) => navigate(`/audit?executionId=${encodeURIComponent(executionId)}&section=decision`)} />) : <EmptyState title="표시할 승인 업무가 없습니다" description="현재 계정과 권한 범위에 해당하는 감사 증적 요청이 없습니다." />}
     </div>
     <div className="pagination-row"><span>{work.data ? `${work.data.totalElements}건 · 페이지당 ${PAGE_SIZE}건` : '조회 대기'}</span><div className="numbered-pagination">
       <button className="button button-secondary" type="button" disabled={page === 0} onClick={() => { setPage((value) => value - 1); closeDetails(); }}>이전</button>

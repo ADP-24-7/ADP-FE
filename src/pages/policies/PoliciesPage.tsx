@@ -1,6 +1,6 @@
 import { ArrowRight, LockKeyhole } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { DigitalAssetArtifactPanel } from '../../features/digital-asset';
 import { PolicyArtifactCreatePanel, PolicyGovernancePanel, PolicyOperationsBrowser, usePolicyLifecycle } from '../../features/policy-lifecycle';
 import { EmptyState, KeyValues, PackContextSummary, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
@@ -20,10 +20,19 @@ const lifecycle = [
 
 export function PoliciesPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { selectedPack } = useExecutionPack();
   const [lookup, setLookup] = useState({ artifactId: '', artifactVersion: '' });
   const policy = usePolicyLifecycle(lookup.artifactId, lookup.artifactVersion);
   const executionPack = selectedPack.key === 'digital-asset' ? 'DIGITAL_ASSET' : 'AI';
+  const requestedSection = searchParams.get('section');
+  const activeSection = requestedSection === 'approvals' || requestedSection === 'evidence' || requestedSection === 'boundaries'
+    ? requestedSection
+    : 'policies';
+
+  function selectSection(section: 'policies' | 'approvals' | 'evidence' | 'boundaries') {
+    setSearchParams(section === 'policies' ? {} : { section });
+  }
 
   useEffect(() => {
     setLookup({ artifactId: '', artifactVersion: '' });
@@ -39,14 +48,21 @@ export function PoliciesPage() {
 
       <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} objective={selectedPack.objective} />
 
-      <div id="approvals" className="anchored-section"><AuditExportWorkPanel /></div>
+      <div className="admin-workspace-tabs" role="tablist" aria-label="정책 관리 업무">
+        <button type="button" role="tab" aria-selected={activeSection === 'policies'} className={activeSection === 'policies' ? 'active' : ''} onClick={() => selectSection('policies')}>정책 현황</button>
+        <button type="button" role="tab" aria-selected={activeSection === 'approvals'} className={activeSection === 'approvals' ? 'active' : ''} onClick={() => selectSection('approvals')}>승인 업무</button>
+        <button type="button" role="tab" aria-selected={activeSection === 'evidence'} className={activeSection === 'evidence' ? 'active' : ''} onClick={() => selectSection('evidence')}>참조 근거</button>
+        <button type="button" role="tab" aria-selected={activeSection === 'boundaries'} className={activeSection === 'boundaries' ? 'active' : ''} onClick={() => selectSection('boundaries')}>통제 기준</button>
+      </div>
 
-      {selectedPack.key === 'digital-asset' ? (
+      {activeSection === 'approvals' ? <div id="approvals" className="anchored-section"><AuditExportWorkPanel /></div> : null}
+
+      {activeSection === 'policies' && selectedPack.key === 'digital-asset' ? (
         <DigitalAssetArtifactPanel
           onOpenTrace={(executionId) => navigate(`/audit?executionId=${encodeURIComponent(executionId)}`)}
         />
       ) : null}
-      {selectedPack.key === 'ai' ? (
+      {activeSection === 'policies' && selectedPack.key === 'ai' ? (
         <PolicyArtifactCreatePanel
           onCreated={(record) => {
             setLookup({ artifactId: record.artifactId, artifactVersion: record.artifactVersion });
@@ -54,7 +70,7 @@ export function PoliciesPage() {
         />
       ) : null}
 
-      <SectionCard title="정책 라이프사이클" description={`${selectedPack.label} 정책이 Runtime에 적용되기 전 거치는 승인 단계`}>
+      {activeSection === 'policies' ? <><SectionCard title="정책 라이프사이클" description={`${selectedPack.label} 정책이 Runtime에 적용되기 전 거치는 승인 단계`}>
         <div className="lifecycle-row lifecycle-flow">
           {lifecycle.map(([state, owner], index) => (
             <div className="lifecycle-step" key={state}>
@@ -76,11 +92,12 @@ export function PoliciesPage() {
         onClearSelection={() => setLookup({ artifactId: '', artifactVersion: '' })}
       />
 
-      <ReferenceEvidencePanel />
-
       {policy.data ? <PolicyGovernancePanel key={`${policy.data.artifactId}:${policy.data.artifactVersion}`} policy={policy.data} /> : null}
+      </> : null}
 
-      <SectionCard title="승인된 실행 경계" description="Role·Purpose·Data·Destination·Action 조건">
+      {activeSection === 'evidence' ? <ReferenceEvidencePanel /> : null}
+
+      {activeSection === 'boundaries' ? <><SectionCard title="승인된 실행 경계" description="역할·목적·데이터·외부 대상·행동 조건">
         <div className="policy-boundary-grid">
           {[
             ['Identity', selectedPack.key === 'digital-asset' ? 'PAYMENT_OPERATOR · CARD_PURCHASE' : 'BRANCH_STAFF · CUSTOMER_SUPPORT'],
@@ -125,6 +142,7 @@ export function PoliciesPage() {
           <EmptyState compact title="상단 Artifact 도구에서 조회" description="BE-owned strict schema와 digest 검증 결과를 실제 Lifecycle Candidate로 확인합니다." endpoint="GET /api/admin/digital-assets/artifacts/{artifactId}/versions/{version}" />
         </SectionCard> : null}
       </div>
+      </> : null}
     </section>
   );
 }

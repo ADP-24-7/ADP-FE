@@ -369,43 +369,43 @@ export function GatewayLabPage() {
               </div>
             </div>
             <label className="field">
-              <span>Institution ID</span>
+              <span>기관</span>
               <input value={institutionId} onChange={(event) => markLogicalRequestChanged(() => setInstitutionId(event.target.value))} placeholder="institution identifier" required />
             </label>
             <label className="field">
-              <span>Approval Reference</span>
+              <span>사전 승인 참조</span>
               <input value={approvalReference} onChange={(event) => markLogicalRequestChanged(() => setApprovalReference(event.target.value))} placeholder="approved policy reference" required />
             </label>
             <label className="field">
-              <span>Workload ID</span>
+              <span>업무 ID</span>
               <input value={workloadId} onChange={(event) => markLogicalRequestChanged(() => setWorkloadId(event.target.value))} placeholder={selectedPack.gatewayRequest.workloadPlaceholder} required />
             </label>
             <label className="field">
-              <span>Purpose Code</span>
+              <span>실행 목적</span>
               <input value={purposeCode} onChange={(event) => markLogicalRequestChanged(() => setPurposeCode(event.target.value))} placeholder={selectedPack.gatewayRequest.purposePlaceholder} required />
             </label>
             <label className="field">
-              <span>Subject Scope</span>
+              <span>업무 대상 범위</span>
               <input value={subjectScope} onChange={(event) => markLogicalRequestChanged(() => setSubjectScope(event.target.value))} placeholder={selectedPack.gatewayRequest.subjectPlaceholder} required />
             </label>
             <label className="field">
-              <span>Destination Profile ID</span>
+              <span>외부 실행 대상</span>
               <input value={destinationProfileId} onChange={(event) => markLogicalRequestChanged(() => setDestinationProfileId(event.target.value))} placeholder={selectedPack.gatewayRequest.destinationPlaceholder} required />
             </label>
             {isDigitalAsset ? (
               <>
-                <label className="field field-full"><span>Approved Transaction Reference</span><input value={approvedTransactionReference} onChange={(event) => markLogicalRequestChanged(() => setApprovedTransactionReference(event.target.value))} placeholder="approved-tx-local-001" required /></label>
-                <label className="field"><span>Customer ID</span><input value={customerId} onChange={(event) => markLogicalRequestChanged(() => setCustomerId(event.target.value))} required /></label>
-                <label className="field"><span>Account ID</span><input value={accountId} onChange={(event) => markLogicalRequestChanged(() => setAccountId(event.target.value))} required /></label>
-                <label className="field"><span>Chain ID</span><input value={chainId} onChange={(event) => markLogicalRequestChanged(() => setChainId(event.target.value))} placeholder="eip155:1" required /></label>
-                <label className="field"><span>Asset Kind</span><select value={assetKind} onChange={(event) => markLogicalRequestChanged(() => setAssetKind(event.target.value as DigitalAssetKind))}><option value="NATIVE">NATIVE</option><option value="FUNGIBLE_TOKEN">FUNGIBLE_TOKEN</option><option value="NON_FUNGIBLE_TOKEN">NON_FUNGIBLE_TOKEN</option></select></label>
-                <label className="field"><span>Asset Symbol</span><input value={assetSymbol} onChange={(event) => markLogicalRequestChanged(() => setAssetSymbol(event.target.value))} required /></label>
-                <label className="field"><span>Operation</span><select value={operation} onChange={(event) => markLogicalRequestChanged(() => setOperation(event.target.value as DigitalAssetOperation))}><option value="TRANSFER">TRANSFER</option><option value="CONTRACT_CALL">CONTRACT_CALL</option></select></label>
+                <label className="field field-full"><span>승인된 거래 참조</span><input value={approvedTransactionReference} onChange={(event) => markLogicalRequestChanged(() => setApprovedTransactionReference(event.target.value))} placeholder="approved-tx-local-001" required /></label>
+                <label className="field"><span>고객 ID</span><input value={customerId} onChange={(event) => markLogicalRequestChanged(() => setCustomerId(event.target.value))} required /></label>
+                <label className="field"><span>계좌 ID</span><input value={accountId} onChange={(event) => markLogicalRequestChanged(() => setAccountId(event.target.value))} required /></label>
+                <label className="field"><span>네트워크</span><input value={chainId} onChange={(event) => markLogicalRequestChanged(() => setChainId(event.target.value))} placeholder="eip155:1" required /></label>
+                <label className="field"><span>자산 유형</span><select value={assetKind} onChange={(event) => markLogicalRequestChanged(() => setAssetKind(event.target.value as DigitalAssetKind))}><option value="NATIVE">네이티브 자산</option><option value="FUNGIBLE_TOKEN">대체 가능 토큰</option><option value="NON_FUNGIBLE_TOKEN">NFT</option></select></label>
+                <label className="field"><span>자산 심볼</span><input value={assetSymbol} onChange={(event) => markLogicalRequestChanged(() => setAssetSymbol(event.target.value))} required /></label>
+                <label className="field"><span>거래 방식</span><select value={operation} onChange={(event) => markLogicalRequestChanged(() => setOperation(event.target.value as DigitalAssetOperation))}><option value="TRANSFER">전송</option><option value="CONTRACT_CALL">계약 호출</option></select></label>
                 {assetKind !== 'NATIVE' ? <label className="field field-full"><span>Asset Contract Address</span><input value={assetContractAddress} onChange={(event) => markLogicalRequestChanged(() => setAssetContractAddress(event.target.value))} required /></label> : null}
                 {assetKind === 'NON_FUNGIBLE_TOKEN' ? <label className="field field-full"><span>Token ID</span><input value={tokenId} onChange={(event) => markLogicalRequestChanged(() => setTokenId(event.target.value))} required /></label> : null}
-                <label className="field"><span>Requested Amount (Atomic Units)</span><input inputMode="numeric" pattern="[0-9]+" value={requestedAmount} onChange={(event) => markLogicalRequestChanged(() => setRequestedAmount(event.target.value))} required /></label>
-                <label className="field"><span>Requested Destination</span><input value={requestedDestination} onChange={(event) => markLogicalRequestChanged(() => setRequestedDestination(event.target.value))} required /></label>
-                <label className="field field-full"><span>Beneficiary Reference</span><input value={requestedBeneficiaryReference} onChange={(event) => markLogicalRequestChanged(() => setRequestedBeneficiaryReference(event.target.value))} required /></label>
+                <label className="field"><span>요청 수량 (최소 단위)</span><input inputMode="numeric" pattern="[0-9]+" value={requestedAmount} onChange={(event) => markLogicalRequestChanged(() => setRequestedAmount(event.target.value))} required /></label>
+                <label className="field"><span>요청 목적지</span><input value={requestedDestination} onChange={(event) => markLogicalRequestChanged(() => setRequestedDestination(event.target.value))} required /></label>
+                <label className="field field-full"><span>수취인 참조</span><input value={requestedBeneficiaryReference} onChange={(event) => markLogicalRequestChanged(() => setRequestedBeneficiaryReference(event.target.value))} required /></label>
               </>
             ) : (
               <>
@@ -418,7 +418,7 @@ export function GatewayLabPage() {
               </>
             )}
             <label className="field field-full">
-              <span>Processing Contexts</span>
+              <span>적용 통제 범위</span>
               <input value={processingContextsText} onChange={(event) => markLogicalRequestChanged(() => setProcessingContextsText(event.target.value))} placeholder={selectedPack.defaultProcessingContexts.join(', ')} required />
             </label>
             <KeyValues
@@ -538,6 +538,8 @@ export function GatewayLabPage() {
         </SectionCard>
       </div>
 
+      <details className="lab-technical-evidence">
+        <summary>실행 경로 및 기술 증적</summary>
       <div className="gateway-lower-grid">
         <SectionCard title="Target Pipeline" description="선택된 Pack에 적용할 목표 Gateway 처리 단계" actions={<StatusBadge tone="purple">TARGET</StatusBadge>}>
           <div className="checkpoint-list">
@@ -649,6 +651,7 @@ export function GatewayLabPage() {
           </SectionCard>
         </div>
       </div>
+      </details>
     </section>
   );
 }
