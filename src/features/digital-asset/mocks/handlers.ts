@@ -62,7 +62,19 @@ export const digitalAssetHandlers = [
     trend: [{ date: '2026-09-13', total: 1, completed: 1, blocked: 0, failed: 0, sentUnknown: 0, reconciled: 0 }],
     violations: [{ stage: 'PRE_EXECUTION', reasonCode: 'DIGITAL_ASSET_APPROVED_AMOUNT_EXCEEDED', count: 13 }],
     hourlyStatuses: [{ hour: 14, status: 'COMPLETED', count: 1 }],
-    recentSignals: [],
+    recentSignals: [
+      {
+        executionId: 'exec-da-failed-001',
+        signalType: 'EXECUTION_FAILED',
+        severity: 'CRITICAL',
+        status: 'FAILED',
+        workloadId: 'tokenized_asset_purchase',
+        stage: 'EXTERNAL_EXECUTION',
+        reasonCode: 'TRANSPORT_ERROR',
+        nextAction: 'INSPECT_EXECUTION_FAILURE',
+        occurredAt: '2026-09-14T01:20:00Z',
+      },
+    ],
     recentExecutions: [],
     coverage: {
       runtimeExecutions: 179,

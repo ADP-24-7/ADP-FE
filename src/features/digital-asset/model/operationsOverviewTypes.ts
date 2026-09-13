@@ -34,7 +34,10 @@ export type DigitalAssetOperationsOverview = {
     signalType: string;
     severity: 'CRITICAL' | 'WARNING' | 'INFO';
     status: string;
+    workloadId: string;
+    stage: string;
     reasonCode: string | null;
+    nextAction: string;
     occurredAt: string;
   }>;
   recentExecutions: Array<{

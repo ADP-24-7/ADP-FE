@@ -1,4 +1,4 @@
-import { type FormEvent, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity,
   AlertTriangle,
@@ -9,6 +9,7 @@ import {
   FileText,
   RefreshCw,
   RotateCw,
+  X,
   XCircle,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -32,7 +33,48 @@ const reasonLabels: Record<string, string> = {
   AMOUNT: '실행 금액 불일치',
   RECIPIENT_ADDRESS: '실행 수신 주소 불일치',
   EXTERNAL_REQUEST_ID: '외부 요청 ID 불일치',
+  PROVIDER_NOT_CONFIGURED: '외부 실행 대상 설정 누락',
+  TRANSPORT_ERROR: '외부 실행 통신 오류',
+  SENT_UNKNOWN: '외부 처리 결과 미확정',
+  FAILED: '외부 실행 실패',
 };
+
+const stageLabels: Record<string, string> = {
+  POLICY_DECISION: '정책 판정',
+  PRE_EXECUTION_GUARD: '실행 전 통제',
+  EXTERNAL_EXECUTION: '외부 실행',
+  POST_EXECUTION_EVIDENCE: '실행 결과 검증',
+  RECONCILIATION: '외부 상태 조정',
+};
+
+const actionLabels: Record<string, string> = {
+  INSPECT_EXECUTION_FAILURE: '실패 원인과 외부 응답을 확인하세요.',
+  REVIEW_POLICY_DECISION: '차단 정책과 승인 조건을 확인하세요.',
+  REVIEW_EVIDENCE: '예상값과 실제 실행 증적을 비교하세요.',
+  RECONCILE_EXTERNAL_STATUS: '재전송 전 외부 상태를 먼저 확인하세요.',
+  VERIFY_RECONCILIATION_EVIDENCE: '조정 완료 증적을 확인하세요.',
+};
+
+const heatmapColors: Record<string, string> = {
+  COMPLETED: '28, 173, 112',
+  BLOCKED: '236, 79, 95',
+  FAILED: '190, 43, 58',
+  EGRESSING: '242, 165, 26',
+  EXTERNALLY_RECONCILED: '40, 120, 232',
+  REVIEW_REQUIRED: '112, 87, 217',
+};
+
+const heatmapStatusOrder = ['COMPLETED', 'BLOCKED', 'FAILED', 'EGRESSING', 'EXTERNALLY_RECONCILED', 'REVIEW_REQUIRED'];
+
+function flowNodeColor(name: string) {
+  if (name.includes('FAILED') || name.includes('BLOCK')) return palette.red;
+  if (name.includes('UNCERTAIN') || name.includes('EGRESSING')) return palette.amber;
+  if (name.includes('REVIEW')) return palette.purple;
+  if (name.includes('RECONCILED')) return palette.blue;
+  if (name.includes('SUCCEEDED') || name.includes('COMPLETED') || name.includes('PASS')) return palette.green;
+  if (name.includes('NOT_SENT') || name.includes('NOT_EVALUATED')) return palette.gray;
+  return palette.blue;
+}
 
 const statusLabels: Record<string, string> = {
   REQUESTED: '전체 요청', DECISION_PASS: '정책 통과', DECISION_BLOCK: '정책 차단',
@@ -99,6 +141,7 @@ function MetricTile({ label, metric, icon: Icon, tone, adverse = false }: {
 
 export function DigitalAssetOperationsOverviewDashboard() {
   const navigate = useNavigate();
+  const customPopoverRef = useRef<HTMLDivElement>(null);
   const [days, setDays] = useState<SelectedRange>(7);
   const [period, setPeriod] = useState(() => range(7));
   const [customOpen, setCustomOpen] = useState(false);
@@ -107,6 +150,22 @@ export function DigitalAssetOperationsOverviewDashboard() {
   const [rangeError, setRangeError] = useState('');
   const overview = useDigitalAssetOperationsOverview(period.from, period.to);
   const data = overview.data;
+
+  useEffect(() => {
+    if (!customOpen) return undefined;
+    const closeOnOutside = (event: PointerEvent) => {
+      if (!customPopoverRef.current?.contains(event.target as Node)) setCustomOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setCustomOpen(false);
+    };
+    document.addEventListener('pointerdown', closeOnOutside);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutside);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [customOpen]);
 
   const sankeyOption = useMemo<DashboardChartOption>(() => {
     const links = data?.flow ?? [];
@@ -132,28 +191,14 @@ export function DigitalAssetOperationsOverviewDashboard() {
         },
         labelLayout: { hideOverlap: true },
         lineStyle: { color: 'gradient', opacity: 0.28, curveness: 0.52 },
-        data: names.map((name) => ({ name, value: Math.max(incoming.get(name) ?? 0, outgoing.get(name) ?? 0) })),
+        data: names.map((name) => ({
+          name,
+          value: Math.max(incoming.get(name) ?? 0, outgoing.get(name) ?? 0),
+          itemStyle: { color: flowNodeColor(name) },
+        })),
         links: links.map((item) => ({ source: item.source, target: item.target, value: item.count })),
       }],
     };
-  }, [data?.flow]);
-
-  const flowGroups = useMemo(() => {
-    const links = data?.flow ?? [];
-    const incoming = new Map<string, number>();
-    const outgoing = new Map<string, number>();
-    links.forEach((item) => {
-      outgoing.set(item.source, (outgoing.get(item.source) ?? 0) + item.count);
-      incoming.set(item.target, (incoming.get(item.target) ?? 0) + item.count);
-    });
-    const nodes = Array.from(new Set(links.flatMap((item) => [item.source, item.target])))
-      .map((name) => ({ name, count: Math.max(incoming.get(name) ?? 0, outgoing.get(name) ?? 0) }));
-    return [
-      ['요청', nodes.filter((node) => node.name === 'REQUESTED')],
-      ['정책 판정', nodes.filter((node) => node.name.startsWith('DECISION_'))],
-      ['외부 실행', nodes.filter((node) => node.name.startsWith('EXECUTION_'))],
-      ['최종 상태', nodes.filter((node) => node.name.startsWith('FINAL_'))],
-    ] as const;
   }, [data?.flow]);
 
   const trendOption = useMemo<DashboardChartOption>(() => ({
@@ -183,21 +228,58 @@ export function DigitalAssetOperationsOverviewDashboard() {
   }, [data?.violations]);
 
   const heatmapOption = useMemo<DashboardChartOption>(() => {
-    const statuses = ['COMPLETED', 'BLOCKED', 'FAILED', 'EGRESSING', 'EXTERNALLY_RECONCILED', 'REVIEW_REQUIRED'];
     const lookup = new Map(data?.hourlyStatuses.map((item) => [`${item.hour}:${item.status}`, item.count]) ?? []);
-    const values = statuses.flatMap((status, y) => Array.from({ length: 24 }, (_, hour) => [hour, y, lookup.get(`${hour}:${status}`) ?? 0]));
+    const maximum = Math.max(1, ...Array.from(lookup.values()));
+    const values = heatmapStatusOrder.flatMap((status, y) => Array.from({ length: 24 }, (_, hour) => {
+      const count = lookup.get(`${hour}:${status}`) ?? 0;
+      const opacity = count === 0 ? 1 : Math.min(.95, .28 + (count / maximum) * .67);
+      return {
+        value: [hour, y, count],
+        itemStyle: { color: count === 0 ? '#f1f4f7' : 'rgba(' + heatmapColors[status] + ', ' + opacity + ')' },
+      };
+    }));
     return {
       tooltip: { formatter: (params: unknown) => {
         const value = (params as { value: number[] }).value;
-        return `${value[0]}시 · ${statusLabels[statuses[value[1]]] ?? statuses[value[1]]}: ${value[2]}건`;
+        const status = heatmapStatusOrder[value[1]];
+        return `${value[0]}시 · ${statusLabels[status] ?? status}: ${value[2]}건`;
       } },
+      visualMap: { show: false, min: 0, max: maximum, inRange: { color: ['#f1f4f7', '#d8e0ea'] } },
       grid: { left: 82, right: 18, top: 8, bottom: 34 },
       xAxis: { type: 'category', data: Array.from({ length: 24 }, (_, hour) => hour), splitArea: { show: true }, axisLabel: { interval: 1, fontSize: 9 } },
-      yAxis: { type: 'category', data: statuses.map((status) => statusLabels[status]), splitArea: { show: true }, axisLabel: { fontSize: 9 } },
-      visualMap: { min: 0, max: Math.max(1, ...values.map((item) => Number(item[2]))), show: false, inRange: { color: ['#edf5f2', '#9bdec1', '#15915b'] } },
+      yAxis: { type: 'category', data: heatmapStatusOrder.map((status) => statusLabels[status]), splitArea: { show: true }, axisLabel: { fontSize: 9 } },
       series: [{ type: 'heatmap', data: values, label: { show: false }, emphasis: { itemStyle: { shadowBlur: 6, shadowColor: 'rgba(0,0,0,.18)' } } }],
     };
   }, [data?.hourlyStatuses]);
+
+  const actionItems = useMemo(() => {
+    if (!data) return [];
+    const reviewRequired = data.flow
+      .filter((link) => link.target === 'FINAL_REVIEW_REQUIRED')
+      .reduce((sum, link) => sum + link.count, 0);
+    return [
+      {
+        key: 'failed', count: data.metrics.failed.current, tone: 'critical',
+        title: '실행 실패 조사', reason: '외부 실행이 정상 완료되지 않았습니다.',
+        action: '외부 응답과 실패 증적을 확인하세요.', path: '/audit?status=FAILED',
+      },
+      {
+        key: 'unknown', count: data.metrics.sentUnknown.current, tone: 'warning',
+        title: '미확정 상태 조정', reason: '외부 전송 결과를 확정하지 못했습니다.',
+        action: '재전송 전에 외부 상태를 조회하세요.', path: '/analysis#recovery-incidents',
+      },
+      {
+        key: 'review', count: reviewRequired, tone: 'review',
+        title: '검토 필요 실행', reason: '정책 또는 실행 증적 확인이 필요합니다.',
+        action: '판정과 사후 증적을 비교하세요.', path: '/analysis#review-queue',
+      },
+      {
+        key: 'blocked', count: data.metrics.blocked.current, tone: 'blocked',
+        title: '정책 차단 확인', reason: '사전 승인 조건과 요청이 일치하지 않았습니다.',
+        action: '정책 판정 사유를 확인하세요.', path: '/monitoring',
+      },
+    ].filter((item) => item.count > 0);
+  }, [data]);
 
   const selectRange = (next: RangeDays) => {
     setDays(next);
@@ -223,6 +305,7 @@ export function DigitalAssetOperationsOverviewDashboard() {
     setRangeError('');
     setDays('custom');
     setPeriod({ from: from.toISOString(), to: to.toISOString() });
+    setCustomOpen(false);
   };
 
   const refresh = () => {
@@ -241,25 +324,27 @@ export function DigitalAssetOperationsOverviewDashboard() {
           <h1>Digital Asset Overview</h1>
           <p>사전 승인 정책부터 외부 실행, 미확정 복구와 감사 증적까지 한 흐름으로 확인합니다.</p>
         </div>
-        <div className="da-overview-controls">
+        <div className="da-overview-controls" ref={customPopoverRef}>
           <span className="da-period-label"><CalendarRange size={14} />{periodLabel(period.from, period.to)}</span>
           <div className="da-range-control" aria-label="조회 기간">
             {([1, 7, 30] as RangeDays[]).map((value) => <button key={value} type="button" className={days === value ? 'active' : ''} onClick={() => selectRange(value)}>{value}D</button>)}
-            <button type="button" className={days === 'custom' || customOpen ? 'active' : ''} onClick={() => setCustomOpen((open) => !open)}>직접 설정</button>
+            <button type="button" aria-expanded={customOpen} aria-haspopup="dialog" className={days === 'custom' || customOpen ? 'active' : ''} onClick={() => setCustomOpen((open) => !open)}>직접 설정</button>
             <button type="button" aria-label="현재 기간 새로고침" onClick={refresh}><RefreshCw size={15} /></button>
           </div>
+          {customOpen ? (
+            <form className="da-custom-range" role="dialog" aria-label="사용자 지정 조회 기간" onSubmit={applyCustomRange}>
+              <div className="da-custom-range-heading"><strong>조회 기간 직접 설정</strong><button type="button" aria-label="닫기" onClick={() => setCustomOpen(false)}><X size={15} /></button></div>
+              <div className="da-custom-range-fields">
+                <label><span>시작일</span><input type="date" value={customFrom} max={customTo} onChange={(event) => setCustomFrom(event.target.value)} /></label>
+                <span aria-hidden="true">-</span>
+                <label><span>종료일</span><input type="date" value={customTo} min={customFrom} max={dateInputValue(new Date().toISOString())} onChange={(event) => setCustomTo(event.target.value)} /></label>
+              </div>
+              {rangeError ? <small role="alert">{rangeError}</small> : null}
+              <button className="da-custom-range-apply" type="submit">적용</button>
+            </form>
+          ) : null}
         </div>
       </header>
-
-      {customOpen ? (
-        <form className="da-custom-range" onSubmit={applyCustomRange}>
-          <label><span>시작일</span><input type="date" value={customFrom} max={customTo} onChange={(event) => setCustomFrom(event.target.value)} /></label>
-          <span aria-hidden="true">-</span>
-          <label><span>종료일</span><input type="date" value={customTo} min={customFrom} max={dateInputValue(new Date().toISOString())} onChange={(event) => setCustomTo(event.target.value)} /></label>
-          <button type="submit">적용</button>
-          {rangeError ? <small role="alert">{rangeError}</small> : null}
-        </form>
-      ) : null}
 
       {overview.isLoading ? <LoadingPanel label="Digital Asset 운영 현황을 불러오는 중입니다" /> : null}
       {overview.isError ? <ErrorState title="Digital Asset 운영 현황을 불러오지 못했습니다" description="현재 계정의 Institution·Workload 권한과 BE 연결 상태를 확인하세요." onRetry={() => overview.refetch()} /> : null}
@@ -275,14 +360,14 @@ export function DigitalAssetOperationsOverviewDashboard() {
         </div>
 
         <div className="da-dashboard-grid da-dashboard-grid-main">
-          <article className="da-dashboard-panel da-flow-panel"><header><div><h2>요청 처리 흐름</h2><p>요청 → 정책 판정 → 외부 실행 → 최종 상태</p></div><StatusBadge tone="info">4 STAGES</StatusBadge></header><EChart option={sankeyOption} ariaLabel="Digital Asset 요청 처리 Sankey 차트" height={280} /><div className="da-flow-summary">{flowGroups.map(([stage, nodes]) => <section key={stage}><strong>{stage}</strong><div>{nodes.map((node) => <span key={node.name}>{statusLabels[node.name] ?? node.name}<b>{node.count.toLocaleString('ko-KR')}건</b></span>)}</div></section>)}</div></article>
+          <article className="da-dashboard-panel da-flow-panel"><header><div><h2>요청 처리 흐름</h2><p>요청 → 정책 판정 → 외부 실행 → 최종 상태</p></div><StatusBadge tone="info">4 STAGES</StatusBadge></header><EChart option={sankeyOption} ariaLabel="Digital Asset 요청 처리 Sankey 차트" height={300} /></article>
           <article className="da-dashboard-panel"><header><div><h2>위반 사유</h2><p>사전 정책 위반과 사후 실행 불일치</p></div></header><EChart option={violationOption} ariaLabel="Digital Asset 위반 사유 막대 차트" height={300} /></article>
         </div>
 
         <div className="da-dashboard-grid da-dashboard-grid-secondary">
           <article className="da-dashboard-panel"><header><div><h2>거래 추이</h2><p>일별 요청과 최종 상태 건수</p></div></header><EChart option={trendOption} ariaLabel="Digital Asset 일별 거래 추이 선 차트" height={270} /></article>
-          <article className="da-dashboard-panel"><header><div><h2>실행 상태 시간 분포</h2><p>Asia/Seoul 요청 시간 기준</p></div></header><EChart option={heatmapOption} ariaLabel="Digital Asset 실행 상태 시간대 Heatmap" height={270} /></article>
-          <article className="da-dashboard-panel da-signal-panel"><header><div><h2>최근 운영 신호</h2><p>조사가 필요한 최신 상태</p></div><button type="button" onClick={() => navigate('/analysis')}>전체 보기</button></header><div className="da-signal-list">{data.recentSignals.map((signal) => <button key={signal.executionId} type="button" onClick={() => navigate(`/audit?executionId=${encodeURIComponent(signal.executionId)}`)}><span className={`da-signal-mark da-signal-${signal.severity.toLowerCase()}`}><AlertTriangle size={14} /></span><span><strong>{statusLabels[signal.status] ?? signal.signalType}</strong><small>{reasonLabels[signal.reasonCode ?? ''] ?? signal.reasonCode ?? signal.executionId}</small></span><time>{new Date(signal.occurredAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</time></button>)}</div></article>
+          <article className="da-dashboard-panel"><header><div><h2>실행 상태 시간 분포</h2><p>Asia/Seoul 요청 시간 기준</p></div></header><EChart option={heatmapOption} ariaLabel="Digital Asset 실행 상태 시간대 Heatmap" height={236} /><div className="da-heatmap-legend">{heatmapStatusOrder.map((status) => <span key={status}><i style={{ background: `rgb(${heatmapColors[status]})` }} />{statusLabels[status]}</span>)}</div></article>
+          <article className="da-dashboard-panel da-signal-panel"><header><div><h2>우선 확인 항목</h2><p>위험도와 최신성 기준 운영 신호</p></div><button type="button" onClick={() => navigate('/analysis')}>전체 보기</button></header><div className="da-signal-list">{data.recentSignals.map((signal) => <button key={signal.executionId} type="button" onClick={() => navigate(`/audit?executionId=${encodeURIComponent(signal.executionId)}`)}><span className={`da-signal-mark da-signal-${signal.severity.toLowerCase()}`}><AlertTriangle size={14} /></span><span><strong>{statusLabels[signal.status] ?? signal.signalType} · {signal.workloadId}</strong><small>{stageLabels[signal.stage] ?? signal.stage} · {reasonLabels[signal.reasonCode ?? ''] ?? signal.reasonCode ?? '상세 증적 확인 필요'}</small><em>{actionLabels[signal.nextAction] ?? signal.nextAction}</em></span><time>{new Date(signal.occurredAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</time></button>)}</div></article>
         </div>
 
         <div className="da-dashboard-grid da-dashboard-grid-data">
@@ -290,7 +375,7 @@ export function DigitalAssetOperationsOverviewDashboard() {
             ['정책 판정', data.coverage.decisionEvidence], ['사전 실행 Guard', data.coverage.preExecutionGuardEvidence],
             ['거래 실행', data.coverage.transactionEvidence], ['사후 실행 증적', data.coverage.postExecutionEvidence], ['복구 증적', data.coverage.recoveryEvidence],
           ].map(([label, value]) => <div key={String(label)}><span>{label}</span><strong>{Number(value).toLocaleString('ko-KR')}</strong><div><i style={{ width: `${data.coverage.runtimeExecutions ? Number(value) / data.coverage.runtimeExecutions * 100 : 0}%` }} /></div></div>)}</div></article>
-          <article className="da-dashboard-panel da-unavailable-panel"><header><div><h2>자산·금액·목적지 분석</h2><p>운영 DB 최소수집 경계</p></div><StatusBadge tone="neutral">NOT COLLECTED</StatusBadge></header><p>자산 Symbol, 정확 금액, 목적지 유형은 현재 Runtime Evidence에 저장하지 않습니다. 분석용 합성 데이터와 운영 지표를 혼합하지 않으며, Privacy-safe 차원 계약이 추가되기 전에는 차트를 생성하지 않습니다.</p><div>{data.coverage.unavailableDimensions.map((item) => <code key={item}>{item}</code>)}</div></article>
+          <article className="da-dashboard-panel da-action-panel"><header><div><h2>운영 조치 요약</h2><p>현재 기간에 관리자가 먼저 확인할 항목</p></div><StatusBadge tone={actionItems.length ? 'warning' : 'success'}>{actionItems.length ? `${actionItems.length} ACTIONS` : 'STABLE'}</StatusBadge></header><div className="da-action-list">{actionItems.length ? actionItems.map((item) => <button key={item.key} type="button" className={`da-action-${item.tone}`} onClick={() => navigate(item.path)}><span><strong>{item.title}</strong><b>{item.count.toLocaleString('ko-KR')}건</b></span><small>{item.reason}</small><em>{item.action}</em></button>) : <p>현재 조회 기간에 즉시 확인할 실패, 미확정, 검토 필요 또는 차단 실행이 없습니다.</p>}</div></article>
         </div>
 
         <article className="da-dashboard-panel da-recent-panel">

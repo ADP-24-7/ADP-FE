@@ -71,7 +71,8 @@ describe('App', () => {
 
     expect(window.location.pathname).toBe('/overview');
     expect(screen.getByRole('tab', { name: /Digital Asset/ })).toHaveClass('active');
-    expect(screen.getByText('Value-use · Transaction · Settlement · Reconciliation')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Digital Asset Overview' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Security Overview' })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('link', { name: /정책 · 승인/ }));
 
@@ -84,6 +85,7 @@ describe('App', () => {
 
   it('uses the global pack selector for Gateway Lab without a duplicate axis picker', async () => {
     const user = userEvent.setup();
+    window.localStorage.setItem('adp.selectedExecutionPack', 'ai');
     render(<App />);
 
     await user.click(await screen.findByRole('link', { name: '통합 관제' }));
@@ -352,19 +354,19 @@ describe('App', () => {
     expect(screen.getByText('총 12건 · 2/2 페이지')).toBeInTheDocument();
   });
 
-  it('scrolls and focuses the operations section selected from overview', async () => {
+  it('opens recovery work from the digital asset action summary', async () => {
     const user = userEvent.setup();
     window.localStorage.setItem('adp.selectedExecutionPack', 'digital-asset');
     render(<App />);
 
     await user.click(screen.getByRole('link', { name: '통합 관제' }));
-    await screen.findByRole('heading', { name: 'Security Overview' });
-    await user.click(await screen.findByRole('button', { name: /Recovery backlog/ }));
+    await screen.findByRole('heading', { name: 'Digital Asset Overview' });
+    await user.click(await screen.findByRole('button', { name: /미확정 상태 조정/ }));
 
     expect(window.location.pathname).toBe('/analysis');
     expect(window.location.hash).toBe('#recovery-incidents');
+    await waitFor(() => expect(document.getElementById('recovery-incidents')).not.toBeNull());
     const target = document.getElementById('recovery-incidents');
-    expect(target).not.toBeNull();
     await waitFor(() => expect(document.activeElement).toBe(target));
   });
 

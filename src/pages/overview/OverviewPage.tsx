@@ -34,21 +34,18 @@ export function OverviewPage() {
     [operations.data.security.institutionScopeMismatch, 'Institution scope mismatch', `${operations.data.security.institutionScopeMismatch}건 · 전체 denied ${operations.data.security.deniedAttempts}건`, '/monitoring#security-findings'],
   ].filter(([value]) => Number(value) > 0) as Array<[number, string, string, string]> : [];
 
-  return (
-    <section className="page-section">
-      {selectedPack.key === 'digital-asset' ? (
+  if (selectedPack.key === 'digital-asset') {
+    return (
+      <section className="page-section">
         <Suspense fallback={<LoadingPanel label="Digital Asset 운영 화면을 준비하는 중입니다" />}>
           <DigitalAssetOperationsOverviewDashboard />
         </Suspense>
-      ) : null}
+      </section>
+    );
+  }
 
-      {selectedPack.key === 'digital-asset' ? (
-        <div className="da-existing-overview-heading">
-          <span>기존 통합 관제</span>
-          <p>정책, 보안, 복구의 기존 운영 화면을 이어서 확인합니다.</p>
-        </div>
-      ) : null}
-
+  return (
+    <section className="page-section">
       <PageHeader
         eyebrow="POLICY DECISION → FINDING → TRACE → RECOVERY"
         title="Security Overview"
@@ -95,7 +92,7 @@ export function OverviewPage() {
             <article>
               <strong>Digital Asset</strong>
               <span>Value-use · Transaction · Settlement · Reconciliation</span>
-              <StatusBadge tone={selectedPack.key === 'digital-asset' ? 'success' : 'neutral'}>{selectedPack.key === 'digital-asset' ? 'SELECTED' : 'NOT SELECTED'}</StatusBadge>
+              <StatusBadge tone="neutral">NOT SELECTED</StatusBadge>
             </article>
           </div>
           <KeyValues
