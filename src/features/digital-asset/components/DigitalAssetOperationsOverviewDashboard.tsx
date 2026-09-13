@@ -5,10 +5,14 @@ import {
   Ban,
   CalendarRange,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Clock3,
   FileText,
   RefreshCw,
   RotateCw,
+  Search,
+  ShieldCheck,
   X,
   XCircle,
 } from 'lucide-react';
@@ -31,6 +35,7 @@ const reasonLabels: Record<string, string> = {
   DIGITAL_ASSET_APPROVED_BENEFICIARY_MISMATCH: '수익자 불일치',
   DIGITAL_ASSET_APPROVED_PERIOD_VIOLATION: '승인 기간 위반',
   AMOUNT: '실행 금액 불일치',
+  WALLET_ADDRESS: '실행 지갑 주소 불일치',
   RECIPIENT_ADDRESS: '실행 수신 주소 불일치',
   EXTERNAL_REQUEST_ID: '외부 요청 ID 불일치',
   PROVIDER_NOT_CONFIGURED: '외부 실행 대상 설정 누락',
@@ -66,6 +71,15 @@ const heatmapColors: Record<string, string> = {
 
 const heatmapStatusOrder = ['COMPLETED', 'BLOCKED', 'FAILED', 'EGRESSING', 'EXTERNALLY_RECONCILED', 'REVIEW_REQUIRED'];
 
+const flowStages = [
+  { key: 'REQUESTED', label: '요청' },
+  { key: 'DECISION', label: '정책 검사' },
+  { key: 'EXECUTION', label: '외부 실행' },
+  { key: 'EVIDENCE', label: '증거 수집' },
+  { key: 'RECONCILIATION', label: '조정' },
+  { key: 'FINAL', label: '최종 상태' },
+] as const;
+
 function flowNodeColor(name: string) {
   if (name.includes('FAILED') || name.includes('BLOCK')) return palette.red;
   if (name.includes('UNCERTAIN') || name.includes('EGRESSING')) return palette.amber;
@@ -76,11 +90,23 @@ function flowNodeColor(name: string) {
   return palette.blue;
 }
 
+function runtimeTone(status: string) {
+  if (status === 'COMPLETED' || status === 'EXTERNALLY_RECONCILED') return 'success' as const;
+  if (status === 'BLOCKED' || status === 'FAILED') return 'danger' as const;
+  if (status === 'EGRESSING') return 'warning' as const;
+  if (status === 'REVIEW_REQUIRED') return 'info' as const;
+  return 'neutral' as const;
+}
+
 const statusLabels: Record<string, string> = {
   REQUESTED: '전체 요청', DECISION_PASS: '정책 통과', DECISION_BLOCK: '정책 차단',
   DECISION_NOT_EVALUATED: '판정 증적 없음', EXECUTION_SUCCEEDED: '실행 성공',
   EXECUTION_FAILED: '실행 실패', EXECUTION_UNCERTAIN: '결과 미확정',
   EXECUTION_RECONCILED: '복구 확인', EXECUTION_NOT_SENT: '미전송',
+  EVIDENCE_VERIFIED: '증적 검증 완료', EVIDENCE_COLLECTED: '증적 수집',
+  EVIDENCE_REVIEW_REQUIRED: '증적 검토 필요', EVIDENCE_NOT_AVAILABLE: '증적 없음',
+  EVIDENCE_NOT_REQUIRED: '증적 불필요', RECONCILIATION_COMPLETED: '조정 완료',
+  RECONCILIATION_REQUIRED: '조정 필요', RECONCILIATION_NOT_REQUIRED: '조정 불필요',
   FINAL_COMPLETED: '최종 완료', FINAL_BLOCKED: '최종 차단', FINAL_FAILED: '최종 실패',
   FINAL_EGRESSING: '최종 미확정', FINAL_EXTERNALLY_RECONCILED: '최종 조정 완료',
   FINAL_REVIEW_REQUIRED: '최종 검토 필요', FINAL_RECEIVED: '최종 접수',
@@ -119,22 +145,37 @@ function changeLabel(metric?: OverviewMetric) {
   return `${sign}${metric.changePercent.toLocaleString('ko-KR')}%`;
 }
 
-function MetricTile({ label, metric, icon: Icon, tone, adverse = false }: {
+function sparklinePoints(series: number[]) {
+  if (series.length === 0) return '';
+  const max = Math.max(...series);
+  const min = Math.min(...series);
+  const span = Math.max(1, max - min);
+  return series.map((value, index) => {
+    const x = series.length === 1 ? 60 : index / (series.length - 1) * 120;
+    const y = 22 - (value - min) / span * 18;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+}
+
+function MetricTile({ label, metric, icon: Icon, tone, adverse = false, series = [] }: {
   label: string;
   metric?: OverviewMetric;
   icon: typeof Activity;
   tone: string;
   adverse?: boolean;
+  series?: number[];
 }) {
   const direction = metric?.changePercent == null ? 'neutral' : metric.changePercent > 0 ? 'up' : metric.changePercent < 0 ? 'down' : 'neutral';
   const changeTone = adverse && direction !== 'neutral'
     ? direction === 'up' ? 'adverse' : 'favorable'
     : direction;
+  const points = sparklinePoints(series);
   return (
     <article className={`da-metric-tile da-tone-${tone}`}>
       <header><span>{label}</span><span className="da-metric-icon"><Icon size={18} /></span></header>
       <div><strong>{metric?.current?.toLocaleString('ko-KR') ?? '—'}</strong><small className={`da-change-${changeTone}`}>{changeLabel(metric)}</small></div>
       <span className="da-metric-baseline">이전 기간 {metric?.previous?.toLocaleString('ko-KR') ?? '—'}건</span>
+      {points ? <svg className="da-metric-sparkline" viewBox="0 0 120 24" preserveAspectRatio="none" aria-hidden="true"><polygon points={`0,24 ${points} 120,24`} /><polyline points={points} /></svg> : null}
     </article>
   );
 }
@@ -148,7 +189,17 @@ export function DigitalAssetOperationsOverviewDashboard() {
   const [customFrom, setCustomFrom] = useState(() => dateInputValue(range(7).from));
   const [customTo, setCustomTo] = useState(() => dateInputValue(range(7).to));
   const [rangeError, setRangeError] = useState('');
-  const overview = useDigitalAssetOperationsOverview(period.from, period.to);
+  const [executionSearchDraft, setExecutionSearchDraft] = useState('');
+  const [executionSearch, setExecutionSearch] = useState('');
+  const [executionStatus, setExecutionStatus] = useState('');
+  const [executionPage, setExecutionPage] = useState(0);
+  const overview = useDigitalAssetOperationsOverview(
+    period.from,
+    period.to,
+    executionSearch,
+    executionStatus,
+    executionPage,
+  );
   const data = overview.data;
 
   useEffect(() => {
@@ -216,39 +267,53 @@ export function DigitalAssetOperationsOverviewDashboard() {
     })),
   }), [data?.trend]);
 
-  const violationOption = useMemo<DashboardChartOption>(() => {
-    const violations = [...(data?.violations ?? [])].sort((a, b) => a.count - b.count).slice(-7);
-    return {
-      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-      grid: { left: 118, right: 22, top: 10, bottom: 24 },
-      xAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: palette.grid } } },
-      yAxis: { type: 'category', data: violations.map((item) => reasonLabels[item.reasonCode] ?? item.reasonCode), axisLabel: { fontSize: 10 } },
-      series: [{ type: 'bar', barWidth: 13, data: violations.map((item) => ({ value: item.count, itemStyle: { color: item.stage === 'PRE_EXECUTION' ? palette.red : palette.amber } })) }],
-    };
-  }, [data?.violations]);
+  const preExecutionFindings = useMemo(() => (data?.violations ?? [])
+    .filter((item) => item.stage === 'PRE_EXECUTION')
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5), [data?.violations]);
+
+  const postExecutionOutcomes = useMemo(() => {
+    if (!data) return [];
+    const reviewRequired = data.flow
+      .filter((link) => link.target === 'FINAL_REVIEW_REQUIRED')
+      .reduce((sum, link) => sum + link.count, 0);
+    return [
+      { key: 'failed', label: '실행 실패', count: data.metrics.failed.current, tone: 'danger' },
+      { key: 'unknown', label: '결과 미확정', count: data.metrics.sentUnknown.current, tone: 'warning' },
+      { key: 'review', label: '사후 검토 필요', count: reviewRequired, tone: 'review' },
+      { key: 'reconciled', label: '조정 완료', count: data.metrics.reconciled.current, tone: 'success' },
+    ];
+  }, [data]);
+  const preExecutionTotal = preExecutionFindings.reduce((sum, item) => sum + item.count, 0);
+  const postExecutionTotal = postExecutionOutcomes.reduce((sum, item) => sum + item.count, 0);
 
   const heatmapOption = useMemo<DashboardChartOption>(() => {
     const lookup = new Map(data?.hourlyStatuses.map((item) => [`${item.hour}:${item.status}`, item.count]) ?? []);
-    const maximum = Math.max(1, ...Array.from(lookup.values()));
-    const values = heatmapStatusOrder.flatMap((status, y) => Array.from({ length: 24 }, (_, hour) => {
-      const count = lookup.get(`${hour}:${status}`) ?? 0;
-      const opacity = count === 0 ? 1 : Math.min(.95, .28 + (count / maximum) * .67);
-      return {
-        value: [hour, y, count],
-        itemStyle: { color: count === 0 ? '#f1f4f7' : 'rgba(' + heatmapColors[status] + ', ' + opacity + ')' },
-      };
-    }));
+    const maxima = heatmapStatusOrder.map((status) => Math.max(1, ...Array.from({ length: 24 }, (_, hour) => lookup.get(`${hour}:${status}`) ?? 0)));
     return {
       tooltip: { formatter: (params: unknown) => {
         const value = (params as { value: number[] }).value;
         const status = heatmapStatusOrder[value[1]];
         return `${value[0]}시 · ${statusLabels[status] ?? status}: ${value[2]}건`;
       } },
-      visualMap: { show: false, min: 0, max: maximum, inRange: { color: ['#f1f4f7', '#d8e0ea'] } },
+      visualMap: heatmapStatusOrder.map((status, index) => ({
+        show: false,
+        seriesIndex: index,
+        min: 0,
+        max: maxima[index],
+        dimension: 2,
+        inRange: { color: [`rgba(${heatmapColors[status]}, .1)`, `rgb(${heatmapColors[status]})`] },
+      })),
       grid: { left: 82, right: 18, top: 8, bottom: 34 },
-      xAxis: { type: 'category', data: Array.from({ length: 24 }, (_, hour) => hour), splitArea: { show: true }, axisLabel: { interval: 1, fontSize: 9 } },
-      yAxis: { type: 'category', data: heatmapStatusOrder.map((status) => statusLabels[status]), splitArea: { show: true }, axisLabel: { fontSize: 9 } },
-      series: [{ type: 'heatmap', data: values, label: { show: false }, emphasis: { itemStyle: { shadowBlur: 6, shadowColor: 'rgba(0,0,0,.18)' } } }],
+      xAxis: { type: 'category', data: Array.from({ length: 24 }, (_, hour) => hour), splitArea: { show: true, areaStyle: { color: ['#f3f6fa'] } }, axisLabel: { interval: 1, fontSize: 9 } },
+      yAxis: { type: 'category', data: heatmapStatusOrder.map((status) => statusLabels[status]), axisLabel: { fontSize: 9 } },
+      series: heatmapStatusOrder.map((status, y) => ({
+        name: statusLabels[status],
+        type: 'heatmap',
+        data: Array.from({ length: 24 }, (_, hour) => [hour, y, lookup.get(`${hour}:${status}`) ?? 0]),
+        label: { show: false },
+        emphasis: { itemStyle: { shadowBlur: 6, shadowColor: 'rgba(0,0,0,.18)' } },
+      })),
     };
   }, [data?.hourlyStatuses]);
 
@@ -281,11 +346,35 @@ export function DigitalAssetOperationsOverviewDashboard() {
     ].filter((item) => item.count > 0);
   }, [data]);
 
+  const controlItems = useMemo(() => {
+    if (!data) return [];
+    return [
+      { code: 'DA-01', key: 'decision', label: '정책 검사', count: data.coverage.decisionEvidence },
+      { code: 'DA-02', key: 'guard', label: '사전 실행 통제', count: data.coverage.preExecutionGuardEvidence },
+      { code: 'DA-03', key: 'transaction', label: '거래 증적 수집', count: data.coverage.transactionEvidence },
+      { code: 'DA-04', key: 'post', label: '사후 결과 검증', count: data.coverage.postExecutionEvidence },
+      { code: 'DA-05', key: 'recovery', label: '조정 처리', count: data.coverage.recoveryEvidence },
+      { code: 'DA-06', key: 'trace', label: '결정 추적', count: data.coverage.runtimeExecutions },
+    ].map((item) => ({
+      ...item,
+      state: item.count === 0 ? '확인 필요' : '정상',
+      tone: item.count === 0 ? 'warning' as const : 'success' as const,
+    }));
+  }, [data]);
+
+  const executionAuditPath = (executionId: string, status?: string, stage?: string) => {
+    const section = stage === 'POLICY_DECISION' || stage === 'PRE_EXECUTION_GUARD' || status === 'BLOCKED'
+      ? 'decision'
+      : 'post-execution';
+    return `/audit?executionId=${encodeURIComponent(executionId)}&section=${section}`;
+  };
+
   const selectRange = (next: RangeDays) => {
     setDays(next);
     setPeriod(range(next));
     setCustomOpen(false);
     setRangeError('');
+    setExecutionPage(0);
   };
 
   const applyCustomRange = (event: FormEvent) => {
@@ -306,6 +395,13 @@ export function DigitalAssetOperationsOverviewDashboard() {
     setDays('custom');
     setPeriod({ from: from.toISOString(), to: to.toISOString() });
     setCustomOpen(false);
+    setExecutionPage(0);
+  };
+
+  const searchExecutions = (event: FormEvent) => {
+    event.preventDefault();
+    setExecutionSearch(executionSearchDraft.trim());
+    setExecutionPage(0);
   };
 
   const refresh = () => {
@@ -351,36 +447,54 @@ export function DigitalAssetOperationsOverviewDashboard() {
 
       {data ? <>
         <div className="da-metric-grid">
-          <MetricTile label="전체 요청" metric={data.metrics.total} icon={FileText} tone="blue" />
-          <MetricTile label="정책 통과" metric={data.metrics.passed} icon={CheckCircle2} tone="green" />
-          <MetricTile label="정책 차단" metric={data.metrics.blocked} icon={Ban} tone="red" adverse />
-          <MetricTile label="실행 실패" metric={data.metrics.failed} icon={XCircle} tone="red" adverse />
-          <MetricTile label="미확정" metric={data.metrics.sentUnknown} icon={Clock3} tone="gray" adverse />
-          <MetricTile label="조정 완료" metric={data.metrics.reconciled} icon={RotateCw} tone="blue" />
+          <MetricTile label="전체 요청" metric={data.metrics.total} icon={FileText} tone="blue" series={data.trend.map((point) => point.total)} />
+          <MetricTile label="정책 통과" metric={data.metrics.passed} icon={CheckCircle2} tone="green" series={data.trend.map((point) => point.passed)} />
+          <MetricTile label="정책 차단" metric={data.metrics.blocked} icon={Ban} tone="red" adverse series={data.trend.map((point) => point.blocked)} />
+          <MetricTile label="실행 실패" metric={data.metrics.failed} icon={XCircle} tone="red" adverse series={data.trend.map((point) => point.failed)} />
+          <MetricTile label="미확정" metric={data.metrics.sentUnknown} icon={Clock3} tone="gray" adverse series={data.trend.map((point) => point.sentUnknown)} />
+          <MetricTile label="조정 완료" metric={data.metrics.reconciled} icon={RotateCw} tone="blue" series={data.trend.map((point) => point.reconciled)} />
         </div>
 
-        <div className="da-dashboard-grid da-dashboard-grid-main">
-          <article className="da-dashboard-panel da-flow-panel"><header><div><h2>요청 처리 흐름</h2><p>요청 → 정책 판정 → 외부 실행 → 최종 상태</p></div><StatusBadge tone="info">4 STAGES</StatusBadge></header><EChart option={sankeyOption} ariaLabel="Digital Asset 요청 처리 Sankey 차트" height={300} /></article>
-          <article className="da-dashboard-panel"><header><div><h2>위반 사유</h2><p>사전 정책 위반과 사후 실행 불일치</p></div></header><EChart option={violationOption} ariaLabel="Digital Asset 위반 사유 막대 차트" height={300} /></article>
+        <article className="da-dashboard-panel da-flow-panel">
+          <header><div><h2>요청 처리 흐름</h2><p>요청부터 정책 검사, 외부 실행, 증적 수집과 조정을 거쳐 최종 상태까지 추적합니다.</p></div><StatusBadge tone="info">6 STAGES</StatusBadge></header>
+          <div className="da-flow-stage-strip" aria-label="요청 처리 단계">{flowStages.map((stage, index) => <div key={stage.key}><span>{stage.label}</span>{index < flowStages.length - 1 ? <i aria-hidden="true" /> : null}</div>)}</div>
+          <EChart option={sankeyOption} ariaLabel="Digital Asset 6단계 요청 처리 Sankey 차트" height={350} />
+        </article>
+
+        <div className="da-dashboard-grid da-dashboard-grid-inspection">
+          <article className="da-dashboard-panel da-pre-post-panel">
+            <header><div><h2>사전 차단 vs 사후 복구·실패</h2><p>정책 검사에서 차단된 원인과 외부 실행 이후 관리할 결과를 비교합니다.</p></div></header>
+            <div className="da-pre-post-comparison">
+              <section><h3><i className="da-compare-red" />사전 차단 <small>Policy Guard</small></h3>{preExecutionFindings.length ? preExecutionFindings.map((item) => <div className="da-compare-row da-compare-row-left" key={item.reasonCode}><span>{reasonLabels[item.reasonCode] ?? item.reasonCode}</span><b>{item.count.toLocaleString('ko-KR')}건 <em>{preExecutionTotal ? (item.count / preExecutionTotal * 100).toFixed(1) : '0.0'}%</em></b><div><i style={{ width: `${Math.max(8, item.count / Math.max(...preExecutionFindings.map((entry) => entry.count)) * 100)}%` }} /></div></div>) : <p>조회 기간에 사전 차단 사유가 없습니다.</p>}</section>
+              <div className="da-compare-vs">VS</div>
+              <section><h3><i className="da-compare-blue" />사후 결과 <small>Execution & Recovery</small></h3>{postExecutionOutcomes.map((item) => <div className={`da-compare-row da-compare-row-${item.tone}`} key={item.key}><span>{item.label}</span><b>{item.count.toLocaleString('ko-KR')}건 <em>{postExecutionTotal ? (item.count / postExecutionTotal * 100).toFixed(1) : '0.0'}%</em></b><div><i style={{ width: `${Math.max(8, item.count / Math.max(1, ...postExecutionOutcomes.map((entry) => entry.count)) * 100)}%` }} /></div></div>)}</section>
+            </div>
+          </article>
+          <article className="da-dashboard-panel da-control-panel">
+            <header><div><h2>통제 검증 현황</h2><p>기간 내 Runtime 실행과 연결된 통제·증적 범위입니다.</p></div><StatusBadge tone={controlItems.every((item) => item.tone === 'success') ? 'success' : 'warning'}>{controlItems.every((item) => item.tone === 'success') ? '전체 정상' : '확인 필요'}</StatusBadge></header>
+            <div className="da-control-list">{controlItems.map((item) => <div key={item.key}><code>{item.code}</code><span className="da-control-icon"><ShieldCheck size={15} /></span><span><strong>{item.label}</strong><small>근거 연결 {item.count.toLocaleString('ko-KR')}건</small></span><StatusBadge tone={item.tone}>{item.state}</StatusBadge></div>)}</div>
+          </article>
         </div>
 
         <div className="da-dashboard-grid da-dashboard-grid-secondary">
           <article className="da-dashboard-panel"><header><div><h2>거래 추이</h2><p>일별 요청과 최종 상태 건수</p></div></header><EChart option={trendOption} ariaLabel="Digital Asset 일별 거래 추이 선 차트" height={270} /></article>
-          <article className="da-dashboard-panel"><header><div><h2>실행 상태 시간 분포</h2><p>Asia/Seoul 요청 시간 기준</p></div></header><EChart option={heatmapOption} ariaLabel="Digital Asset 실행 상태 시간대 Heatmap" height={236} /><div className="da-heatmap-legend">{heatmapStatusOrder.map((status) => <span key={status}><i style={{ background: `rgb(${heatmapColors[status]})` }} />{statusLabels[status]}</span>)}</div></article>
-          <article className="da-dashboard-panel da-signal-panel"><header><div><h2>우선 확인 항목</h2><p>위험도와 최신성 기준 운영 신호</p></div><button type="button" onClick={() => navigate('/analysis')}>전체 보기</button></header><div className="da-signal-list">{data.recentSignals.map((signal) => <button key={signal.executionId} type="button" onClick={() => navigate(`/audit?executionId=${encodeURIComponent(signal.executionId)}`)}><span className={`da-signal-mark da-signal-${signal.severity.toLowerCase()}`}><AlertTriangle size={14} /></span><span><strong>{statusLabels[signal.status] ?? signal.signalType} · {signal.workloadId}</strong><small>{stageLabels[signal.stage] ?? signal.stage} · {reasonLabels[signal.reasonCode ?? ''] ?? signal.reasonCode ?? '상세 증적 확인 필요'}</small><em>{actionLabels[signal.nextAction] ?? signal.nextAction}</em></span><time>{new Date(signal.occurredAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</time></button>)}</div></article>
+          <article className="da-dashboard-panel"><header><div><h2>실행 상태 시간 분포</h2><p>Asia/Seoul 요청 시간 기준 · 같은 상태 안에서 진할수록 실행이 많습니다.</p></div></header><EChart option={heatmapOption} ariaLabel="Digital Asset 실행 상태 시간대 Heatmap" height={236} /><div className="da-heatmap-legend">{heatmapStatusOrder.map((status) => <span key={status}><i style={{ background: `rgb(${heatmapColors[status]})` }} />{statusLabels[status]}</span>)}<span className="da-intensity-guide"><i />낮음 → 높음</span></div></article>
+          <article className="da-dashboard-panel da-signal-panel"><header><div><h2>우선 확인 항목</h2><p>위험도와 최신성 기준 운영 신호</p></div><button type="button" onClick={() => navigate('/analysis')}>전체 보기</button></header><div className="da-signal-list">{data.recentSignals.map((signal) => <button key={signal.executionId} type="button" onClick={() => navigate(executionAuditPath(signal.executionId, signal.status, signal.stage))}><span className={`da-signal-mark da-signal-${signal.severity.toLowerCase()}`}><AlertTriangle size={14} /></span><span><strong>{statusLabels[signal.status] ?? signal.signalType} · {signal.workloadId}</strong><small>{stageLabels[signal.stage] ?? signal.stage} · {reasonLabels[signal.reasonCode ?? ''] ?? signal.reasonCode ?? '상세 증적 확인 필요'}</small><em>{actionLabels[signal.nextAction] ?? signal.nextAction}</em></span><time>{new Date(signal.occurredAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</time></button>)}</div></article>
         </div>
 
-        <div className="da-dashboard-grid da-dashboard-grid-data">
-          <article className="da-dashboard-panel"><header><div><h2>운영 데이터 범위</h2><p>해당 기간의 Evidence 연결 현황</p></div></header><div className="da-coverage-list">{[
-            ['정책 판정', data.coverage.decisionEvidence], ['사전 실행 Guard', data.coverage.preExecutionGuardEvidence],
-            ['거래 실행', data.coverage.transactionEvidence], ['사후 실행 증적', data.coverage.postExecutionEvidence], ['복구 증적', data.coverage.recoveryEvidence],
-          ].map(([label, value]) => <div key={String(label)}><span>{label}</span><strong>{Number(value).toLocaleString('ko-KR')}</strong><div><i style={{ width: `${data.coverage.runtimeExecutions ? Number(value) / data.coverage.runtimeExecutions * 100 : 0}%` }} /></div></div>)}</div></article>
-          <article className="da-dashboard-panel da-action-panel"><header><div><h2>운영 조치 요약</h2><p>현재 기간에 관리자가 먼저 확인할 항목</p></div><StatusBadge tone={actionItems.length ? 'warning' : 'success'}>{actionItems.length ? `${actionItems.length} ACTIONS` : 'STABLE'}</StatusBadge></header><div className="da-action-list">{actionItems.length ? actionItems.map((item) => <button key={item.key} type="button" className={`da-action-${item.tone}`} onClick={() => navigate(item.path)}><span><strong>{item.title}</strong><b>{item.count.toLocaleString('ko-KR')}건</b></span><small>{item.reason}</small><em>{item.action}</em></button>) : <p>현재 조회 기간에 즉시 확인할 실패, 미확정, 검토 필요 또는 차단 실행이 없습니다.</p>}</div></article>
-        </div>
+        <article className="da-dashboard-panel da-action-panel"><header><div><h2>운영 조치 요약</h2><p>현재 기간에 관리자가 먼저 확인할 항목</p></div><StatusBadge tone={actionItems.length ? 'warning' : 'success'}>{actionItems.length ? `${actionItems.length} ACTIONS` : 'STABLE'}</StatusBadge></header><div className="da-action-list da-action-list-wide">{actionItems.length ? actionItems.map((item) => <button key={item.key} type="button" className={`da-action-${item.tone}`} onClick={() => navigate(item.path)}><span><strong>{item.title}</strong><b>{item.count.toLocaleString('ko-KR')}건</b></span><small>{item.reason}</small><em>{item.action}</em></button>) : <p>현재 조회 기간에 즉시 확인할 실패, 미확정, 검토 필요 또는 차단 실행이 없습니다.</p>}</div></article>
 
         <article className="da-dashboard-panel da-recent-panel">
-          <header><div><h2>최근 실행</h2><p>현재 권한 범위의 Digital Asset Runtime</p></div><button type="button" onClick={() => navigate('/audit')}>Decision Trace</button></header>
-          <div className="da-table-shell"><div className="da-recent-table da-table-head"><span>요청 시각</span><span>Request ID</span><span>Workload</span><span>Policy</span><span>사전 결정</span><span>실행 상태</span><span>외부 상태</span></div>{data.recentExecutions.map((item) => <button className="da-recent-table" type="button" key={item.executionId} onClick={() => navigate(`/audit?executionId=${encodeURIComponent(item.executionId)}`)}><span>{new Date(item.requestedAt).toLocaleString('ko-KR')}</span><span><strong>{item.requestId}</strong><small>{item.executionId}</small></span><span>{item.workloadId}</span><span>{item.policyVersion ?? '—'}</span><span><StatusBadge tone={item.finalAction === 'BLOCK' ? 'danger' : item.finalAction ? 'success' : 'neutral'}>{item.finalAction ?? 'N/A'}</StatusBadge></span><span>{statusLabels[item.runtimeStatus] ?? item.runtimeStatus}</span><span>{item.recoveryStatus ?? item.connectorStatus ?? 'NOT_SENT'}</span></button>)}</div>
+          <header><div><h2>최근 실행</h2><p>운영 판단에 필요한 요청, 정책, Runtime 및 외부 상태입니다.</p></div><button type="button" onClick={() => navigate('/audit')}>Decision Trace</button></header>
+          <form className="da-execution-filters" onSubmit={searchExecutions}>
+            <label><Search size={14} /><input aria-label="최근 실행 검색" value={executionSearchDraft} onChange={(event) => setExecutionSearchDraft(event.target.value)} placeholder="Request ID, Execution ID, Workload 검색" /></label>
+            <select aria-label="실행 상태 필터" value={executionStatus} onChange={(event) => { setExecutionStatus(event.target.value); setExecutionPage(0); }}>
+              <option value="">전체 상태</option><option value="COMPLETED">완료</option><option value="BLOCKED">차단</option><option value="FAILED">실패</option><option value="EGRESSING">미확정</option><option value="EXTERNALLY_RECONCILED">조정 완료</option><option value="REVIEW_REQUIRED">검토 필요</option>
+            </select>
+            <button type="submit"><Search size={14} />검색</button>
+          </form>
+          <div className="da-table-shell"><div className="da-recent-table da-table-head"><span>요청</span><span>Workload</span><span>Policy</span><span>사전 결정</span><span>실행 상태</span><span>외부 상태</span><span>작업</span></div>{data.recentExecutions.items.map((item) => <button className="da-recent-table" type="button" key={item.executionId} onClick={() => navigate(executionAuditPath(item.executionId, item.runtimeStatus))}><span><strong>{item.requestId}</strong><small>{new Date(item.requestedAt).toLocaleString('ko-KR')} · {item.executionId}</small></span><span>{item.workloadId}</span><span>{item.policyVersion ?? '—'}</span><span><StatusBadge tone={item.finalAction === 'BLOCK' ? 'danger' : item.finalAction ? 'success' : 'neutral'}>{item.finalAction ?? 'N/A'}</StatusBadge></span><span><StatusBadge tone={runtimeTone(item.runtimeStatus)}>{statusLabels[item.runtimeStatus] ?? item.runtimeStatus}</StatusBadge></span><span>{item.recoveryStatus ?? item.connectorStatus ?? 'NOT_SENT'}</span><span className="da-trace-link">Trace 확인</span></button>)}{data.recentExecutions.items.length === 0 ? <div className="da-execution-empty">조건에 맞는 실행이 없습니다.</div> : null}</div>
+          <footer className="da-execution-pagination"><span>총 {data.recentExecutions.totalElements.toLocaleString('ko-KR')}건 · {data.recentExecutions.page + 1} / {Math.max(1, data.recentExecutions.totalPages)} 페이지</span><div><button type="button" aria-label="이전 페이지" disabled={data.recentExecutions.page === 0} onClick={() => setExecutionPage((page) => Math.max(0, page - 1))}><ChevronLeft size={15} /></button><button type="button" aria-label="다음 페이지" disabled={data.recentExecutions.page + 1 >= data.recentExecutions.totalPages} onClick={() => setExecutionPage((page) => page + 1)}><ChevronRight size={15} /></button></div></footer>
         </article>
       </> : null}
     </div>

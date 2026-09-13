@@ -57,9 +57,11 @@ export const digitalAssetHandlers = [
     flow: [
       { source: 'REQUESTED', target: 'DECISION_PASS', count: 94 },
       { source: 'DECISION_PASS', target: 'EXECUTION_SUCCEEDED', count: 88 },
-      { source: 'EXECUTION_SUCCEEDED', target: 'FINAL_COMPLETED', count: 88 },
+      { source: 'EXECUTION_SUCCEEDED', target: 'EVIDENCE_VERIFIED', count: 88 },
+      { source: 'EVIDENCE_VERIFIED', target: 'RECONCILIATION_NOT_REQUIRED', count: 88 },
+      { source: 'RECONCILIATION_NOT_REQUIRED', target: 'FINAL_COMPLETED', count: 88 },
     ],
-    trend: [{ date: '2026-09-13', total: 1, completed: 1, blocked: 0, failed: 0, sentUnknown: 0, reconciled: 0 }],
+    trend: [{ date: '2026-09-13', total: 1, passed: 1, completed: 1, blocked: 0, failed: 0, sentUnknown: 0, reconciled: 0 }],
     violations: [{ stage: 'PRE_EXECUTION', reasonCode: 'DIGITAL_ASSET_APPROVED_AMOUNT_EXCEEDED', count: 13 }],
     hourlyStatuses: [{ hour: 14, status: 'COMPLETED', count: 1 }],
     recentSignals: [
@@ -75,7 +77,23 @@ export const digitalAssetHandlers = [
         occurredAt: '2026-09-14T01:20:00Z',
       },
     ],
-    recentExecutions: [],
+    recentExecutions: {
+      items: [{
+        executionId: 'exec-da-completed-001',
+        requestId: 'req-da-completed-001',
+        workloadId: 'tokenized_asset_purchase',
+        policyVersion: 'be-runtime-policy/digital-asset/1.0.0',
+        finalAction: 'TRANSFORM',
+        runtimeStatus: 'COMPLETED',
+        connectorStatus: 'ACKNOWLEDGED',
+        recoveryStatus: null,
+        requestedAt: '2026-09-14T01:10:00Z',
+      }],
+      page: 0,
+      size: 10,
+      totalElements: 1,
+      totalPages: 1,
+    },
     coverage: {
       runtimeExecutions: 179,
       decisionEvidence: 145,

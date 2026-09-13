@@ -21,6 +21,7 @@ export type DigitalAssetOperationsOverview = {
   trend: Array<{
     date: string;
     total: number;
+    passed: number;
     completed: number;
     blocked: number;
     failed: number;
@@ -40,17 +41,23 @@ export type DigitalAssetOperationsOverview = {
     nextAction: string;
     occurredAt: string;
   }>;
-  recentExecutions: Array<{
-    executionId: string;
-    requestId: string;
-    workloadId: string;
-    policyVersion: string | null;
-    finalAction: string | null;
-    runtimeStatus: string;
-    connectorStatus: string | null;
-    recoveryStatus: string | null;
-    requestedAt: string;
-  }>;
+  recentExecutions: {
+    items: Array<{
+      executionId: string;
+      requestId: string;
+      workloadId: string;
+      policyVersion: string | null;
+      finalAction: string | null;
+      runtimeStatus: string;
+      connectorStatus: string | null;
+      recoveryStatus: string | null;
+      requestedAt: string;
+    }>;
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+  };
   coverage: {
     runtimeExecutions: number;
     decisionEvidence: number;
