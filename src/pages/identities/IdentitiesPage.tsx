@@ -9,7 +9,7 @@ export function IdentitiesPage() {
         eyebrow="ADMIN ACCESS PLANE · INSTITUTION SCOPED"
         title="Identity · 권한"
         description="관리자와 Runtime Service의 역할, Workload 및 Purpose 권한을 조회합니다."
-        actions={<StatusBadge tone="success"><ShieldCheck size={13} />SCOPED READ</StatusBadge>}
+        actions={<StatusBadge tone="success"><ShieldCheck size={13} />범위 제한 조회</StatusBadge>}
       />
       <AdminIdentityPanel />
     </section>

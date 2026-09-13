@@ -36,7 +36,7 @@ export function AnalysisPage() {
           eyebrow="AI RUNTIME CONTROL · PRIVACY-SAFE TRACE"
           title="AI Admin"
           description="이상 실행을 찾고 Policy부터 Controlled Delivery까지 차단 지점을 확인합니다."
-          actions={<StatusBadge tone="info">RUNTIME EVIDENCE</StatusBadge>}
+          actions={<StatusBadge tone="info">실행 증적</StatusBadge>}
         />
         <PackContextSummary
           label={selectedPack.label}
@@ -56,7 +56,7 @@ export function AnalysisPage() {
         eyebrow="RECOVERY OPERATIONS · RECONCILIATION FIRST"
         title="Runtime · Recovery"
         description="SENT_UNKNOWN을 재전송하지 않고 외부 상태 확인, 안전 재시도와 수동 검토 Evidence로 수렴시킵니다."
-        actions={<StatusBadge tone={summary.isSuccess ? 'success' : 'warning'}>{summary.isSuccess ? 'OPERATIONS API CONNECTED' : 'OPERATIONS API'}</StatusBadge>}
+        actions={<StatusBadge tone={summary.isSuccess ? 'success' : 'warning'}>{summary.isSuccess ? '운영 API 연결' : '운영 API 확인 필요'}</StatusBadge>}
       />
 
       <PackContextSummary

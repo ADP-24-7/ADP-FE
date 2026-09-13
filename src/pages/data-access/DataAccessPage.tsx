@@ -44,7 +44,7 @@ export function DataAccessPage() {
         eyebrow="DATA MINIMIZATION BOUNDARY"
         title="Workload · Data Access"
         description={`${selectedPack.label} 흐름이 DB에 직접 접근하지 않도록 Workload별 허용 범위와 사전 정의 Query Adapter를 검증합니다.`}
-        actions={<StatusBadge tone="warning">DEFAULT DENY</StatusBadge>}
+        actions={<StatusBadge tone="warning">기본 차단</StatusBadge>}
       />
 
       <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} objective={selectedPack.objective} />

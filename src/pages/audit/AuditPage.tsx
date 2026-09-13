@@ -147,7 +147,7 @@ export function AuditPage() {
         <div className="investigation-context" role="status">
           <FileCheck2 size={17} />
           <p><strong>{investigationLabel} 조사 문맥</strong><span>{initialExecutionId} 실행의 전체 Evidence Chain에서 해당 구간을 우선 확인합니다.</span></p>
-          <StatusBadge tone="info">TRACE LINKED</StatusBadge>
+          <StatusBadge tone="info">추적 연결</StatusBadge>
         </div>
       ) : null}
 

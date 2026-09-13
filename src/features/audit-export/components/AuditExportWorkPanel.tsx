@@ -16,6 +16,10 @@ const STATUS_LABELS: Record<AuditExportStatus, string> = {
   REQUESTED: '승인 대기', APPROVED: '생성 대기', GENERATING: '생성 중', READY: '다운로드 가능',
   REJECTED: '반려', FAILED: '실패', EXPIRED: '만료', REVOKED: '폐기됨',
 };
+const STATUS_TONES: Record<AuditExportStatus, 'success' | 'warning' | 'danger' | 'info' | 'neutral'> = {
+  REQUESTED: 'warning', APPROVED: 'info', GENERATING: 'info', READY: 'success',
+  REJECTED: 'danger', FAILED: 'danger', EXPIRED: 'neutral', REVOKED: 'neutral',
+};
 const VIEWS: Array<[AuditExportWorkView, string]> = [
   ['MY_REQUESTS', '내 요청'],
   ['MY_HISTORY', '내 요청 이력'],
@@ -107,7 +111,7 @@ function ApprovalWorkRow({
         }
       }}
     >
-      <span><StatusBadge tone={job.status === 'READY' ? 'success' : job.status === 'REJECTED' || job.status === 'FAILED' ? 'danger' : 'warning'}>{displayStatus(job)}</StatusBadge>{waiting ? <small className={waiting.overdue ? 'approval-waiting overdue' : 'approval-waiting'}>{waiting.overdue ? <AlertTriangle size={12} /> : null}{waiting.label}</small> : null}</span>
+      <span><StatusBadge tone={STATUS_TONES[job.status]}>{displayStatus(job)}</StatusBadge>{waiting ? <small className={waiting.overdue ? 'approval-waiting overdue' : 'approval-waiting'}>{waiting.overdue ? <AlertTriangle size={12} /> : null}{waiting.label}</small> : null}</span>
       <span><strong>{job.format} 감사 증적</strong><small>{job.workloadId} · {job.executionPack}</small><code>{job.exportId}</code></span>
       <span><strong>{job.requesterId}</strong><small>{job.status === 'REVOKED' ? job.revokedBy ?? '폐기자 미확인' : job.approverId ?? '처리자 미지정'}</small></span>
       <span>{formatDate(job.createdAt)}<small>{job.approvedAt ? formatDate(job.approvedAt) : '처리 대기'}</small></span>

@@ -163,6 +163,7 @@ describe('AuditExportWorkPanel', () => {
     expect(screen.queryByRole('tab', { name: '내 처리 이력' })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: '내 요청 이력' }));
+    expect((await screen.findByText('만료')).closest('.status-badge')).toHaveClass('status-neutral');
     await user.click(await screen.findByRole('button', { name: 'CSV 감사 증적 상세' }));
     await user.click(await screen.findByRole('button', { name: '다시 요청' }));
     const reason = screen.getByRole('textbox', { name: '새 요청 목적' });
