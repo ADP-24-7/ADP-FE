@@ -1,9 +1,15 @@
+import { lazy, Suspense } from 'react';
 import { useBackendReadiness } from '../../features/monitoring';
 import { useOperationsSummary } from '../../features/operations-monitoring';
 import { AlertTriangle, ArrowRight, CircleGauge, ListChecks, ShieldAlert, ShieldCheck, ShieldX, Workflow } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { EmptyState, KeyValues, MetricCard, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
+import { EmptyState, KeyValues, LoadingPanel, MetricCard, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
 import { useExecutionPack } from '../../shared/prototype';
+
+const DigitalAssetOperationsOverviewDashboard = lazy(() =>
+  import('../../features/digital-asset/components/DigitalAssetOperationsOverviewDashboard')
+    .then((module) => ({ default: module.DigitalAssetOperationsOverviewDashboard })),
+);
 
 const operatorFlow = [
   ['01', 'Monitor', '이상 탐지'],
@@ -27,6 +33,16 @@ export function OverviewPage() {
     [operations.data.policy.driftedSelections, 'Policy selection drift', `${operations.data.policy.driftedSelections}건 · current ${operations.data.policy.currentSelections}건`, '/monitoring#policy-events'],
     [operations.data.security.institutionScopeMismatch, 'Institution scope mismatch', `${operations.data.security.institutionScopeMismatch}건 · 전체 denied ${operations.data.security.deniedAttempts}건`, '/monitoring#security-findings'],
   ].filter(([value]) => Number(value) > 0) as Array<[number, string, string, string]> : [];
+
+  if (selectedPack.key === 'digital-asset') {
+    return (
+      <section className="page-section">
+        <Suspense fallback={<LoadingPanel label="Digital Asset 운영 화면을 준비하는 중입니다" />}>
+          <DigitalAssetOperationsOverviewDashboard />
+        </Suspense>
+      </section>
+    );
+  }
 
   return (
     <section className="page-section">
@@ -76,7 +92,7 @@ export function OverviewPage() {
             <article>
               <strong>Digital Asset</strong>
               <span>Value-use · Transaction · Settlement · Reconciliation</span>
-              <StatusBadge tone={selectedPack.key === 'digital-asset' ? 'success' : 'neutral'}>{selectedPack.key === 'digital-asset' ? 'SELECTED' : 'NOT SELECTED'}</StatusBadge>
+              <StatusBadge tone="neutral">NOT SELECTED</StatusBadge>
             </article>
           </div>
           <KeyValues

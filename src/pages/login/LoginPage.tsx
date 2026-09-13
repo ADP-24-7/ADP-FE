@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
-import { LockKeyhole, ShieldCheck } from 'lucide-react';
+import { LockKeyhole } from 'lucide-react';
 import { normalizeApiError } from '../../shared/api/apiError';
 import { useAuthContext, useLogin } from '../../features/auth';
 
@@ -39,8 +39,8 @@ export function LoginPage() {
     <main className="login-page">
       <section className="login-panel" aria-labelledby="login-title">
         <div className="login-brand">
-          <span className="login-brand-icon"><ShieldCheck size={23} /></span>
-          <div><span>FPG</span><strong>Governance Console</strong></div>
+          <span className="login-brand-icon"><img src="/assets/fpg-mark.png" alt="" /></span>
+          <strong>FPG</strong>
         </div>
         <header>
           <LockKeyhole size={20} aria-hidden="true" />

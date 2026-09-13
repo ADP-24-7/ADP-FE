@@ -11,7 +11,6 @@ import {
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
-  ShieldCheck,
   ShieldAlert,
   SlidersHorizontal,
   UsersRound,
@@ -86,15 +85,11 @@ export function ConsoleLayout() {
 
   return (
     <div className={isSidebarCollapsed ? 'console-shell console-shell-collapsed' : 'console-shell'}>
-      <aside className="console-sidebar" aria-label="ADP Console navigation">
+      <aside className="console-sidebar" aria-label="FPG Console navigation">
         <div className="console-brand-row">
           <div className="console-brand">
-              <span className="console-brand-logo" aria-hidden="true"><ShieldCheck size={20} /></span>
-            <span className="console-brand-copy">
-              <span className="console-brand-mark">FPG</span>
-              <span className="console-brand-title">Governance Console</span>
-              <span className="console-brand-subtitle">AI · Digital Asset Control</span>
-            </span>
+            <span className="console-brand-logo" aria-hidden="true"><img src="/assets/fpg-mark.png" alt="" /></span>
+            <span className="console-brand-mark">FPG</span>
           </div>
           <button
             className="sidebar-toggle"
