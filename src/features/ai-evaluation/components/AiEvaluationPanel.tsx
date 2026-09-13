@@ -65,7 +65,8 @@ function fpgStageMillis(trace: RuntimeExecutionTrace) {
 
 export function AiEvaluationPanel() {
   const auth = useAuthContext();
-  const canReadRestrictedEvidence = auth.data?.roles.includes('PRIVILEGED_OPERATOR') ?? false;
+  const canReadRestrictedEvidence = Boolean(auth.data?.roles.includes('PRIVILEGED_OPERATOR')
+    || auth.data?.roles.includes('AUDITOR'));
   const [runId, setRunId] = useState(CURRENT_RUN_ID);
   const [lookupRunId, setLookupRunId] = useState(CURRENT_RUN_ID);
   const [selectedExecutionId, setSelectedExecutionId] = useState('');
