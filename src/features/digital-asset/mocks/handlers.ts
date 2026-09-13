@@ -41,6 +41,35 @@ const currentStateItem = {
 } as const;
 
 export const digitalAssetHandlers = [
+  http.get('/api/admin/digital-assets/overview', () => HttpResponse.json({
+    schemaVersion: 'adp-digital-asset-operations-overview/v1',
+    generatedAt: '2026-09-14T00:00:00Z',
+    from: '2026-09-07T00:00:00Z',
+    to: '2026-09-14T00:00:00Z',
+    metrics: {
+      total: { current: 179, previous: 0, changePercent: null },
+      passed: { current: 94, previous: 0, changePercent: null },
+      blocked: { current: 57, previous: 0, changePercent: null },
+      failed: { current: 3, previous: 0, changePercent: null },
+      sentUnknown: { current: 4, previous: 0, changePercent: null },
+      reconciled: { current: 6, previous: 0, changePercent: null },
+    },
+    flow: [{ source: 'REQUESTED', target: 'PASS', count: 94 }, { source: 'PASS', target: 'COMPLETED', count: 22 }],
+    trend: [{ date: '2026-09-13', total: 1, completed: 1, blocked: 0, failed: 0, sentUnknown: 0, reconciled: 0 }],
+    violations: [{ stage: 'PRE_EXECUTION', reasonCode: 'DIGITAL_ASSET_APPROVED_AMOUNT_EXCEEDED', count: 13 }],
+    hourlyStatuses: [{ hour: 14, status: 'COMPLETED', count: 1 }],
+    recentSignals: [],
+    recentExecutions: [],
+    coverage: {
+      runtimeExecutions: 179,
+      decisionEvidence: 145,
+      preExecutionGuardEvidence: 19,
+      transactionEvidence: 49,
+      postExecutionEvidence: 16,
+      recoveryEvidence: 11,
+      unavailableDimensions: ['ASSET_SYMBOL', 'EXACT_AMOUNT', 'DESTINATION_CATEGORY'],
+    },
+  })),
   http.get('/api/admin/digital-assets/artifacts', () => HttpResponse.json({
     items: [currentStateItem],
     page: 0,

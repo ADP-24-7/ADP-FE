@@ -15,6 +15,7 @@ export {
   useDigitalAssetArtifactCurrentStates,
   useIngestDigitalAssetArtifact,
 } from './hooks/useDigitalAssetArtifact';
+export { useDigitalAssetOperationsOverview } from './hooks/useDigitalAssetOperationsOverview';
 export { createDigitalAssetRuntimeInput, isSha256Digest } from './model/runtimeContract';
 export type {
   DigitalAssetActiveArtifact,
@@ -31,3 +32,4 @@ export type {
   DigitalAssetRuntimeInputDraft,
   IngestDigitalAssetArtifactRequest,
 } from './model/types';
+export type { DigitalAssetOperationsOverview, OverviewMetric } from './model/operationsOverviewTypes';

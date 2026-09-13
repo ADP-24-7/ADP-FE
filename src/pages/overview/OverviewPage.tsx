@@ -1,9 +1,15 @@
+import { lazy, Suspense } from 'react';
 import { useBackendReadiness } from '../../features/monitoring';
 import { useOperationsSummary } from '../../features/operations-monitoring';
 import { AlertTriangle, ArrowRight, CircleGauge, ListChecks, ShieldAlert, ShieldCheck, ShieldX, Workflow } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { EmptyState, KeyValues, MetricCard, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
+import { EmptyState, KeyValues, LoadingPanel, MetricCard, PageHeader, SectionCard, StatusBadge } from '../../shared/components';
 import { useExecutionPack } from '../../shared/prototype';
+
+const DigitalAssetOperationsOverviewDashboard = lazy(() =>
+  import('../../features/digital-asset/components/DigitalAssetOperationsOverviewDashboard')
+    .then((module) => ({ default: module.DigitalAssetOperationsOverviewDashboard })),
+);
 
 const operatorFlow = [
   ['01', 'Monitor', '이상 탐지'],
@@ -30,6 +36,19 @@ export function OverviewPage() {
 
   return (
     <section className="page-section">
+      {selectedPack.key === 'digital-asset' ? (
+        <Suspense fallback={<LoadingPanel label="Digital Asset 운영 화면을 준비하는 중입니다" />}>
+          <DigitalAssetOperationsOverviewDashboard />
+        </Suspense>
+      ) : null}
+
+      {selectedPack.key === 'digital-asset' ? (
+        <div className="da-existing-overview-heading">
+          <span>기존 통합 관제</span>
+          <p>정책, 보안, 복구의 기존 운영 화면을 이어서 확인합니다.</p>
+        </div>
+      ) : null}
+
       <PageHeader
         eyebrow="POLICY DECISION → FINDING → TRACE → RECOVERY"
         title="Security Overview"
