@@ -54,7 +54,11 @@ export const digitalAssetHandlers = [
       sentUnknown: { current: 4, previous: 0, changePercent: null },
       reconciled: { current: 6, previous: 0, changePercent: null },
     },
-    flow: [{ source: 'REQUESTED', target: 'PASS', count: 94 }, { source: 'PASS', target: 'COMPLETED', count: 22 }],
+    flow: [
+      { source: 'REQUESTED', target: 'DECISION_PASS', count: 94 },
+      { source: 'DECISION_PASS', target: 'EXECUTION_SUCCEEDED', count: 88 },
+      { source: 'EXECUTION_SUCCEEDED', target: 'FINAL_COMPLETED', count: 88 },
+    ],
     trend: [{ date: '2026-09-13', total: 1, completed: 1, blocked: 0, failed: 0, sentUnknown: 0, reconciled: 0 }],
     violations: [{ stage: 'PRE_EXECUTION', reasonCode: 'DIGITAL_ASSET_APPROVED_AMOUNT_EXCEEDED', count: 13 }],
     hourlyStatuses: [{ hour: 14, status: 'COMPLETED', count: 1 }],

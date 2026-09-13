@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import { type FormEvent, useMemo, useState } from 'react';
 import {
   Activity,
   AlertTriangle,
   Ban,
+  CalendarRange,
   CheckCircle2,
   Clock3,
   FileText,
@@ -34,13 +35,22 @@ const reasonLabels: Record<string, string> = {
 };
 
 const statusLabels: Record<string, string> = {
-  REQUESTED: '전체 요청', PASS: '정책 통과', BLOCK: '정책 차단', NOT_EVALUATED: '판정 증적 없음',
+  REQUESTED: '전체 요청', DECISION_PASS: '정책 통과', DECISION_BLOCK: '정책 차단',
+  DECISION_NOT_EVALUATED: '판정 증적 없음', EXECUTION_SUCCEEDED: '실행 성공',
+  EXECUTION_FAILED: '실행 실패', EXECUTION_UNCERTAIN: '결과 미확정',
+  EXECUTION_RECONCILED: '복구 확인', EXECUTION_NOT_SENT: '미전송',
+  FINAL_COMPLETED: '최종 완료', FINAL_BLOCKED: '최종 차단', FINAL_FAILED: '최종 실패',
+  FINAL_EGRESSING: '최종 미확정', FINAL_EXTERNALLY_RECONCILED: '최종 조정 완료',
+  FINAL_REVIEW_REQUIRED: '최종 검토 필요', FINAL_RECEIVED: '최종 접수',
+  FINAL_AUTHORIZED: '최종 인가 완료', FINAL_RETRIEVED: '최종 조회 완료',
+  FINAL_DECIDED: '최종 판정 완료', FINAL_TRANSFORMED: '최종 변환 완료',
   COMPLETED: '완료', BLOCKED: '차단', FAILED: '실패', EGRESSING: '미확정',
   EXTERNALLY_RECONCILED: '조정 완료', REVIEW_REQUIRED: '검토 필요', RECEIVED: '접수',
   AUTHORIZED: '인가 완료', RETRIEVED: '조회 완료', DECIDED: '판정 완료', TRANSFORMED: '변환 완료',
 };
 
 type RangeDays = 1 | 7 | 30;
+type SelectedRange = RangeDays | 'custom';
 
 function range(days: RangeDays) {
   const to = new Date();
@@ -48,6 +58,17 @@ function range(days: RangeDays) {
   from.setHours(0, 0, 0, 0);
   from.setDate(from.getDate() - (days - 1));
   return { from: from.toISOString(), to: to.toISOString() };
+}
+
+function dateInputValue(value: string) {
+  const date = new Date(value);
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 10);
+}
+
+function periodLabel(from: string, to: string) {
+  const format = new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  return `${format.format(new Date(from))} - ${format.format(new Date(to))}`;
 }
 
 function changeLabel(metric?: OverviewMetric) {
@@ -78,24 +99,61 @@ function MetricTile({ label, metric, icon: Icon, tone, adverse = false }: {
 
 export function DigitalAssetOperationsOverviewDashboard() {
   const navigate = useNavigate();
-  const [days, setDays] = useState<RangeDays>(7);
+  const [days, setDays] = useState<SelectedRange>(7);
   const [period, setPeriod] = useState(() => range(7));
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customFrom, setCustomFrom] = useState(() => dateInputValue(range(7).from));
+  const [customTo, setCustomTo] = useState(() => dateInputValue(range(7).to));
+  const [rangeError, setRangeError] = useState('');
   const overview = useDigitalAssetOperationsOverview(period.from, period.to);
   const data = overview.data;
 
   const sankeyOption = useMemo<DashboardChartOption>(() => {
-    const names = Array.from(new Set(data?.flow.flatMap((item) => [item.source, item.target]) ?? []));
+    const links = data?.flow ?? [];
+    const names = Array.from(new Set(links.flatMap((item) => [item.source, item.target])));
+    const incoming = new Map<string, number>();
+    const outgoing = new Map<string, number>();
+    links.forEach((item) => {
+      outgoing.set(item.source, (outgoing.get(item.source) ?? 0) + item.count);
+      incoming.set(item.target, (incoming.get(item.target) ?? 0) + item.count);
+    });
     return {
       tooltip: { trigger: 'item' },
       series: [{
-        type: 'sankey', left: 12, right: 92, top: 12, bottom: 12, nodeWidth: 16, nodeGap: 10,
+        type: 'sankey', left: 12, right: 104, top: 12, bottom: 12, nodeWidth: 16, nodeGap: 9,
         emphasis: { focus: 'adjacency' },
-        label: { color: palette.ink, fontSize: 11, formatter: (params: { name: string }) => statusLabels[params.name] ?? params.name },
+        label: {
+          color: palette.ink,
+          fontSize: 9,
+          formatter: (rawParams: unknown) => {
+            const params = rawParams as { name: string; data?: { value?: number } | null };
+            return `${statusLabels[params.name] ?? params.name} ${Number(params.data?.value ?? 0).toLocaleString('ko-KR')}건`;
+          },
+        },
+        labelLayout: { hideOverlap: true },
         lineStyle: { color: 'gradient', opacity: 0.28, curveness: 0.52 },
-        data: names.map((name) => ({ name })),
-        links: data?.flow.map((item) => ({ source: item.source, target: item.target, value: item.count })) ?? [],
+        data: names.map((name) => ({ name, value: Math.max(incoming.get(name) ?? 0, outgoing.get(name) ?? 0) })),
+        links: links.map((item) => ({ source: item.source, target: item.target, value: item.count })),
       }],
     };
+  }, [data?.flow]);
+
+  const flowGroups = useMemo(() => {
+    const links = data?.flow ?? [];
+    const incoming = new Map<string, number>();
+    const outgoing = new Map<string, number>();
+    links.forEach((item) => {
+      outgoing.set(item.source, (outgoing.get(item.source) ?? 0) + item.count);
+      incoming.set(item.target, (incoming.get(item.target) ?? 0) + item.count);
+    });
+    const nodes = Array.from(new Set(links.flatMap((item) => [item.source, item.target])))
+      .map((name) => ({ name, count: Math.max(incoming.get(name) ?? 0, outgoing.get(name) ?? 0) }));
+    return [
+      ['요청', nodes.filter((node) => node.name === 'REQUESTED')],
+      ['정책 판정', nodes.filter((node) => node.name.startsWith('DECISION_'))],
+      ['외부 실행', nodes.filter((node) => node.name.startsWith('EXECUTION_'))],
+      ['최종 상태', nodes.filter((node) => node.name.startsWith('FINAL_'))],
+    ] as const;
   }, [data?.flow]);
 
   const trendOption = useMemo<DashboardChartOption>(() => ({
@@ -144,6 +202,35 @@ export function DigitalAssetOperationsOverviewDashboard() {
   const selectRange = (next: RangeDays) => {
     setDays(next);
     setPeriod(range(next));
+    setCustomOpen(false);
+    setRangeError('');
+  };
+
+  const applyCustomRange = (event: FormEvent) => {
+    event.preventDefault();
+    const from = new Date(`${customFrom}T00:00:00`);
+    const requestedTo = new Date(`${customTo}T23:59:59.999`);
+    const to = requestedTo > new Date() ? new Date() : requestedTo;
+    const durationDays = (requestedTo.getTime() - from.getTime()) / (24 * 60 * 60 * 1000);
+    if (!customFrom || !customTo || Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || from >= to) {
+      setRangeError('시작일과 종료일을 올바르게 입력하세요.');
+      return;
+    }
+    if (durationDays > 31) {
+      setRangeError('조회 기간은 최대 31일입니다.');
+      return;
+    }
+    setRangeError('');
+    setDays('custom');
+    setPeriod({ from: from.toISOString(), to: to.toISOString() });
+  };
+
+  const refresh = () => {
+    if (days === 'custom') {
+      void overview.refetch();
+      return;
+    }
+    setPeriod(range(days));
   };
 
   return (
@@ -154,11 +241,25 @@ export function DigitalAssetOperationsOverviewDashboard() {
           <h1>Digital Asset Overview</h1>
           <p>사전 승인 정책부터 외부 실행, 미확정 복구와 감사 증적까지 한 흐름으로 확인합니다.</p>
         </div>
-        <div className="da-range-control" aria-label="조회 기간">
-          {([1, 7, 30] as RangeDays[]).map((value) => <button key={value} type="button" className={days === value ? 'active' : ''} onClick={() => selectRange(value)}>{value}D</button>)}
-          <button type="button" aria-label="현재 기간 새로고침" onClick={() => setPeriod(range(days))}><RefreshCw size={15} /></button>
+        <div className="da-overview-controls">
+          <span className="da-period-label"><CalendarRange size={14} />{periodLabel(period.from, period.to)}</span>
+          <div className="da-range-control" aria-label="조회 기간">
+            {([1, 7, 30] as RangeDays[]).map((value) => <button key={value} type="button" className={days === value ? 'active' : ''} onClick={() => selectRange(value)}>{value}D</button>)}
+            <button type="button" className={days === 'custom' || customOpen ? 'active' : ''} onClick={() => setCustomOpen((open) => !open)}>직접 설정</button>
+            <button type="button" aria-label="현재 기간 새로고침" onClick={refresh}><RefreshCw size={15} /></button>
+          </div>
         </div>
       </header>
+
+      {customOpen ? (
+        <form className="da-custom-range" onSubmit={applyCustomRange}>
+          <label><span>시작일</span><input type="date" value={customFrom} max={customTo} onChange={(event) => setCustomFrom(event.target.value)} /></label>
+          <span aria-hidden="true">-</span>
+          <label><span>종료일</span><input type="date" value={customTo} min={customFrom} max={dateInputValue(new Date().toISOString())} onChange={(event) => setCustomTo(event.target.value)} /></label>
+          <button type="submit">적용</button>
+          {rangeError ? <small role="alert">{rangeError}</small> : null}
+        </form>
+      ) : null}
 
       {overview.isLoading ? <LoadingPanel label="Digital Asset 운영 현황을 불러오는 중입니다" /> : null}
       {overview.isError ? <ErrorState title="Digital Asset 운영 현황을 불러오지 못했습니다" description="현재 계정의 Institution·Workload 권한과 BE 연결 상태를 확인하세요." onRetry={() => overview.refetch()} /> : null}
@@ -174,7 +275,7 @@ export function DigitalAssetOperationsOverviewDashboard() {
         </div>
 
         <div className="da-dashboard-grid da-dashboard-grid-main">
-          <article className="da-dashboard-panel da-flow-panel"><header><div><h2>정책 진행 흐름</h2><p>요청 시점에 고정된 정책 판정과 현재 실행 상태의 연결</p></div><StatusBadge tone="info">CURRENT PATH</StatusBadge></header><EChart option={sankeyOption} ariaLabel="Digital Asset 정책 진행 Sankey 차트" height={300} /></article>
+          <article className="da-dashboard-panel da-flow-panel"><header><div><h2>요청 처리 흐름</h2><p>요청 → 정책 판정 → 외부 실행 → 최종 상태</p></div><StatusBadge tone="info">4 STAGES</StatusBadge></header><EChart option={sankeyOption} ariaLabel="Digital Asset 요청 처리 Sankey 차트" height={280} /><div className="da-flow-summary">{flowGroups.map(([stage, nodes]) => <section key={stage}><strong>{stage}</strong><div>{nodes.map((node) => <span key={node.name}>{statusLabels[node.name] ?? node.name}<b>{node.count.toLocaleString('ko-KR')}건</b></span>)}</div></section>)}</div></article>
           <article className="da-dashboard-panel"><header><div><h2>위반 사유</h2><p>사전 정책 위반과 사후 실행 불일치</p></div></header><EChart option={violationOption} ariaLabel="Digital Asset 위반 사유 막대 차트" height={300} /></article>
         </div>
 
