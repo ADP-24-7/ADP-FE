@@ -47,10 +47,10 @@ export const aiOperationsHandlers = [
       { date: '2026-09-14', total: 18, minimized: 14, externalCalls: 16, completed: 14, blocked: 0, reviewRequired: 2, responseRejected: 1 },
     ],
     dataClassControls: [
-      { dataClass: 'CUSTOMER_IDENTIFIER', transformedFields: 88, retainedFields: 0, responseFindings: 1 },
-      { dataClass: 'ACCOUNT_IDENTIFIER', transformedFields: 76, retainedFields: 0, responseFindings: 0 },
-      { dataClass: 'FINANCIAL_AMOUNT', transformedFields: 64, retainedFields: 42, responseFindings: 2 },
-      { dataClass: 'BUSINESS_METADATA', transformedFields: 31, retainedFields: 114, responseFindings: 1 },
+      { dataClass: 'CUSTOMER_IDENTIFIER', protectionRequired: true, transformedFields: 88, retainedFields: 0, responseFindings: 1 },
+      { dataClass: 'ACCOUNT_IDENTIFIER', protectionRequired: true, transformedFields: 76, retainedFields: 0, responseFindings: 0 },
+      { dataClass: 'FINANCIAL_AMOUNT', protectionRequired: true, transformedFields: 64, retainedFields: 42, responseFindings: 2 },
+      { dataClass: 'BUSINESS_METADATA', protectionRequired: false, transformedFields: 31, retainedFields: 114, responseFindings: 1 },
     ],
     latency: [
       { workloadId: 'customer_summary', p50Ms: 920, p95Ms: 1680, observations: 35 },

@@ -35,6 +35,17 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: /My Work/ })).toBeInTheDocument();
   });
 
+  it('calculates the protection rate only from backend-designated data classes', async () => {
+    render(<App />);
+
+    const heading = await screen.findByRole('heading', { name: '보호 대상 필드 변환율' });
+    const panel = heading.closest('article');
+
+    expect(panel).toHaveTextContent('84.4%');
+    expect(panel).toHaveTextContent('변환 228 / 보호 대상 270 필드');
+    expect(screen.queryByText(/Butterfly/)).not.toBeInTheDocument();
+  });
+
   it('does not restore a persisted pack that the runtime selector does not support', async () => {
     window.localStorage.setItem('adp.selectedExecutionPack', 'saas');
 

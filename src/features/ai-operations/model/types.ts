@@ -41,6 +41,7 @@ export type AiOperationsOverview = {
   }>;
   dataClassControls: Array<{
     dataClass: string;
+    protectionRequired: boolean;
     transformedFields: number;
     retainedFields: number;
     responseFindings: number;
