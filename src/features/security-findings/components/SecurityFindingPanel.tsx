@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { normalizeApiError } from '../../../shared/api/apiError';
 import { EmptyState, ErrorState, KeyValues, LoadingPanel, SectionCard, StatusBadge } from '../../../shared/components';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../../shared/config/pagination';
+import { workloadDisplayName } from '../../../shared/config/adminLabels';
 import { useSecurityFindingDetail, useSecurityFindings } from '../hooks/useSecurityFindings';
 import type { SecurityFindingExecutionPack } from '../model/types';
 
@@ -12,6 +13,7 @@ const findingLabels: Record<string, string> = {
   ACCOUNT_NUMBER: '계좌번호',
   RESIDENT_REGISTRATION_NUMBER: '주민등록번호',
   NAME: '이름',
+  RAW_VALUE_REFLECTION: '원문 값 재노출',
 };
 
 type SecurityFindingPanelProps = {
@@ -25,6 +27,11 @@ export function SecurityFindingPanel({ executionPack, onOpenTrace }: SecurityFin
   const findings = useSecurityFindings({ executionPack, page, size: DEFAULT_TABLE_PAGE_SIZE });
   const detail = useSecurityFindingDetail(selectedFindingId);
   const totalPages = findings.data ? Math.ceil(findings.data.totalElements / findings.data.size) : 0;
+  const findingDistribution = Object.entries(findings.data?.items.reduce<Record<string, number>>((counts, finding) => {
+    counts[finding.findingType] = (counts[finding.findingType] ?? 0) + 1;
+    return counts;
+  }, {}) ?? {}).sort((left, right) => right[1] - left[1]);
+  const maxFindingCount = Math.max(1, ...findingDistribution.map(([, count]) => count));
 
   useEffect(() => {
     setPage(0);
@@ -34,8 +41,8 @@ export function SecurityFindingPanel({ executionPack, onOpenTrace }: SecurityFin
   return (
     <div className="security-finding-stack">
       <SectionCard
-        title="Security Findings"
-        description="Provider 응답에서 차단된 민감정보 Finding을 원문 없이 탐색합니다."
+        title="민감정보 탐지 현황"
+        description="외부 응답에서 차단된 민감정보를 원문 노출 없이 확인합니다."
         actions={(
           <div className="section-action-group">
             <button className="button button-secondary" type="button" onClick={() => findings.refetch()} disabled={findings.isFetching} title="Security Finding 새로고침">
@@ -44,9 +51,12 @@ export function SecurityFindingPanel({ executionPack, onOpenTrace }: SecurityFin
           </div>
         )}
       >
+        {findingDistribution.length ? <div className="finding-distribution" aria-label="현재 페이지 민감정보 탐지 유형 분포">
+          {findingDistribution.map(([type, count]) => <div key={type}><span>{findingLabels[type] ?? type}</span><i><b style={{ width: `${count / maxFindingCount * 100}%` }} /></i><strong>{count}건</strong></div>)}
+        </div> : null}
         <div className={`table-shell security-findings-table-shell${findings.isFetching && !findings.isLoading ? ' is-refreshing' : ''}`} aria-busy={findings.isFetching}>
           <div className="table-head table-security-findings">
-            <span>DETECTED</span><span>EXECUTION</span><span>WORKLOAD</span><span>TYPE</span><span>LOCATION</span><span>DETECTOR</span>
+            <span>탐지 시각</span><span>업무·목적</span><span>탐지 정보</span><span>검출 기준</span>
           </div>
           {findings.isLoading ? <LoadingPanel label="Security Finding을 불러오는 중입니다" /> : findings.isError ? (
             <ErrorState description={normalizeApiError(findings.error).message} onRetry={() => findings.refetch()} />
@@ -58,11 +68,9 @@ export function SecurityFindingPanel({ executionPack, onOpenTrace }: SecurityFin
               key={item.findingId}
               onClick={() => setSelectedFindingId(item.findingId)}
             >
-              <span>{new Date(item.createdAt).toLocaleString('ko-KR')}</span>
-              <span><code>{item.executionId}</code><small>{item.executionPack}</small></span>
-              <span>{item.workloadId}<small>{item.purposeCode}</small></span>
+              <span>{new Date(item.createdAt).toLocaleString('ko-KR')}<small>{item.executionId}</small></span>
+              <span>{workloadDisplayName(item.workloadId)}<small>{item.workloadId} · {item.purposeCode}</small></span>
               <StatusBadge tone="danger">{findingLabels[item.findingType] ?? item.findingType}</StatusBadge>
-              <span><code>{item.location}</code></span>
               <span>{item.detectorVersion}</span>
             </button>
           )) : (
@@ -78,23 +86,23 @@ export function SecurityFindingPanel({ executionPack, onOpenTrace }: SecurityFin
         </div>
       </SectionCard>
 
-      <SectionCard title="Finding Detail" description="원문 대신 위치, 오프셋, 검출기 버전과 Evidence Digest를 확인합니다.">
+      <SectionCard title="탐지 상세" description="선택한 탐지의 처리 상태와 원문 없는 기술 증적을 확인합니다.">
         {selectedFindingId == null ? (
-          <EmptyState icon={ShieldAlert} title="Finding 선택 대기" description="위 목록에서 Finding을 선택하세요." />
+          <EmptyState icon={ShieldAlert} title="탐지 항목 선택 대기" description="왼쪽 목록에서 확인할 탐지 항목을 선택하세요." />
         ) : detail.isLoading ? <LoadingPanel label="Finding 상세를 불러오는 중입니다" /> : detail.isError ? (
           <ErrorState description={normalizeApiError(detail.error).message} onRetry={() => detail.refetch()} />
         ) : detail.data ? (
           <div className="recovery-detail-stack">
             <KeyValues items={[
-              ['Execution ID', detail.data.executionId],
+              ['관련 실행', detail.data.executionId],
+              ['업무 영역', `${workloadDisplayName(detail.data.workloadId)} · ${detail.data.executionPack}`],
+              ['탐지 정보', findingLabels[detail.data.findingType] ?? detail.data.findingType],
+              ['응답 보호 결과', detail.data.responseGuardStatus],
+              ['실행·외부 상태', `${detail.data.runtimeStatus} · ${detail.data.connectorStatus}`],
+              ['탐지 위치', `${detail.data.location} · ${detail.data.startOffset}-${detail.data.endOffset}`],
+              ['검출 기준 버전', detail.data.detectorVersion],
               ['Trace ID', detail.data.traceId],
-              ['Pack / Workload', `${detail.data.executionPack} · ${detail.data.workloadId}`],
-              ['Finding Type', findingLabels[detail.data.findingType] ?? detail.data.findingType],
-              ['Location / Offset', `${detail.data.location} · ${detail.data.startOffset}-${detail.data.endOffset}`],
-              ['Detector Version', detail.data.detectorVersion],
-              ['Evidence Digest', detail.data.evidenceDigest],
-              ['Runtime / Connector', `${detail.data.runtimeStatus} · ${detail.data.connectorStatus}`],
-              ['Response Guard', detail.data.responseGuardStatus],
+              ['증적 Digest', detail.data.evidenceDigest],
             ]} />
             <div className="section-action-group">
               <button className="button button-primary" type="button" onClick={() => onOpenTrace(detail.data.executionId)}>

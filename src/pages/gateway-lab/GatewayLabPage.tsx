@@ -303,17 +303,13 @@ export function GatewayLabPage() {
   return (
     <section className="page-section">
       <PageHeader
-        eyebrow={isDigitalAsset ? 'TRANSACTION INTENT → VERIFIED SETTLEMENT' : 'EMPLOYEE REQUEST → SAFE AI RESPONSE'}
+        eyebrow="CONTROLLED EXECUTION LAB"
         title="Gateway Lab"
         description={isDigitalAsset ? '거래 의도부터 정책 검증, 외부 상태 확인과 정산 복구까지 한 번에 검증합니다.' : '은행원의 요청부터 데이터 최소화, AI 응답 재검사와 최종 전달까지 한 번에 비교합니다.'}
         actions={<StatusBadge tone={canExecute ? 'success' : 'warning'}>{canExecute ? '실행 가능' : '권한 필요'}</StatusBadge>}
       />
 
       <PackContextSummary label={selectedPack.label} scope={selectedPack.scope} descriptor={selectedPack.descriptor} objective={selectedPack.objective} />
-
-      <div className="notice notice-security">
-        <strong>보호된 실행 경로</strong> 모든 실행은 서버 측 인증·권한·정책 검증 후 처리되며, 서비스 자격 증명은 브라우저에 노출되지 않습니다.
-      </div>
 
       <div className="lab-toolbar" aria-label="Gateway Lab controls">
         <div>
@@ -330,82 +326,83 @@ export function GatewayLabPage() {
         </div>
       </div>
 
+      <div className="lab-simulation-flow" aria-label="시뮬레이션 진행 순서">
+        {['시나리오 선택', '요청 입력', '사전 검증', '결과 확인'].map((label, index) => <div className={execution.data ? 'complete' : index < 2 ? 'active' : ''} key={label}><span>{index + 1}</span><strong>{label}</strong></div>)}
+      </div>
+
       <section className={isApprovedScenario ? 'policy-application-card policy-application-card-approved' : 'policy-application-card'}>
         <div className="policy-application-hero">
           <span className="policy-application-icon" aria-hidden="true"><ShieldCheck size={24} /></span>
           <div>
-            <p>PRE-APPROVED POLICY APPLIED</p>
+            <p>정책 적용 예상</p>
             <h2>{isApprovedScenario ? '사전 승인 정책 재사용 가능' : scenarioMode === 'scope-change' ? '승인 범위 변경 검토 필요' : scenarioMode === 'destination-risk' ? '외부 대상 상태 확인 필요' : '응답 재검증 필요'}</h2>
             <span>{isApprovedScenario ? 'Gateway가 임의로 허용하지 않고 기존 Approval Reference와 현재 요청을 비교합니다.' : isDigitalAsset ? 'FPG는 거래 적격성을 재판정하지 않고 승인된 거래 의도와 외부 상태/정산 결과를 검증합니다.' : '승인된 목적과 다른 전송 범위는 Review 경로로 분기되어야 합니다.'}</span>
           </div>
-          <StatusBadge tone={isApprovedScenario ? 'success' : 'warning'}>{isApprovedScenario ? 'REUSE_ALLOWED' : 'REVIEW_REQUIRED'}</StatusBadge>
+          <StatusBadge tone={isApprovedScenario ? 'success' : 'warning'}>{isApprovedScenario ? '재사용 가능' : '검토 필요'}</StatusBadge>
         </div>
         <KeyValues
           items={[
-            ['Workload', workloadId || '입력 대기'],
-            ['Policy', execution.data?.created.policyVersion ?? '실행 대기'],
-            ['Approval', execution.data?.trace.evidence.approvalReference ?? (approvalReference || '입력 대기')],
-            ['Data Profile', selectedPack.scope],
-            ['Destination', destinationProfileId || selectedPack.destinationProfile[0]?.[1] || '입력 대기'],
-            ['Execution Pack', selectedPack.label],
-            ['Scope Match', isApprovedScenario ? 'MATCH' : 'REVIEW'],
+            ['업무', workloadId || '입력 대기'],
+            ['적용 정책', execution.data?.created.policyVersion ?? '실행 후 확인'],
+            ['승인 참조', execution.data?.trace.evidence.approvalReference ?? (approvalReference || '입력 대기')],
+            ['외부 실행 대상', destinationProfileId || selectedPack.destinationProfile[0]?.[1] || '입력 대기'],
+            ['범위 일치', isApprovedScenario ? '일치' : '검토 필요'],
           ]}
         />
       </section>
 
       <div className="gateway-prototype-grid">
-        <SectionCard title={isDigitalAsset ? '거래 요청' : '사용자 요청'} description="업무 목적과 실행 범위">
+        <SectionCard title={isDigitalAsset ? '거래 요청 구성' : 'AI 요청 구성'} description="시뮬레이션할 업무 목적과 실행 범위를 입력합니다." actions={
+          <button className="button button-secondary local-example-button" type="button" onClick={() => fillLocalContractExample()}>
+            <Sparkles size={15} />예시 불러오기
+          </button>
+        }>
           <form className="form-grid compact-form-grid" onSubmit={submit}>
-            {selectedPack.key === 'ai' || isDigitalAsset ? (
-              <button className="button button-secondary field-full local-example-button" type="button" onClick={() => fillLocalContractExample()}>
-                <Sparkles size={15} />BE Local 계약 예시 채우기
-              </button>
-            ) : null}
             <div className="requester-role-card field-full">
               <span aria-hidden="true"><BriefcaseBusiness size={20} /></span>
               <div>
-                <small>ROLE</small>
+                <small>요청자 역할</small>
                 <strong>{requesterRole === 'staff' ? (isDigitalAsset ? '카드결제 운영자' : '상담직원') : (isDigitalAsset ? '정산 담당자' : '여신심사 담당자')}</strong>
               </div>
             </div>
             <label className="field">
-              <span>Institution ID</span>
+              <span>기관</span>
               <input value={institutionId} onChange={(event) => markLogicalRequestChanged(() => setInstitutionId(event.target.value))} placeholder="institution identifier" required />
             </label>
             <label className="field">
-              <span>Approval Reference</span>
+              <span>사전 승인 참조</span>
               <input value={approvalReference} onChange={(event) => markLogicalRequestChanged(() => setApprovalReference(event.target.value))} placeholder="approved policy reference" required />
             </label>
             <label className="field">
-              <span>Workload ID</span>
+              <span>업무 ID</span>
               <input value={workloadId} onChange={(event) => markLogicalRequestChanged(() => setWorkloadId(event.target.value))} placeholder={selectedPack.gatewayRequest.workloadPlaceholder} required />
             </label>
             <label className="field">
-              <span>Purpose Code</span>
+              <span>실행 목적</span>
               <input value={purposeCode} onChange={(event) => markLogicalRequestChanged(() => setPurposeCode(event.target.value))} placeholder={selectedPack.gatewayRequest.purposePlaceholder} required />
             </label>
             <label className="field">
-              <span>Subject Scope</span>
+              <span>업무 대상 범위</span>
               <input value={subjectScope} onChange={(event) => markLogicalRequestChanged(() => setSubjectScope(event.target.value))} placeholder={selectedPack.gatewayRequest.subjectPlaceholder} required />
             </label>
             <label className="field">
-              <span>Destination Profile ID</span>
+              <span>외부 실행 대상</span>
               <input value={destinationProfileId} onChange={(event) => markLogicalRequestChanged(() => setDestinationProfileId(event.target.value))} placeholder={selectedPack.gatewayRequest.destinationPlaceholder} required />
             </label>
             {isDigitalAsset ? (
               <>
-                <label className="field field-full"><span>Approved Transaction Reference</span><input value={approvedTransactionReference} onChange={(event) => markLogicalRequestChanged(() => setApprovedTransactionReference(event.target.value))} placeholder="approved-tx-local-001" required /></label>
-                <label className="field"><span>Customer ID</span><input value={customerId} onChange={(event) => markLogicalRequestChanged(() => setCustomerId(event.target.value))} required /></label>
-                <label className="field"><span>Account ID</span><input value={accountId} onChange={(event) => markLogicalRequestChanged(() => setAccountId(event.target.value))} required /></label>
-                <label className="field"><span>Chain ID</span><input value={chainId} onChange={(event) => markLogicalRequestChanged(() => setChainId(event.target.value))} placeholder="eip155:1" required /></label>
-                <label className="field"><span>Asset Kind</span><select value={assetKind} onChange={(event) => markLogicalRequestChanged(() => setAssetKind(event.target.value as DigitalAssetKind))}><option value="NATIVE">NATIVE</option><option value="FUNGIBLE_TOKEN">FUNGIBLE_TOKEN</option><option value="NON_FUNGIBLE_TOKEN">NON_FUNGIBLE_TOKEN</option></select></label>
-                <label className="field"><span>Asset Symbol</span><input value={assetSymbol} onChange={(event) => markLogicalRequestChanged(() => setAssetSymbol(event.target.value))} required /></label>
-                <label className="field"><span>Operation</span><select value={operation} onChange={(event) => markLogicalRequestChanged(() => setOperation(event.target.value as DigitalAssetOperation))}><option value="TRANSFER">TRANSFER</option><option value="CONTRACT_CALL">CONTRACT_CALL</option></select></label>
+                <label className="field field-full"><span>승인된 거래 참조</span><input value={approvedTransactionReference} onChange={(event) => markLogicalRequestChanged(() => setApprovedTransactionReference(event.target.value))} placeholder="approved-tx-local-001" required /></label>
+                <label className="field"><span>고객 ID</span><input value={customerId} onChange={(event) => markLogicalRequestChanged(() => setCustomerId(event.target.value))} required /></label>
+                <label className="field"><span>계좌 ID</span><input value={accountId} onChange={(event) => markLogicalRequestChanged(() => setAccountId(event.target.value))} required /></label>
+                <label className="field"><span>네트워크</span><input value={chainId} onChange={(event) => markLogicalRequestChanged(() => setChainId(event.target.value))} placeholder="eip155:1" required /></label>
+                <label className="field"><span>자산 유형</span><select value={assetKind} onChange={(event) => markLogicalRequestChanged(() => setAssetKind(event.target.value as DigitalAssetKind))}><option value="NATIVE">네이티브 자산</option><option value="FUNGIBLE_TOKEN">대체 가능 토큰</option><option value="NON_FUNGIBLE_TOKEN">NFT</option></select></label>
+                <label className="field"><span>자산 심볼</span><input value={assetSymbol} onChange={(event) => markLogicalRequestChanged(() => setAssetSymbol(event.target.value))} required /></label>
+                <label className="field"><span>거래 방식</span><select value={operation} onChange={(event) => markLogicalRequestChanged(() => setOperation(event.target.value as DigitalAssetOperation))}><option value="TRANSFER">전송</option><option value="CONTRACT_CALL">계약 호출</option></select></label>
                 {assetKind !== 'NATIVE' ? <label className="field field-full"><span>Asset Contract Address</span><input value={assetContractAddress} onChange={(event) => markLogicalRequestChanged(() => setAssetContractAddress(event.target.value))} required /></label> : null}
                 {assetKind === 'NON_FUNGIBLE_TOKEN' ? <label className="field field-full"><span>Token ID</span><input value={tokenId} onChange={(event) => markLogicalRequestChanged(() => setTokenId(event.target.value))} required /></label> : null}
-                <label className="field"><span>Requested Amount (Atomic Units)</span><input inputMode="numeric" pattern="[0-9]+" value={requestedAmount} onChange={(event) => markLogicalRequestChanged(() => setRequestedAmount(event.target.value))} required /></label>
-                <label className="field"><span>Requested Destination</span><input value={requestedDestination} onChange={(event) => markLogicalRequestChanged(() => setRequestedDestination(event.target.value))} required /></label>
-                <label className="field field-full"><span>Beneficiary Reference</span><input value={requestedBeneficiaryReference} onChange={(event) => markLogicalRequestChanged(() => setRequestedBeneficiaryReference(event.target.value))} required /></label>
+                <label className="field"><span>요청 수량 (최소 단위)</span><input inputMode="numeric" pattern="[0-9]+" value={requestedAmount} onChange={(event) => markLogicalRequestChanged(() => setRequestedAmount(event.target.value))} required /></label>
+                <label className="field"><span>요청 목적지</span><input value={requestedDestination} onChange={(event) => markLogicalRequestChanged(() => setRequestedDestination(event.target.value))} required /></label>
+                <label className="field field-full"><span>수취인 참조</span><input value={requestedBeneficiaryReference} onChange={(event) => markLogicalRequestChanged(() => setRequestedBeneficiaryReference(event.target.value))} required /></label>
               </>
             ) : (
               <>
@@ -418,24 +415,24 @@ export function GatewayLabPage() {
               </>
             )}
             <label className="field field-full">
-              <span>Processing Contexts</span>
+              <span>적용 통제 범위</span>
               <input value={processingContextsText} onChange={(event) => markLogicalRequestChanged(() => setProcessingContextsText(event.target.value))} placeholder={selectedPack.defaultProcessingContexts.join(', ')} required />
             </label>
             <KeyValues
               items={[
-                ['Purpose', purposeCode || '입력 대기'],
-                ['Subject Scope', subjectScope || '입력 대기'],
-                ['Requested Change', isApprovedScenario ? '없음' : '있음'],
-                ['Approval Reuse', isApprovedScenario ? '동일 조건' : 'Review 필요'],
+                ['실행 목적', purposeCode || '입력 대기'],
+                ['업무 대상', subjectScope || '입력 대기'],
+                ['승인 범위 변경', isApprovedScenario ? '없음' : '있음'],
+                ['승인 재사용', isApprovedScenario ? '동일 조건' : '검토 필요'],
               ]}
             />
             <div className="input-meta field-full">
-              <span>{isDigitalAsset ? 'P0-4 Canonical Contract' : `${content.length} chars`}</span>
-              <span>Raw Prompt · Token Map 저장 금지</span>
+              <span>{isDigitalAsset ? '표준 거래 계약' : `${content.length}자 입력`}</span>
+              <span>원문과 토큰 매핑은 저장하지 않음</span>
             </div>
             <div className="idempotency-panel field-full">
               <div>
-                <span>Idempotency Key</span>
+                <span>중복 실행 방지 키</span>
                 <code>{idempotencyKey}</code>
               </div>
               <button className="button button-secondary" type="button" onClick={() => setIdempotencyKey(createIdempotencyKey())}>
@@ -450,13 +447,14 @@ export function GatewayLabPage() {
           </form>
         </SectionCard>
 
-        <SectionCard title={isDigitalAsset ? '실행 전 경계 검증' : '전송 전 데이터 미리보기'} description={isDigitalAsset ? '공개 정보와 가치사용 경계 표시' : '원본 대신 외부 전송값과 처리 근거 표시'}>
+        <div className="gateway-simulation-results">
+        <SectionCard title={isDigitalAsset ? '실행 전 경계 검증' : '전송 전 데이터 미리보기'} description={isDigitalAsset ? '거래 실행 전 승인 범위와 외부 전송 경계를 비교합니다.' : '원본 대신 외부 전송 항목과 처리 근거를 표시합니다.'}>
           <div className="field-treatment-table" role="table" aria-label="Field treatment preview">
             <div className="field-treatment-head" role="row">
-              <span>FIELD</span>
+              <span>데이터 항목</span>
               <span>요청</span>
-              <span>OBLIGATION</span>
-              <span>TREATMENT</span>
+              <span>보호 의무</span>
+              <span>처리 방식</span>
             </div>
             {fieldTreatmentRows.map((row) => (
               <div className="field-treatment-row" role="row" key={row.field}>
@@ -468,11 +466,11 @@ export function GatewayLabPage() {
             ))}
           </div>
           <div className="field-summary-grid">
-            <div><span>Requested</span><strong>{execution.data ? `${execution.data.trace.evidence.requested.count ?? 0} Fields` : '실행 대기'}</strong></div>
-            <div><span>Retrieved</span><strong>{execution.data ? `${execution.data.trace.evidence.retrieved.count ?? 0} Fields` : '실행 대기'}</strong></div>
-            <div><span>Released</span><strong>{execution.data ? `${execution.data.trace.evidence.released.count ?? 0} Fields` : '실행 대기'}</strong></div>
-            <div><span>Transformed</span><strong>{execution.data ? `${execution.data.trace.evidence.transformed.count ?? 0} Fields` : '실행 대기'}</strong></div>
-            <div><span>Outbound Guard</span><strong>{execution.data?.created.outboundGuardStatus ?? '실행 대기'}</strong></div>
+            <div><span>요청</span><strong>{execution.data ? `${execution.data.trace.evidence.requested.count ?? 0}개` : '대기'}</strong></div>
+            <div><span>조회</span><strong>{execution.data ? `${execution.data.trace.evidence.retrieved.count ?? 0}개` : '대기'}</strong></div>
+            <div><span>외부 전달</span><strong>{execution.data ? `${execution.data.trace.evidence.released.count ?? 0}개` : '대기'}</strong></div>
+            <div><span>변환</span><strong>{execution.data ? `${execution.data.trace.evidence.transformed.count ?? 0}개` : '대기'}</strong></div>
+            <div><span>전송 검사</span><strong>{execution.data?.created.outboundGuardStatus ?? '대기'}</strong></div>
           </div>
         </SectionCard>
 
@@ -536,8 +534,11 @@ export function GatewayLabPage() {
             />
           )}
         </SectionCard>
+        </div>
       </div>
 
+      <details className="lab-technical-evidence">
+        <summary>실행 경로 및 기술 증적</summary>
       <div className="gateway-lower-grid">
         <SectionCard title="Target Pipeline" description="선택된 Pack에 적용할 목표 Gateway 처리 단계" actions={<StatusBadge tone="purple">TARGET</StatusBadge>}>
           <div className="checkpoint-list">
@@ -649,6 +650,7 @@ export function GatewayLabPage() {
           </SectionCard>
         </div>
       </div>
+      </details>
     </section>
   );
 }

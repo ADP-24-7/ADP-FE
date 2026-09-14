@@ -4,6 +4,7 @@ import { normalizeApiError } from '../../../shared/api/apiError';
 import { EmptyState, ErrorState, KeyValues, LoadingPanel, MetricCard, SearchAssistInput, SectionCard, StatusBadge } from '../../../shared/components';
 import type { RuntimeExecutionTrace } from '../../runtime-execution/model/types';
 import { useAiCalibrationEvidence, useAiEvaluationBundle, useAiEvaluationReadiness, useAiExecutionTraces, useAiTransformGovernanceProfile } from '../hooks/useAiEvaluationRun';
+import { useAuthContext } from '../../auth';
 
 const CURRENT_RUN_ID = 'ai-experiment-02-financial-regulatory-v5';
 
@@ -63,13 +64,17 @@ function fpgStageMillis(trace: RuntimeExecutionTrace) {
 }
 
 export function AiEvaluationPanel() {
+  const auth = useAuthContext();
+  const canReadRestrictedEvidence = Boolean(auth.data?.roles.includes('PRIVILEGED_OPERATOR')
+    || auth.data?.roles.includes('AUDITOR'));
   const [runId, setRunId] = useState(CURRENT_RUN_ID);
   const [lookupRunId, setLookupRunId] = useState(CURRENT_RUN_ID);
   const [selectedExecutionId, setSelectedExecutionId] = useState('');
-  const readiness = useAiEvaluationReadiness(lookupRunId);
+  const [activeView, setActiveView] = useState<'executions' | 'controls' | 'validation'>('controls');
+  const readiness = useAiEvaluationReadiness(lookupRunId, canReadRestrictedEvidence);
   const governance = useAiTransformGovernanceProfile(lookupRunId);
-  const bundle = useAiEvaluationBundle(lookupRunId, readiness.data?.bundleAvailable === true);
-  const calibration = useAiCalibrationEvidence(lookupRunId, readiness.data?.bundleAvailable === true);
+  const bundle = useAiEvaluationBundle(lookupRunId, canReadRestrictedEvidence && readiness.data?.bundleAvailable === true);
+  const calibration = useAiCalibrationEvidence(lookupRunId, canReadRestrictedEvidence && readiness.data?.bundleAvailable === true);
   const executionIds = bundle.data?.caseResults.map((item) => item.executionId) ?? [];
   const traceQueries = useAiExecutionTraces(executionIds);
   const traces = traceQueries.flatMap((query) => query.data ? [query.data] : []);
@@ -83,8 +88,8 @@ export function AiEvaluationPanel() {
     const decision = policyStatus(trace);
     return contractStatus(trace) === 'MATCH' && (decision === 'ALLOW' || decision === 'TRANSFORM');
   }).length;
-  const loading = readiness.isLoading || governance.isLoading || bundle.isLoading || calibration.isLoading || tracesLoading;
-  const failed = readiness.isError || governance.isError || bundle.isError || calibration.isError || tracesFailed;
+  const loading = governance.isLoading || (canReadRestrictedEvidence && (readiness.isLoading || bundle.isLoading || calibration.isLoading || tracesLoading));
+  const failed = governance.isError || (canReadRestrictedEvidence && (readiness.isError || bundle.isError || calibration.isError || tracesFailed));
   const state = loading ? 'loading' as const : failed ? 'error' as const : 'value' as const;
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -95,7 +100,7 @@ export function AiEvaluationPanel() {
 
   return (
     <div className="ai-admin-stack">
-      <SectionCard className="search-assist-card" title="AI 실행 모니터링" description="Evaluation Run에 바인딩된 외부 실행과 통제 결과를 조회합니다." actions={readiness.data ? <StatusBadge tone={readiness.data.status === 'READY' ? 'success' : 'warning'}>{readiness.data.status}</StatusBadge> : undefined}>
+      <SectionCard className="search-assist-card" title="AI 실행 모니터링" description="평가 실행에 연결된 외부 실행과 통제 결과를 조회합니다." actions={canReadRestrictedEvidence ? (readiness.data ? <StatusBadge tone={readiness.data.status === 'READY' ? 'success' : 'warning'}>{readiness.data.status}</StatusBadge> : undefined) : <StatusBadge tone="neutral">운영 조회</StatusBadge>}>
         <form className="search-row" onSubmit={submit}>
           <label className="field field-grow">
             <span>Evaluation Run ID</span>
@@ -108,17 +113,36 @@ export function AiEvaluationPanel() {
         </form>
       </SectionCard>
 
+      {!canReadRestrictedEvidence ? <div className="notice notice-access">
+        <strong>상세 검증 증적은 승인 담당자 전용입니다.</strong> 현재 계정에서는 업무·규제 통제 기준을 조회할 수 있으며, 평가 Bundle과 검증 결과는 승인 담당자 계정에서 확인합니다.
+      </div> : null}
+
       <div className="metric-grid">
-        <MetricCard label="External Executions" value={providerExecutions} description="Provider 응답을 받은 실행" state={state} icon={Activity} tone="blue" />
-        <MetricCard label="Block / Review / Withheld" value={heldExecutions} description="관리자 확인이 필요한 실행" state={state} icon={FilterX} tone="red" />
-        <MetricCard label="Transform Applied" value={transformedExecutions} description="Transform 단계가 적용된 실행" state={state} icon={ShieldCheck} tone="green" />
-        <MetricCard label="Policy / Contract Match" value={`${matchingContracts} / ${readiness.data?.expectedExecutionCount ?? 0}`} description="Frozen input과 정책 Evidence 일치" state={state} icon={FileCheck2} tone="neutral" />
+        <MetricCard label="외부 AI 실행" value={providerExecutions} description="Provider 응답을 받은 실행" state={canReadRestrictedEvidence ? state : 'restricted'} icon={Activity} tone="blue" />
+        <MetricCard label="확인 필요" value={heldExecutions} description="차단·검토·응답 보류 실행" state={canReadRestrictedEvidence ? state : 'restricted'} icon={FilterX} tone="red" />
+        <MetricCard label="데이터 변환 적용" value={transformedExecutions} description="전송 전 최소화가 적용된 실행" state={canReadRestrictedEvidence ? state : 'restricted'} icon={ShieldCheck} tone="green" />
+        <MetricCard label="정책·계약 일치" value={`${matchingContracts} / ${readiness.data?.expectedExecutionCount ?? 0}`} description="승인 조건과 실행 증적 일치" state={canReadRestrictedEvidence ? state : 'restricted'} icon={FileCheck2} tone="neutral" />
       </div>
+
+      {canReadRestrictedEvidence ? <div className="ai-operations-flow" aria-label="AI 실행 통제 흐름">
+        {[
+          ['검증 대상', readiness.data?.expectedExecutionCount ?? 0],
+          ['데이터 변환', transformedExecutions],
+          ['외부 AI 실행', providerExecutions],
+          ['확인 필요', heldExecutions],
+        ].map(([label, value], index) => <div key={String(label)}><span>{index + 1}</span><small>{label}</small><strong>{value}</strong>{index < 3 ? <i /> : null}</div>)}
+      </div> : null}
 
       {failed ? <ErrorState title="AI Runtime Evidence를 불러오지 못했습니다" description={normalizeApiError(readiness.error ?? governance.error ?? bundle.error ?? calibration.error ?? traceQueries.find((query) => query.error)?.error).message} onRetry={() => { readiness.refetch(); governance.refetch(); bundle.refetch(); calibration.refetch(); traceQueries.forEach((query) => query.refetch()); }} /> : null}
 
-      {governance.data ? <>
-        <SectionCard title="Workload / Regulatory Control Context" description="실행 기능이 아닌 관리자용 frozen E2 Requirement Context입니다." actions={<StatusBadge tone="warning">{governance.data.e2ValidationStatus}</StatusBadge>}>
+      <div className="admin-workspace-tabs" role="tablist" aria-label="AI 운영 분석 화면">
+        {canReadRestrictedEvidence ? <button type="button" role="tab" aria-selected={activeView === 'executions'} className={activeView === 'executions' ? 'active' : ''} onClick={() => setActiveView('executions')}>실행 모니터링</button> : null}
+        <button type="button" role="tab" aria-selected={activeView === 'controls'} className={activeView === 'controls' ? 'active' : ''} onClick={() => setActiveView('controls')}>정책·필드 통제</button>
+        {canReadRestrictedEvidence ? <button type="button" role="tab" aria-selected={activeView === 'validation'} className={activeView === 'validation' ? 'active' : ''} onClick={() => setActiveView('validation')}>검증 결과</button> : null}
+      </div>
+
+      {activeView === 'controls' && governance.data ? <>
+        <SectionCard title="업무·규제 통제 기준" description="현재 AI 업무에 동결된 목적, 대상, 요청자 역할을 확인합니다." actions={<StatusBadge tone="warning">{governance.data.e2ValidationStatus}</StatusBadge>}>
           <div className="content-grid content-grid-two ai-evidence-grid">
             <KeyValues items={[
               ['Workload', `${governance.data.workloadName} (${governance.data.workloadId})`],
@@ -142,7 +166,7 @@ export function AiEvaluationPanel() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Provider Governance / External Execution" description="BE가 동결 계약으로 판정한 Provider·Model·Region·Retention·Reuse 결과입니다." actions={<StatusBadge tone={statusTone(governance.data.providerGovernance.governanceDecision)}>{governance.data.providerGovernance.governanceDecision}</StatusBadge>}>
+        <SectionCard title="외부 AI 제공자 통제" description="승인된 모델·리전·보존·재사용 조건과 실제 요청을 비교합니다." actions={<StatusBadge tone={statusTone(governance.data.providerGovernance.governanceDecision)}>{governance.data.providerGovernance.governanceDecision}</StatusBadge>}>
           <div className="content-grid content-grid-two ai-evidence-grid">
             <KeyValues items={[
               ['Provider', governance.data.providerGovernance.providerConnectionProfileId],
@@ -163,7 +187,7 @@ export function AiEvaluationPanel() {
           </div>
         </SectionCard>
 
-        <SectionCard title="E2 / E3 Field Control" description="E2 Requirement와 E3의 독립 gate 결과, 현재 Runtime 활성화 차이를 표시합니다." actions={<StatusBadge tone="neutral">{governance.data.fieldControls.length} FIELDS</StatusBadge>}>
+        <SectionCard title="필드별 보호 정책" description="데이터 필드별 요구 처리와 현재 Runtime 적용 결과를 비교합니다." actions={<StatusBadge tone="neutral">{governance.data.fieldControls.length}개 필드</StatusBadge>}>
           <div className="ai-execution-table-shell">
             <div className="table-head table-ai-field-controls">
               <span>Field / Classification</span><span>Requirement / Intent</span><span>Runtime → Validated</span><span>E3 Validation</span><span>Rejected</span><span>Applicability</span><span>Evidence</span><span>Release</span>
@@ -188,10 +212,10 @@ export function AiEvaluationPanel() {
         </SectionCard> : null}
       </> : null}
 
-      <SectionCard title="실행 목록" description="Provider 호출 상태와 Controlled Delivery 결과를 별도 열로 확인합니다." actions={<StatusBadge tone="neutral">{traces.length} EXECUTIONS</StatusBadge>}>
+      {activeView === 'executions' ? <SectionCard title="실행 목록" description="외부 AI 호출부터 응답 보호와 최종 전달까지 실행별로 확인합니다." actions={<StatusBadge tone="neutral">{traces.length}건</StatusBadge>}>
         <div className="ai-execution-table-shell">
           <div className="table-head table-ai-executions">
-            <span>Model</span><span>Workload / Purpose</span><span>Runtime</span><span>Transform</span><span>Outbound</span><span>Provider</span><span>Response Guard</span><span>Delivery</span><span>Timestamp</span>
+            <span>AI 모델</span><span>업무·목적</span><span>실행 상태</span><span>데이터 변환</span><span>전송 검사</span><span>외부 응답</span><span>응답 보호</span><span>최종 전달</span><span>요청 시각</span>
           </div>
           {tracesLoading ? <LoadingPanel label="실행 Trace를 불러오는 중입니다" /> : traces.length ? traces.map((trace) => {
             const model = trace.evidence.aiModel;
@@ -209,9 +233,9 @@ export function AiEvaluationPanel() {
             </button>;
           }) : <EmptyState compact title="실행 Evidence 없음" description="선택한 Run에서 관측된 실행이 없습니다." />}
         </div>
-      </SectionCard>
+      </SectionCard> : null}
 
-      <SectionCard title="Response Finding Calibration" description="BE calibration-evidence의 privacy-safe finding group만 표시합니다.">
+      {activeView === 'validation' ? <SectionCard title="응답 탐지 검증 결과" description="원문 없이 민감정보 탐지 그룹과 검증 준비 상태를 확인합니다.">
         {calibration.data ? <div className="content-grid content-grid-two ai-evidence-grid">
           <KeyValues items={[
             ['Calibration ready', calibration.data.calibrationReady ? 'YES' : 'NO'],
@@ -225,9 +249,9 @@ export function AiEvaluationPanel() {
               `${finding.findingType} · ${finding.sourceDataClass ?? 'UNBOUND'} · ${finding.transformStrategy ?? 'UNBOUND'} · ${finding.fieldTreatment ?? 'UNBOUND'} × ${finding.count}`,
             ] as [string, string]))} />
         </div> : <EmptyState compact title="NOT_EXECUTED" description="완전한 3×3 Bundle이 없어 latency, token, response finding을 조회하지 않습니다." />}
-      </SectionCard>
+      </SectionCard> : null}
 
-      {selectedTrace ? <ExecutionTracePanel trace={selectedTrace} /> : null}
+      {activeView === 'executions' && selectedTrace ? <ExecutionTracePanel trace={selectedTrace} /> : null}
     </div>
   );
 }

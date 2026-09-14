@@ -36,8 +36,10 @@ describe('App', () => {
   });
 
   it('calculates the protection rate only from backend-designated data classes', async () => {
+    const user = userEvent.setup();
     render(<App />);
 
+    await user.click(await screen.findByRole('tab', { name: /AI · Agent/ }));
     const heading = await screen.findByRole('heading', { name: '보호 대상 필드 변환율' });
     const panel = heading.closest('article');
 
@@ -110,10 +112,10 @@ describe('App', () => {
     expect(screen.queryByRole('tablist', { name: 'Gateway 실행 축 선택' })).not.toBeInTheDocument();
     expect(screen.queryByText('Gateway 실행 축')).not.toBeInTheDocument();
     expect(screen.getByLabelText('선택된 운영 영역')).toHaveTextContent('Digital Asset');
-    expect(screen.getByRole('textbox', { name: 'Customer ID' })).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: 'Approved Transaction Reference' })).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: 'Requested Amount (Atomic Units)' })).toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: 'Asset Kind' })).toHaveValue('FUNGIBLE_TOKEN');
+    expect(screen.getByRole('textbox', { name: '고객 ID' })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: '승인된 거래 참조' })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: '요청 수량 (최소 단위)' })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: '자산 유형' })).toHaveValue('FUNGIBLE_TOKEN');
   });
 
   it('keeps the local runtime harness read-only for an auditor session', async () => {
@@ -158,8 +160,9 @@ describe('App', () => {
 
     await user.click(screen.getByRole('link', { name: /AI Admin/ }));
     expect(await screen.findByRole('heading', { name: 'AI Admin' })).toBeInTheDocument();
-    expect(await screen.findByText('E2 / E3 Field Control')).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Recovery Incident' })).not.toBeInTheDocument();
+    await user.click(await screen.findByRole('tab', { name: '정책·필드 통제' }));
+    expect(await screen.findByText('필드별 보호 정책')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '복구 대상 실행' })).not.toBeInTheDocument();
   });
 
   it('shows AI operations without the legacy generic signal inference', async () => {

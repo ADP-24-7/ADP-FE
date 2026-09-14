@@ -86,11 +86,11 @@ describe('AuditExportWorkPanel', () => {
     expect(detailRows).toHaveLength(10);
     await user.click(detailRows[0]);
     await user.click(detailRows[1]);
-    expect(detailRows[0]).toHaveAttribute('aria-expanded', 'true');
+    expect(detailRows[0]).toHaveAttribute('aria-expanded', 'false');
     expect(detailRows[1]).toHaveAttribute('aria-expanded', 'true');
-    expect(await screen.findAllByText('요청 목적')).toHaveLength(2);
-    expect(await screen.findAllByText('업무 범위 불일치')).toHaveLength(2);
-    expect(screen.getAllByText('REQUESTED → REJECTED')).toHaveLength(2);
+    expect(await screen.findAllByText('요청 목적')).toHaveLength(1);
+    expect(await screen.findAllByText('업무 범위 불일치')).toHaveLength(1);
+    expect(screen.getAllByText('REQUESTED → REJECTED')).toHaveLength(1);
     expect(screen.getByText('11건 · 페이지당 10건')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '2페이지' }));
     expect(await screen.findByText('exp-history-10')).toBeInTheDocument();
@@ -163,6 +163,7 @@ describe('AuditExportWorkPanel', () => {
     expect(screen.queryByRole('tab', { name: '내 처리 이력' })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: '내 요청 이력' }));
+    expect((await screen.findByText('만료')).closest('.status-badge')).toHaveClass('status-neutral');
     await user.click(await screen.findByRole('button', { name: 'CSV 감사 증적 상세' }));
     await user.click(await screen.findByRole('button', { name: '다시 요청' }));
     const reason = screen.getByRole('textbox', { name: '새 요청 목적' });

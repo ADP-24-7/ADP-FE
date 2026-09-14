@@ -8,7 +8,15 @@ import type { AuditSearchParams } from '../../features/audit-trace';
 import { normalizeApiError } from '../../shared/api/apiError';
 import { EmptyState, ErrorState, KeyValues, LoadingPanel, PackContextSummary, PageHeader, SearchAssistInput, SectionCard, StatusBadge } from '../../shared/components';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../shared/config/pagination';
+import { workloadDisplayName } from '../../shared/config/adminLabels';
 import { useExecutionPack } from '../../shared/prototype';
+
+const runtimeStatusLabels: Record<string, string> = {
+  COMPLETED: '완료', REVIEW_REQUIRED: '검토 필요', BLOCKED: '차단', EGRESSING: '외부 처리 중',
+  EXTERNALLY_RECONCILED: '외부 상태 조정 완료', FAILED: '실패', SENT_UNKNOWN: '결과 미확정',
+};
+
+const actionLabels: Record<string, string> = { ALLOW: '허용', TRANSFORM: '변환 후 허용', REVIEW: '검토', BLOCK: '차단' };
 
 export function AuditPage() {
   const [routeSearchParams, setRouteSearchParams] = useRouterSearchParams();
@@ -119,10 +127,10 @@ export function AuditPage() {
   }
 
   const activeFilters = [
-    searchParams.workloadId ? `Workload: ${searchParams.workloadId}` : null,
-    searchParams.status ? `Status: ${searchParams.status}` : null,
-    searchParams.from ? `From: ${new Date(searchParams.from).toLocaleString('ko-KR')}` : null,
-    searchParams.to ? `To: ${new Date(searchParams.to).toLocaleString('ko-KR')}` : null,
+    searchParams.workloadId ? `업무: ${searchParams.workloadId}` : null,
+    searchParams.status ? `상태: ${runtimeStatusLabels[searchParams.status] ?? searchParams.status}` : null,
+    searchParams.from ? `시작: ${new Date(searchParams.from).toLocaleString('ko-KR')}` : null,
+    searchParams.to ? `종료: ${new Date(searchParams.to).toLocaleString('ko-KR')}` : null,
   ].filter(Boolean) as string[];
 
   return (
@@ -139,30 +147,30 @@ export function AuditPage() {
         <div className="investigation-context" role="status">
           <FileCheck2 size={17} />
           <p><strong>{investigationLabel} 조사 문맥</strong><span>{initialExecutionId} 실행의 전체 Evidence Chain에서 해당 구간을 우선 확인합니다.</span></p>
-          <StatusBadge tone="info">TRACE LINKED</StatusBadge>
+          <StatusBadge tone="info">추적 연결</StatusBadge>
         </div>
       ) : null}
 
       <SectionCard className="search-assist-card" title="감사 실행 검색" description="현재 인증 사용자의 Institution·Workload 범위 안에서 서버 Read Model을 검색합니다." actions={<Search size={16} />}>
         <form className="search-filter-grid" onSubmit={search}>
           <label className="field">
-            <span>Workload ID</span>
+            <span>업무</span>
             <SearchAssistInput value={workloadId} onChange={setWorkloadId} suggestions={workloadSuggestions} placeholder="예: customer 또는 tokenized 입력" ariaLabel="감사 Workload 검색" />
           </label>
           <label className="field">
-            <span>Status</span>
+            <span>실행 상태</span>
             <select value={status} onChange={(event) => setStatus(event.target.value)}>
               <option value="">전체 상태</option>
-              <option value="COMPLETED">COMPLETED</option>
-              <option value="REVIEW_REQUIRED">REVIEW_REQUIRED</option>
-              <option value="BLOCKED">BLOCKED</option>
-              <option value="EGRESSING">EGRESSING</option>
-              <option value="EXTERNALLY_RECONCILED">EXTERNALLY_RECONCILED</option>
-              <option value="FAILED">FAILED</option>
+              <option value="COMPLETED">완료</option>
+              <option value="REVIEW_REQUIRED">검토 필요</option>
+              <option value="BLOCKED">차단</option>
+              <option value="EGRESSING">외부 처리 중</option>
+              <option value="EXTERNALLY_RECONCILED">외부 상태 조정 완료</option>
+              <option value="FAILED">실패</option>
             </select>
           </label>
-          <label className="field"><span>From</span><input type="datetime-local" value={from} onChange={(event) => setFrom(event.target.value)} /></label>
-          <label className="field"><span>To</span><input type="datetime-local" value={to} onChange={(event) => setTo(event.target.value)} /></label>
+          <label className="field"><span>시작 시각</span><input type="datetime-local" value={from} onChange={(event) => setFrom(event.target.value)} /></label>
+          <label className="field"><span>종료 시각</span><input type="datetime-local" value={to} onChange={(event) => setTo(event.target.value)} /></label>
           <div className="search-filter-actions">
             <button className="button button-primary" type="submit"><Search size={15} />검색</button>
             <button className="button button-secondary" type="button" onClick={resetSearch} title="검색 조건 초기화"><RotateCcw size={15} /></button>
@@ -180,7 +188,7 @@ export function AuditPage() {
         >
           <div className={`table-shell audit-table-shell${isRefreshing ? ' is-refreshing' : ''}`} aria-busy={isRefreshing}>
             <div className="table-head table-audit">
-              <span>발생 시각</span><span>Execution ID</span><span>Workload</span><span>Final Action</span><span>Status</span>
+              <span>발생 시각</span><span>실행 ID</span><span>업무</span><span>정책 결정</span><span>실행 상태</span>
             </div>
             {audit.isLoading ? <LoadingPanel label="감사 실행 목록을 불러오는 중입니다" /> : audit.isError ? (
               <ErrorState description={normalizeApiError(audit.error).message} onRetry={() => audit.refetch()} compact />
@@ -194,9 +202,9 @@ export function AuditPage() {
               >
                 <span>{new Date(item.createdAt).toLocaleString('ko-KR')}</span>
                 <code>{item.executionId}</code>
-                <span>{item.workloadId}</span>
-                <StatusBadge tone={item.finalAction === 'BLOCK' ? 'danger' : item.finalAction === 'REVIEW' ? 'warning' : 'success'}>{item.finalAction}</StatusBadge>
-                <span>{item.status}</span>
+                <span>{workloadDisplayName(item.workloadId)}<small>{item.workloadId}</small></span>
+                <StatusBadge tone={item.finalAction === 'BLOCK' ? 'danger' : item.finalAction === 'REVIEW' ? 'warning' : 'success'}>{actionLabels[item.finalAction] ?? item.finalAction}</StatusBadge>
+                <span>{runtimeStatusLabels[item.status] ?? item.status}</span>
               </button>
             )) : <EmptyState title="검색 결과가 없습니다" description={activeFilters.length ? '현재 권한 범위에서 검색 조건에 일치하는 Runtime 실행이 없습니다.' : '현재 권한 범위에 저장된 Runtime 실행 이력이 없습니다.'} />}
           </div>

@@ -21,8 +21,8 @@ describe('AdminIdentityPanel', () => {
     await user.click(await screen.findByRole('button', { name: /Local Runtime Harness/ }));
 
     expect(await screen.findByText('CUSTOMER_SUPPORT')).toBeInTheDocument();
-    expect(screen.getByText('2 scoped grant')).toBeInTheDocument();
-    expect(screen.getByText('WORKLOAD ENABLED')).toBeInTheDocument();
+    expect(screen.getByText('대상 승인 2건')).toBeInTheDocument();
+    expect(screen.getByText('사용 가능')).toBeInTheDocument();
     expect(screen.queryByText(/local-dev-api-key/)).not.toBeInTheDocument();
     expect(screen.queryByText(/customer-100/)).not.toBeInTheDocument();
   });

@@ -2,11 +2,11 @@ import { useQueries, useQuery } from '@tanstack/react-query';
 import { getRuntimeExecutionTrace } from '../../runtime-execution';
 import { getAiCalibrationEvidence, getAiEvaluationBundle, getAiEvaluationReadiness, getAiTransformGovernanceProfile } from '../api/aiEvaluationApi';
 
-export function useAiEvaluationReadiness(evaluationRunId: string) {
+export function useAiEvaluationReadiness(evaluationRunId: string, enabled = true) {
   return useQuery({
     queryKey: ['ai-evaluation-readiness', evaluationRunId],
     queryFn: () => getAiEvaluationReadiness(evaluationRunId),
-    enabled: evaluationRunId.length > 0,
+    enabled: enabled && evaluationRunId.length > 0,
     retry: false,
   });
 }
@@ -31,11 +31,11 @@ export function useAiExecutionTraces(executionIds: string[]) {
   });
 }
 
-export function useAiTransformGovernanceProfile(evaluationRunId: string) {
+export function useAiTransformGovernanceProfile(evaluationRunId: string, enabled = true) {
   return useQuery({
     queryKey: ['ai-transform-governance-profile', evaluationRunId],
     queryFn: () => getAiTransformGovernanceProfile(evaluationRunId),
-    enabled: evaluationRunId.length > 0,
+    enabled: enabled && evaluationRunId.length > 0,
     retry: false,
   });
 }

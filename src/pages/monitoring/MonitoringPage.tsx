@@ -1,6 +1,6 @@
 import { History, RefreshCw, Search } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { usePolicyOperationEvents } from '../../features/operations-monitoring';
 import type { PolicyEventCategory, PolicyOperationEventParams } from '../../features/operations-monitoring';
 import { SecurityFindingPanel } from '../../features/security-findings';
@@ -13,6 +13,7 @@ import { useAuditExportWorkSummary } from '../../features/audit-export';
 
 export function MonitoringPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const auth = useAuthContext();
   const { selectedPack } = useExecutionPack();
   const [workloadId, setWorkloadId] = useState('');
@@ -20,6 +21,7 @@ export function MonitoringPage() {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [eventParams, setEventParams] = useState<PolicyOperationEventParams>({ page: 0, size: DEFAULT_TABLE_PAGE_SIZE });
+  const [monitoringView, setMonitoringView] = useState<'findings' | 'history'>(() => window.location.hash === '#policy-events' ? 'history' : 'findings');
   const events = usePolicyOperationEvents({ ...eventParams, executionPack: selectedPack.apiValue });
   const totalPages = events.data ? Math.ceil(events.data.total / events.data.size) : 0;
   const eventsRefreshing = events.isFetching && !events.isLoading;
@@ -33,6 +35,11 @@ export function MonitoringPage() {
   useEffect(() => {
     setEventParams((current) => ({ ...current, page: 0 }));
   }, [selectedPack.apiValue]);
+
+  useEffect(() => {
+    if (location.hash === '#policy-events') setMonitoringView('history');
+    if (location.hash === '#security-findings') setMonitoringView('findings');
+  }, [location.hash]);
 
   function searchEvents(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -71,7 +78,7 @@ export function MonitoringPage() {
       />
 
       {exportWork.data?.operationsAvailable ? <SectionCard
-        title="Governance Operations"
+        title="승인 및 감사 운영"
         description="승인 지연과 감사 증적 생성 상태를 확인합니다. 실제 처리는 승인 업무 화면에서 수행합니다."
         actions={<button className="button button-secondary" type="button" onClick={() => navigate(`/policies?section=approvals&view=${operationsView}`)}>승인 업무 보기</button>}
       >
@@ -83,30 +90,35 @@ export function MonitoringPage() {
         </div>
       </SectionCard> : null}
 
-      <div id="security-findings" className="anchored-section"><SecurityFindingPanel
+      <div className="admin-workspace-tabs" role="tablist" aria-label="보안 모니터링 업무">
+        <button type="button" role="tab" aria-selected={monitoringView === 'findings'} className={monitoringView === 'findings' ? 'active' : ''} onClick={() => setMonitoringView('findings')}>민감정보 탐지</button>
+        <button type="button" role="tab" aria-selected={monitoringView === 'history'} className={monitoringView === 'history' ? 'active' : ''} onClick={() => setMonitoringView('history')}>정책 변경 이력</button>
+      </div>
+
+      {monitoringView === 'findings' ? <div id="security-findings" className="anchored-section"><SecurityFindingPanel
         key={selectedPack.key}
         executionPack={selectedPack.apiValue}
         onOpenTrace={(executionId) => navigate(`/audit?executionId=${encodeURIComponent(executionId)}&section=response-guard`)}
-      /></div>
+      /></div> : null}
 
-      <div id="policy-events" className="anchored-section"><SectionCard
+      {monitoringView === 'history' ? <div id="policy-events" className="anchored-section"><SectionCard
         className="search-assist-card"
-        title="Policy Operation History"
-        description="Lifecycle Transition과 Current Selection Event를 단일 append-only 이력으로 검색합니다."
+        title="정책 변경 이력"
+        description="정책 상태 전환과 현재 적용 정책 변경을 시간순으로 조회합니다."
         actions={eventsRefreshing ? <StatusBadge tone="warning">REFRESHING</StatusBadge> : <History size={16} />}
       >
         <form className="search-filter-grid" onSubmit={searchEvents}>
-          <label className="field"><span>Workload ID</span><input value={workloadId} onChange={(event) => setWorkloadId(event.target.value)} placeholder="Workload ID 직접 입력" /></label>
+          <label className="field"><span>업무 ID</span><input value={workloadId} onChange={(event) => setWorkloadId(event.target.value)} placeholder="업무 ID 직접 입력" /></label>
           <label className="field">
-            <span>Category</span>
+            <span>변경 유형</span>
             <select value={category} onChange={(event) => setCategory(event.target.value as PolicyEventCategory | '')}>
-              <option value="">전체 Category</option>
-              <option value="LIFECYCLE_TRANSITION">LIFECYCLE_TRANSITION</option>
-              <option value="CURRENT_SELECTION">CURRENT_SELECTION</option>
+              <option value="">전체 변경 유형</option>
+              <option value="LIFECYCLE_TRANSITION">정책 상태 변경</option>
+              <option value="CURRENT_SELECTION">적용 정책 변경</option>
             </select>
           </label>
-          <label className="field"><span>From</span><input type="datetime-local" value={from} onChange={(event) => setFrom(event.target.value)} /></label>
-          <label className="field"><span>To</span><input type="datetime-local" value={to} onChange={(event) => setTo(event.target.value)} /></label>
+          <label className="field"><span>시작 시각</span><input type="datetime-local" value={from} onChange={(event) => setFrom(event.target.value)} /></label>
+          <label className="field"><span>종료 시각</span><input type="datetime-local" value={to} onChange={(event) => setTo(event.target.value)} /></label>
           <div className="search-filter-actions">
             <button className="button button-primary" type="submit" disabled={eventsRefreshing}><Search size={14} />검색</button>
             <button className="button button-secondary" type="button" disabled={eventsRefreshing} onClick={resetEvents} title="검색 조건 초기화"><RefreshCw size={14} /></button>
@@ -115,7 +127,7 @@ export function MonitoringPage() {
 
         <div className={`table-shell policy-events-table-shell${eventsRefreshing ? ' is-refreshing' : ''}`} aria-busy={eventsRefreshing}>
           <div className="table-head table-policy-events">
-            <span>OCCURRED</span><span>CATEGORY / TYPE</span><span>ARTIFACT</span><span>WORKLOAD / PURPOSE</span><span>REVISION</span><span>ACTOR / REASON</span>
+            <span>발생 시각</span><span>변경 유형</span><span>정책</span><span>업무 · 목적</span><span>버전</span><span>처리자 · 사유</span>
           </div>
           {events.isLoading ? <LoadingPanel label="운영 이력을 불러오는 중입니다" /> : events.isError ? (
             <ErrorState description={normalizeApiError(events.error).message} onRetry={() => events.refetch()} />
@@ -137,7 +149,7 @@ export function MonitoringPage() {
             <button className="button button-secondary" type="button" disabled={!totalPages || (eventParams.page ?? 0) + 1 >= totalPages || eventsRefreshing} onClick={() => setEventParams((value) => ({ ...value, page: (value.page ?? 0) + 1 }))}>다음</button>
           </div>
         </div>
-      </SectionCard></div>
+      </SectionCard></div> : null}
 
     </section>
   );

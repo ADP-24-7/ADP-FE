@@ -16,6 +16,10 @@ const STATUS_LABELS: Record<AuditExportStatus, string> = {
   REQUESTED: '승인 대기', APPROVED: '생성 대기', GENERATING: '생성 중', READY: '다운로드 가능',
   REJECTED: '반려', FAILED: '실패', EXPIRED: '만료', REVOKED: '폐기됨',
 };
+const STATUS_TONES: Record<AuditExportStatus, 'success' | 'warning' | 'danger' | 'info' | 'neutral'> = {
+  REQUESTED: 'warning', APPROVED: 'info', GENERATING: 'info', READY: 'success',
+  REJECTED: 'danger', FAILED: 'danger', EXPIRED: 'neutral', REVOKED: 'neutral',
+};
 const VIEWS: Array<[AuditExportWorkView, string]> = [
   ['MY_REQUESTS', '내 요청'],
   ['MY_HISTORY', '내 요청 이력'],
@@ -107,7 +111,7 @@ function ApprovalWorkRow({
         }
       }}
     >
-      <span><StatusBadge tone={job.status === 'READY' ? 'success' : job.status === 'REJECTED' || job.status === 'FAILED' ? 'danger' : 'warning'}>{displayStatus(job)}</StatusBadge>{waiting ? <small className={waiting.overdue ? 'approval-waiting overdue' : 'approval-waiting'}>{waiting.overdue ? <AlertTriangle size={12} /> : null}{waiting.label}</small> : null}</span>
+      <span><StatusBadge tone={STATUS_TONES[job.status]}>{displayStatus(job)}</StatusBadge>{waiting ? <small className={waiting.overdue ? 'approval-waiting overdue' : 'approval-waiting'}>{waiting.overdue ? <AlertTriangle size={12} /> : null}{waiting.label}</small> : null}</span>
       <span><strong>{job.format} 감사 증적</strong><small>{job.workloadId} · {job.executionPack}</small><code>{job.exportId}</code></span>
       <span><strong>{job.requesterId}</strong><small>{job.status === 'REVOKED' ? job.revokedBy ?? '폐기자 미확인' : job.approverId ?? '처리자 미지정'}</small></span>
       <span>{formatDate(job.createdAt)}<small>{job.approvedAt ? formatDate(job.approvedAt) : '처리 대기'}</small></span>
@@ -163,7 +167,7 @@ export function AuditExportWorkPanel() {
     requestedViewAllowed && requestedView ? requestedView : 'MY_REQUESTS',
   );
   const [page, setPage] = useState(0);
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
+  const [expandedId, setExpandedId] = useState('');
   const summary = useAuditExportWorkSummary(exportEligible);
   const work = useAuditExportWork(view, page, PAGE_SIZE, exportEligible && canAccessView(view, exportEligible, privileged, auditor));
   const decide = useDecideAuditExport();
@@ -187,7 +191,7 @@ export function AuditExportWorkPanel() {
   }, [page, pages]);
 
   function closeDetails() {
-    setExpandedIds(new Set());
+    setExpandedId('');
   }
 
   function selectView(next: AuditExportWorkView) {
@@ -198,29 +202,24 @@ export function AuditExportWorkPanel() {
   }
 
   function toggleJob(exportId: string) {
-    setExpandedIds((current) => {
-      const next = new Set(current);
-      if (next.has(exportId)) next.delete(exportId);
-      else next.add(exportId);
-      return next;
-    });
+    setExpandedId((current) => current === exportId ? '' : exportId);
   }
 
   async function approveJob(exportId: string) {
     await decide.mutateAsync({ exportId, action: 'APPROVE', reason: APPROVAL_REASON });
-    setExpandedIds((current) => new Set([...current].filter((id) => id !== exportId)));
+    setExpandedId('');
     await work.refetch();
   }
 
   async function rejectJob(exportId: string, reason: string) {
     await decide.mutateAsync({ exportId, action: 'REJECT', reason });
-    setExpandedIds((current) => new Set([...current].filter((id) => id !== exportId)));
+    setExpandedId('');
     await work.refetch();
   }
 
   async function revokeJob(exportId: string, reason: string) {
     await decide.mutateAsync({ exportId, action: 'REVOKE', reason });
-    setExpandedIds((current) => new Set([...current].filter((id) => id !== exportId)));
+    setExpandedId('');
     await work.refetch();
   }
 
@@ -243,7 +242,7 @@ export function AuditExportWorkPanel() {
       reason,
       idempotencyKey: `audit-export-rerequest-${crypto.randomUUID()}`,
     });
-    setExpandedIds((current) => new Set([...current].filter((id) => id !== job.exportId)));
+    setExpandedId('');
     selectView('MY_REQUESTS');
   }
 
@@ -263,7 +262,7 @@ export function AuditExportWorkPanel() {
 
     <div className="table-shell approval-work-table-shell">
       <div className="table-head table-approval-work"><span>상태</span><span>요청</span><span>요청자 / 처리자</span><span>요청일 / 처리일</span><span>작업</span></div>
-      {work.isLoading ? <LoadingPanel label="승인 업무를 불러오는 중입니다" /> : work.isError ? <ErrorState description={normalizeApiError(work.error).message} onRetry={() => work.refetch()} /> : work.data?.items.length ? work.data.items.map((job) => <ApprovalWorkRow key={job.exportId} job={job} view={view} privileged={privileged} expanded={expandedIds.has(job.exportId)} deciding={decide.isPending || create.isPending} downloading={download.isPending} onToggle={toggleJob} onApprove={approveJob} onReject={rejectJob} onRevoke={revokeJob} onDownload={downloadJob} onRerequest={rerequestJob} onInspectExecution={(executionId) => navigate(`/audit?executionId=${encodeURIComponent(executionId)}&section=decision`)} />) : <EmptyState title="표시할 승인 업무가 없습니다" description="현재 계정과 권한 범위에 해당하는 감사 증적 요청이 없습니다." />}
+      {work.isLoading ? <LoadingPanel label="승인 업무를 불러오는 중입니다" /> : work.isError ? <ErrorState description={normalizeApiError(work.error).message} onRetry={() => work.refetch()} /> : work.data?.items.length ? work.data.items.map((job) => <ApprovalWorkRow key={job.exportId} job={job} view={view} privileged={privileged} expanded={expandedId === job.exportId} deciding={decide.isPending || create.isPending} downloading={download.isPending} onToggle={toggleJob} onApprove={approveJob} onReject={rejectJob} onRevoke={revokeJob} onDownload={downloadJob} onRerequest={rerequestJob} onInspectExecution={(executionId) => navigate(`/audit?executionId=${encodeURIComponent(executionId)}&section=decision`)} />) : <EmptyState title="표시할 승인 업무가 없습니다" description="현재 계정과 권한 범위에 해당하는 감사 증적 요청이 없습니다." />}
     </div>
     <div className="pagination-row"><span>{work.data ? `${work.data.totalElements}건 · 페이지당 ${PAGE_SIZE}건` : '조회 대기'}</span><div className="numbered-pagination">
       <button className="button button-secondary" type="button" disabled={page === 0} onClick={() => { setPage((value) => value - 1); closeDetails(); }}>이전</button>

@@ -11,6 +11,10 @@ const STATUS_LABELS: Record<AuditExportStatus, string> = {
   REQUESTED: '승인 대기', APPROVED: '생성 대기', GENERATING: '생성 중', READY: '다운로드 가능',
   REJECTED: '반려', FAILED: '생성 실패', EXPIRED: '만료', REVOKED: '폐기됨',
 };
+const STATUS_TONES: Record<AuditExportStatus, 'success' | 'warning' | 'danger' | 'info' | 'neutral'> = {
+  REQUESTED: 'warning', APPROVED: 'info', GENERATING: 'info', READY: 'success',
+  REJECTED: 'danger', FAILED: 'danger', EXPIRED: 'neutral', REVOKED: 'neutral',
+};
 
 export function AuditExportPanel({ executionId }: { executionId: string }) {
   const auth = useAuthContext();
@@ -89,18 +93,18 @@ export function AuditExportPanel({ executionId }: { executionId: string }) {
     <div className="audit-export-panel">
       <div className="audit-export-heading">
         <div><h3>감사 증적 내보내기</h3><p>선택한 실행의 허용된 메타데이터와 Digest만 CSV 또는 PDF로 생성합니다.</p></div>
-        {job ? <StatusBadge tone={job.status === 'READY' ? 'success' : job.status === 'FAILED' || job.status === 'REJECTED' ? 'danger' : 'warning'}>{STATUS_LABELS[job.status]}</StatusBadge> : <FileOutput size={18} />}
+        {job ? <StatusBadge tone={STATUS_TONES[job.status]}>{STATUS_LABELS[job.status]}</StatusBadge> : <FileOutput size={18} />}
       </div>
 
       {!job && !canRequest ? (
         <p className="helper-text">현재 계정에는 감사 증적 반출 권한이 없습니다.</p>
       ) : !job ? (
         <div className="audit-export-request">
-          <div className="segmented-control" role="group" aria-label="내보내기 형식">
-            {(['CSV', 'PDF'] as const).map((value) => (
-              <button type="button" className={format === value ? 'active' : ''} key={value} onClick={() => setFormat(value)}>{value}</button>
-            ))}
-          </div>
+          <label className="audit-export-format"><span>파일 형식</span><div className="segmented-control" role="group" aria-label="내보내기 형식">
+              {(['CSV', 'PDF'] as const).map((value) => (
+                <button type="button" className={format === value ? 'active' : ''} key={value} onClick={() => setFormat(value)}>{value}</button>
+              ))}
+          </div></label>
           <label className="field"><span>반출 목적</span><input aria-label="반출 목적" maxLength={500} value={reason} onChange={(event) => setReason(event.target.value)} /><small>고객명, 계좌번호, 주민등록번호, API Key 등 민감정보는 입력하지 마세요.</small></label>
           <button className="button button-primary" type="button" disabled={!reason.trim() || create.isPending} onClick={requestExport}>
             <FileOutput size={15} />{create.isPending ? '요청 중' : '승인 요청'}

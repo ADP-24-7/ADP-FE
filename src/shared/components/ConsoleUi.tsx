@@ -100,7 +100,7 @@ type MetricCardProps = {
   value?: number | string | null;
   description: string;
   loading?: boolean;
-  state?: 'loading' | 'value' | 'empty' | 'unconnected' | 'error';
+  state?: 'loading' | 'value' | 'empty' | 'unconnected' | 'restricted' | 'error';
   tone?: 'blue' | 'amber' | 'red' | 'purple' | 'green' | 'neutral';
   icon?: LucideIcon;
 };
@@ -112,6 +112,7 @@ export function MetricCard({ label, value, description, loading = false, state, 
     value: <strong>{value}</strong>,
     empty: <strong>—</strong>,
     unconnected: <strong>—</strong>,
+    restricted: <strong>—</strong>,
     error: <strong>!</strong>,
   }[resolvedState];
 
@@ -120,6 +121,7 @@ export function MetricCard({ label, value, description, loading = false, state, 
     value: description,
     empty: '데이터가 없습니다',
     unconnected: 'API 연결 대기',
+    restricted: '승인 권한 필요',
     error: 'API 오류',
   }[resolvedState];
 
