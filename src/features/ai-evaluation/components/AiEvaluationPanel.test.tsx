@@ -21,8 +21,8 @@ describe('AiEvaluationPanel', () => {
     expect(await screen.findByText('업무·규제 통제 기준')).toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(screen.queryByRole('tab', { name: '검증 결과' })).not.toBeInTheDocument()
-    expect(queryClient.getQueryState(['ai-evaluation-readiness', 'ai-experiment-02-financial-regulatory-v5'])?.fetchStatus).toBe('idle')
-    expect(queryClient.getQueryData(['ai-evaluation-readiness', 'ai-experiment-02-financial-regulatory-v5'])).toBeUndefined()
+    expect(queryClient.getQueryState(['ai-evaluation-readiness', 'ai-eval-baseline-2026-09-07'])?.fetchStatus).toBe('idle')
+    expect(queryClient.getQueryData(['ai-evaluation-readiness', 'ai-eval-baseline-2026-09-07'])).toBeUndefined()
   })
 
   it('shows frozen E2 governance while preserving unexecuted provider semantics', async () => {
@@ -58,5 +58,18 @@ describe('AiEvaluationPanel', () => {
     expect(screen.queryByText('HTTP 200')).not.toBeInTheDocument()
     expect(screen.queryByText('RAW_VALUE_REFLECTION')).not.toBeInTheDocument()
     expect(screen.queryByText('AI Chat')).not.toBeInTheDocument()
+  })
+
+  it('loads stored execution traces independently from the governance profile endpoint', async () => {
+    const user = userEvent.setup()
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+
+    render(<QueryClientProvider client={queryClient}><AiEvaluationPanel /></QueryClientProvider>)
+
+    await user.click(await screen.findByRole('tab', { name: '실행 모니터링' }))
+    expect(await screen.findByText('실행 목록')).toBeInTheDocument()
+    expect((await screen.findAllByText(/exec_/)).length).toBeGreaterThan(0)
+    expect((await screen.findByText('Provider 호출을 시도한 실행')).closest('article')).toHaveTextContent('3')
+    expect(screen.queryByText('AI Runtime Evidence를 불러오지 못했습니다')).not.toBeInTheDocument()
   })
 })

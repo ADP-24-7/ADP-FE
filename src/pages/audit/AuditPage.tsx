@@ -9,6 +9,7 @@ import { normalizeApiError } from '../../shared/api/apiError';
 import { EmptyState, ErrorState, KeyValues, LoadingPanel, PackContextSummary, PageHeader, SearchAssistInput, SectionCard, StatusBadge } from '../../shared/components';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../shared/config/pagination';
 import { workloadDisplayName } from '../../shared/config/adminLabels';
+import { reasonDisplayName } from '../../shared/config/reasonLabels';
 import { useExecutionPack } from '../../shared/prototype';
 
 const runtimeStatusLabels: Record<string, string> = {
@@ -132,6 +133,12 @@ export function AuditPage() {
     searchParams.from ? `시작: ${new Date(searchParams.from).toLocaleString('ko-KR')}` : null,
     searchParams.to ? `종료: ${new Date(searchParams.to).toLocaleString('ko-KR')}` : null,
   ].filter(Boolean) as string[];
+  const decisionExplanations = evidence.data ? [
+    ...(evidence.data.policy.reasonCodes ?? []).map((code) => ({ stage: '정책 판정', code })),
+    ...(evidence.data.egress.responseGuardReasonCodes ?? []).map((code) => ({ stage: '응답 보호', code })),
+    ...(evidence.data.recovery.lastErrorCode ? [{ stage: '복구 처리', code: String(evidence.data.recovery.lastErrorCode) }] : []),
+    ...(evidence.data.audit.reasonCode ? [{ stage: '감사 기록', code: evidence.data.audit.reasonCode }] : []),
+  ].filter((item, index, items) => items.findIndex((candidate) => candidate.code === item.code) === index) : [];
 
   return (
     <section className="page-section">
@@ -243,18 +250,23 @@ export function AuditPage() {
                     tabIndex={-1}
                     aria-label="Policy Decision Evidence"
                   >
+                  <h3>판정 결과 및 사유</h3>
+                  <p className="helper-text">원문 데이터 없이 어떤 통제가 허용·검토·차단을 결정했는지 확인합니다.</p>
                   <KeyValues items={[
                     ['Execution ID', evidence.data.executionId],
                     ['Trace ID', evidence.data.traceId],
                     ['Workload', evidence.data.workloadId],
                     ['Purpose', evidence.data.purposeCode],
                     ['Final Action', evidence.data.policy.finalAction ?? '—'],
+                    ['Matched Rules', (evidence.data.policy.matchedRuleIds ?? []).join(', ') || '—'],
+                    ['Required Controls', (evidence.data.policy.requiredControls ?? []).join(', ') || '—'],
                     ['Policy Version', evidence.data.policy.policyVersion ?? '—'],
                     ['Destination', evidence.data.egress.destinationProfileId ?? '—'],
                     ['Connector', evidence.data.egress.connectorStatus ?? '—'],
                     ['Recovery', String(evidence.data.recovery.recoveryStatus ?? '—')],
                     ['Export Digest', evidence.data.exportContentDigest],
                   ]} />
+                  {decisionExplanations.length ? <ul className="reason-code-list">{decisionExplanations.map((item) => <li key={`${item.stage}-${item.code}`}><code>{item.stage} · {item.code}</code><span>{reasonDisplayName(item.code)}</span></li>)}</ul> : <div className="notice notice-info"><p><b>추가 확인 사유 없음</b><span>현재 증적에는 별도의 차단·검토 사유가 기록되지 않았습니다.</span></p></div>}
                   </div>
                   <div
                     ref={postExecutionEvidenceRef}
@@ -272,6 +284,7 @@ export function AuditPage() {
                       ['Provider Request Digest', evidence.data.egress.providerRequestDigest ?? '—'],
                       ['Provider Response Digest', evidence.data.egress.providerResponseDigest ?? '—'],
                       ['Response Guard', evidence.data.egress.responseGuardStatus ?? '—'],
+                      ['Response Guard Reason', (evidence.data.egress.responseGuardReasonCodes ?? []).join(', ') || '—'],
                       ['Controlled Delivery', evidence.data.egress.controlledDeliveryStatus ?? '—'],
                       ['Delivered Response Digest', evidence.data.egress.controlledDeliveryResponseDigest ?? '—'],
                       ['Recovery Status', String(evidence.data.recovery.recoveryStatus ?? '—')],

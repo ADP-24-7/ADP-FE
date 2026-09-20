@@ -12,6 +12,7 @@ export type AiEvaluationCaseModelEvidence = {
   runtimeStatus?: string | null;
   providerStatus?: string | null;
   evidenceStatus?: string | null;
+  reasonCodes: string[];
 };
 
 export type AiEvaluationRunReadiness = {
@@ -25,6 +26,7 @@ export type AiEvaluationRunReadiness = {
   completeEvidenceCount: number;
   missingExecutionCount: number;
   unexpectedExecutionCount: number;
+  reasonCodes: string[];
   caseModels: AiEvaluationCaseModelEvidence[];
 };
 

@@ -112,6 +112,7 @@ export const aiEvaluationHandlers = [
         complete_evidence_count: 0,
         missing_execution_count: 9,
         unexpected_execution_count: 0,
+        reason_codes: ['EVALUATION_EXECUTION_NOT_STARTED'],
         case_models: [],
       });
     }
@@ -126,6 +127,7 @@ export const aiEvaluationHandlers = [
       complete_evidence_count: 3,
       missing_execution_count: 0,
       unexpected_execution_count: 0,
+      reason_codes: [],
       case_models: executions.map(([executionId, profileId]) => ({
         eval_case_id: 'customer-summary-da-10832-001',
         profile_id: profileId,
@@ -133,6 +135,7 @@ export const aiEvaluationHandlers = [
         runtime_status: 'BLOCKED',
         provider_status: 'ACKNOWLEDGED',
         evidence_status: 'COMPLETE',
+        reason_codes: [],
       })),
     });
   }),
