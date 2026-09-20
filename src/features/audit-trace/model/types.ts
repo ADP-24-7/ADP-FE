@@ -59,6 +59,9 @@ export type ExecutionEvidencePack = {
     snapshotDigest?: string | null;
     decisionId?: string | null;
     finalAction?: string | null;
+    reasonCodes?: string[];
+    matchedRuleIds?: string[];
+    requiredControls?: string[];
   };
   data: {
     subjectRefDigest?: string | null;
@@ -85,6 +88,7 @@ export type ExecutionEvidencePack = {
     providerRequestDigest?: string | null;
     providerResponseDigest?: string | null;
     responseGuardStatus?: string | null;
+    responseGuardReasonCodes?: string[];
     controlledDeliveryStatus?: string | null;
     controlledDeliveryResponseDigest?: string | null;
   };

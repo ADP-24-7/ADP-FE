@@ -41,7 +41,7 @@ export const auditTraceHandlers = [
       replayCount: params.executionId === 'exec_da_snapshot_contract' ? 1 : 0,
       additionalExternalEffectCount: 0,
     },
-    policy: { finalAction: 'TRANSFORM' },
+    policy: { finalAction: 'TRANSFORM', reasonCodes: ['POLICY_APPLICABLE'], matchedRuleIds: ['rule-customer-summary'], requiredControls: ['DATA_MINIMIZATION'] },
     data: { inputDigest: 'input-digest' },
     egress: {
       destinationProfileId: 'ai-provider-local',
@@ -50,6 +50,7 @@ export const auditTraceHandlers = [
       providerRequestDigest: 'provider-request-digest',
       providerResponseDigest: 'provider-response-digest',
       responseGuardStatus: 'PASSED',
+      responseGuardReasonCodes: [],
       controlledDeliveryStatus: 'DELIVERED',
       controlledDeliveryResponseDigest: 'delivered-response-digest',
     },

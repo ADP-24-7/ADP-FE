@@ -1,19 +1,14 @@
 import { Activity, FileCheck2, FilterX, Search, ShieldCheck } from 'lucide-react';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { normalizeApiError } from '../../../shared/api/apiError';
 import { EmptyState, ErrorState, KeyValues, LoadingPanel, MetricCard, SearchAssistInput, SectionCard, StatusBadge } from '../../../shared/components';
 import type { RuntimeExecutionTrace } from '../../runtime-execution/model/types';
 import { useAiCalibrationEvidence, useAiEvaluationBundle, useAiEvaluationReadiness, useAiExecutionTraces, useAiTransformGovernanceProfile } from '../hooks/useAiEvaluationRun';
 import { useAuthContext } from '../../auth';
+import { reasonDisplayName } from '../../../shared/config/reasonLabels';
 
 const CURRENT_RUN_ID = 'ai-experiment-02-financial-regulatory-v5';
-
-const reasonLabels: Record<string, string> = {
-  RESPONSE_SENSITIVE_DATA_DETECTED: '응답에서 민감 데이터가 탐지됨',
-  RAW_VALUE_REFLECTION: 'Provider 입력값이 응답에 그대로 반영됨',
-  SUBJECT_SCOPE_MISMATCH: '승인된 고객 범위와 실행 대상이 다름',
-  AI_FIXED_CONDITIONS_MISMATCH: 'Frozen Contract 조건과 실행 조건이 다름',
-};
+const EXECUTED_RUN_ID = 'ai-eval-baseline-2026-09-07';
 
 function statusTone(status?: string | null) {
   if (!status) return 'neutral' as const;
@@ -67,35 +62,50 @@ export function AiEvaluationPanel() {
   const auth = useAuthContext();
   const canReadRestrictedEvidence = Boolean(auth.data?.roles.includes('PRIVILEGED_OPERATOR')
     || auth.data?.roles.includes('AUDITOR'));
-  const [runId, setRunId] = useState(CURRENT_RUN_ID);
-  const [lookupRunId, setLookupRunId] = useState(CURRENT_RUN_ID);
+  const [runId, setRunId] = useState(EXECUTED_RUN_ID);
+  const [lookupRunId, setLookupRunId] = useState(EXECUTED_RUN_ID);
   const [selectedExecutionId, setSelectedExecutionId] = useState('');
-  const [activeView, setActiveView] = useState<'executions' | 'controls' | 'validation'>('controls');
+  const [activeView, setActiveView] = useState<'executions' | 'controls' | 'validation'>('executions');
   const readiness = useAiEvaluationReadiness(lookupRunId, canReadRestrictedEvidence);
-  const governance = useAiTransformGovernanceProfile(lookupRunId);
+  const governance = useAiTransformGovernanceProfile(CURRENT_RUN_ID);
   const bundle = useAiEvaluationBundle(lookupRunId, canReadRestrictedEvidence && readiness.data?.bundleAvailable === true);
   const calibration = useAiCalibrationEvidence(lookupRunId, canReadRestrictedEvidence && readiness.data?.bundleAvailable === true);
-  const executionIds = bundle.data?.caseResults.map((item) => item.executionId) ?? [];
+  const executionIds = [...new Set(
+    bundle.data?.caseResults.map((item) => item.executionId)
+      ?? readiness.data?.caseModels.flatMap((item) => item.executionId ? [item.executionId] : [])
+      ?? [],
+  )];
   const traceQueries = useAiExecutionTraces(executionIds);
   const traces = traceQueries.flatMap((query) => query.data ? [query.data] : []);
   const tracesLoading = traceQueries.some((query) => query.isLoading);
   const tracesFailed = traceQueries.some((query) => query.isError);
   const selectedTrace = traces.find((trace) => trace.executionId === selectedExecutionId) ?? traces[0];
-  const providerExecutions = traces.filter((trace) => trace.evidence.aiModel?.providerHttpStatus != null).length;
+  const providerExecutions = traces.filter((trace) => {
+    const providerStatus = trace.evidence.aiModel?.providerStatus;
+    return providerStatus != null && !['NOT_ATTEMPTED', 'NOT_STARTED'].includes(providerStatus);
+  }).length;
   const heldExecutions = traces.filter((trace) => ['BLOCKED', 'REVIEW_REQUIRED'].includes(trace.status) || trace.evidence.controlledDeliveryStatus === 'WITHHELD').length;
   const transformedExecutions = traces.filter((trace) => stageStatus(trace, 'TRANSFORM') === 'COMPLETED').length;
   const matchingContracts = traces.filter((trace) => {
     const decision = policyStatus(trace);
     return contractStatus(trace) === 'MATCH' && (decision === 'ALLOW' || decision === 'TRANSFORM');
   }).length;
-  const loading = governance.isLoading || (canReadRestrictedEvidence && (readiness.isLoading || bundle.isLoading || calibration.isLoading || tracesLoading));
-  const failed = governance.isError || (canReadRestrictedEvidence && (readiness.isError || bundle.isError || calibration.isError || tracesFailed));
+  const loading = governance.isLoading
+    || (canReadRestrictedEvidence && (readiness.isLoading || bundle.isLoading || calibration.isLoading || tracesLoading));
+  const failed = governance.isError
+    || (canReadRestrictedEvidence && (readiness.isError || bundle.isError || calibration.isError || tracesFailed));
   const state = loading ? 'loading' as const : failed ? 'error' as const : 'value' as const;
+
+  useEffect(() => {
+    if (auth.data && !canReadRestrictedEvidence) setActiveView('controls');
+  }, [auth.data, canReadRestrictedEvidence]);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSelectedExecutionId('');
-    setLookupRunId(runId.trim());
+    const nextRunId = runId.trim();
+    setLookupRunId(nextRunId);
+    setActiveView(canReadRestrictedEvidence && nextRunId !== CURRENT_RUN_ID ? 'executions' : 'controls');
   }
 
   return (
@@ -105,8 +115,8 @@ export function AiEvaluationPanel() {
           <label className="field field-grow">
             <span>Evaluation Run ID</span>
             <SearchAssistInput value={runId} onChange={setRunId} suggestions={[
-              { value: CURRENT_RUN_ID, label: 'E2 regulatory runtime', description: 'Provider governance blocked · 실행 Evidence 조회', source: 'api' },
-              { value: 'ai-eval-baseline-2026-09-07', label: 'Legacy baseline', description: '기존 local fixture', source: 'local-example' },
+              { value: EXECUTED_RUN_ID, label: 'AI 실행 검증', description: '3개 모델의 저장된 Runtime Evidence', source: 'api' },
+              { value: CURRENT_RUN_ID, label: '정책·필드 통제 검증', description: '외부 실행 전 Provider governance 상태', source: 'api' },
             ]} placeholder="Evaluation Run ID" ariaLabel="Evaluation Run ID" required />
           </label>
           <button className="button button-primary" type="submit"><Search size={15} />조회</button>
@@ -118,7 +128,7 @@ export function AiEvaluationPanel() {
       </div> : null}
 
       <div className="metric-grid">
-        <MetricCard label="외부 AI 실행" value={providerExecutions} description="Provider 응답을 받은 실행" state={canReadRestrictedEvidence ? state : 'restricted'} icon={Activity} tone="blue" />
+        <MetricCard label="외부 AI 실행" value={providerExecutions} description="Provider 호출을 시도한 실행" state={canReadRestrictedEvidence ? state : 'restricted'} icon={Activity} tone="blue" />
         <MetricCard label="확인 필요" value={heldExecutions} description="차단·검토·응답 보류 실행" state={canReadRestrictedEvidence ? state : 'restricted'} icon={FilterX} tone="red" />
         <MetricCard label="데이터 변환 적용" value={transformedExecutions} description="전송 전 최소화가 적용된 실행" state={canReadRestrictedEvidence ? state : 'restricted'} icon={ShieldCheck} tone="green" />
         <MetricCard label="정책·계약 일치" value={`${matchingContracts} / ${readiness.data?.expectedExecutionCount ?? 0}`} description="승인 조건과 실행 증적 일치" state={canReadRestrictedEvidence ? state : 'restricted'} icon={FileCheck2} tone="neutral" />
@@ -134,6 +144,22 @@ export function AiEvaluationPanel() {
       </div> : null}
 
       {failed ? <ErrorState title="AI Runtime Evidence를 불러오지 못했습니다" description={normalizeApiError(readiness.error ?? governance.error ?? bundle.error ?? calibration.error ?? traceQueries.find((query) => query.error)?.error).message} onRetry={() => { readiness.refetch(); governance.refetch(); bundle.refetch(); calibration.refetch(); traceQueries.forEach((query) => query.refetch()); }} /> : null}
+
+      {canReadRestrictedEvidence && readiness.data && readiness.data.status !== 'READY' ? <SectionCard
+        title="조회 상태 및 확인 사유"
+        description="오류로 숨기지 않고 저장된 실행과 현재 평가 계약의 차이를 표시합니다."
+        actions={<StatusBadge tone="warning">{readiness.data.status}</StatusBadge>}
+      >
+        <div className="content-grid content-grid-two ai-evidence-grid">
+          <KeyValues items={[
+            ['예상 실행', String(readiness.data.expectedExecutionCount)],
+            ['관측 실행', String(readiness.data.observedExecutionCount)],
+            ['완전한 증적', String(readiness.data.completeEvidenceCount)],
+            ['누락 실행', String(readiness.data.missingExecutionCount)],
+          ]} />
+          <ul className="reason-code-list">{readiness.data.reasonCodes.map((reason) => <li key={reason}><code>{reason}</code><span>{reasonDisplayName(reason)}</span></li>)}</ul>
+        </div>
+      </SectionCard> : null}
 
       <div className="admin-workspace-tabs" role="tablist" aria-label="AI 운영 분석 화면">
         {canReadRestrictedEvidence ? <button type="button" role="tab" aria-selected={activeView === 'executions'} className={activeView === 'executions' ? 'active' : ''} onClick={() => setActiveView('executions')}>실행 모니터링</button> : null}
@@ -231,7 +257,7 @@ export function AiEvaluationPanel() {
               <StatusBadge tone={statusTone(trace.evidence.controlledDeliveryStatus)}>{trace.evidence.controlledDeliveryStatus ?? 'NOT_REACHED'}</StatusBadge>
               <span>{new Date(trace.createdAt).toLocaleString('ko-KR')}</span>
             </button>;
-          }) : <EmptyState compact title="실행 Evidence 없음" description="선택한 Run에서 관측된 실행이 없습니다." />}
+          }) : <EmptyState compact title="실행 증적 없음" description={readiness.data?.status === 'NOT_STARTED' ? '평가 계약은 등록됐지만 외부 AI 실행은 아직 시작되지 않았습니다.' : '선택한 Run에서 관측된 실행이 없습니다.'} />}
         </div>
       </SectionCard> : null}
 
@@ -248,7 +274,7 @@ export function AiEvaluationPanel() {
               `${execution.evalCaseId} / ${execution.modelProfileId}`,
               `${finding.findingType} · ${finding.sourceDataClass ?? 'UNBOUND'} · ${finding.transformStrategy ?? 'UNBOUND'} · ${finding.fieldTreatment ?? 'UNBOUND'} × ${finding.count}`,
             ] as [string, string]))} />
-        </div> : <EmptyState compact title="NOT_EXECUTED" description="완전한 3×3 Bundle이 없어 latency, token, response finding을 조회하지 않습니다." />}
+        </div> : <EmptyState compact title="검증 결과 준비 중" description="평가 실행 구성이 완성되면 응답 탐지와 품질 지표를 확인할 수 있습니다." />}
       </SectionCard> : null}
 
       {activeView === 'executions' && selectedTrace ? <ExecutionTracePanel trace={selectedTrace} /> : null}
@@ -279,7 +305,7 @@ function ExecutionTracePanel({ trace }: { trace: RuntimeExecutionTrace }) {
       </article>)}
     </div>
     <div className="content-grid content-grid-two ai-evidence-grid">
-      <div><h3>차단 원인</h3>{reasons.length ? <ul className="reason-code-list">{reasons.map((reason) => <li key={reason}><code>{reason}</code><span>{reasonLabels[reason] ?? 'Runtime 통제 조건을 확인해야 합니다.'}</span></li>)}</ul> : <p className="helper-text">기록된 차단 원인이 없습니다.</p>}</div>
+      <div><h3>차단·검토 사유</h3>{reasons.length ? <ul className="reason-code-list">{reasons.map((reason) => <li key={reason}><code>{reason}</code><span>{reasonDisplayName(reason)}</span></li>)}</ul> : <p className="helper-text">기록된 차단·검토 사유가 없습니다.</p>}</div>
       <div><h3>운영 Evidence</h3><KeyValues items={[
         ['Authorization reason', trace.authorizationReason],
         ['Policy reason', trace.policyReasonCodes.join(', ') || 'NONE'],
